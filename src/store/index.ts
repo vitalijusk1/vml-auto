@@ -26,6 +26,8 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        // Ignore Date objects in state (they will be serialized by redux-persist if needed)
+        ignoredPaths: ['data.parts', 'data.orders', 'data.returns'],
       },
     }),
 });

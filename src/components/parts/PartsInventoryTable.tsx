@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectFilteredParts, selectSelectedParts } from "@/store/selectors";
+import { selectParts, selectSelectedParts } from "@/store/selectors";
 import {
   togglePartSelection,
   selectAllParts,
@@ -45,9 +45,16 @@ const getPartStatusClass = (status: PartStatus) => {
   return statusMap[status] || getStatusBadgeClass("part", "Returned");
 };
 
-export function PartsInventoryTable() {
+interface PartsInventoryTableProps {
+  parts?: Part[];
+}
+
+export function PartsInventoryTable({
+  parts: providedParts,
+}: PartsInventoryTableProps = {}) {
   const dispatch = useAppDispatch();
-  const filteredParts = useAppSelector(selectFilteredParts);
+  const allParts = useAppSelector(selectParts);
+  const filteredParts = providedParts || allParts;
   const selectedParts = useAppSelector(selectSelectedParts);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);

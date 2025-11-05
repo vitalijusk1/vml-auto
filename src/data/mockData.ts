@@ -1,4 +1,4 @@
-import { Car, Part, Order, Return, Customer, PartStatus, CarStatus, OrderStatus, ReturnStatus, PartQuality, PartPosition, FuelType, BodyType } from '../types';
+import { Car, Part, Order, Return, Customer, PartStatus, OrderStatus, ReturnStatus, PartQuality, PartPosition, FuelType, BodyType } from '../types';
 
 const brands = ['BMW', 'Mercedes-Benz', 'Audi', 'Volkswagen', 'Toyota', 'Ford', 'Opel', 'Peugeot', 'Renault', 'Volvo'];
 const models: Record<string, string[]> = {
@@ -33,33 +33,86 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const fuelTypes = ['Petrol', 'Diesel', 'Electric', 'Hybrid'];
+const bodyTypes = ['Sedan', 'Hatchback', 'SUV', 'Coupe', 'Estate', 'Van'];
+const wheelDrives = ['FWD', 'RWD', 'AWD', '4WD'];
+const wheelTypes = ['Alloy', 'Steel', 'Forged'];
+const gearboxTypes = ['Manual', 'Automatic', 'CVT', 'DCT', 'AMT'];
+const colors = ['Black', 'White', 'Silver', 'Gray', 'Blue', 'Red', 'Green', 'Brown'];
+const categories = ['Compact', 'Mid-size', 'Full-size', 'Luxury', 'Sports', 'SUV', 'Van'];
+
 export function generateMockCars(count: number = 50): Car[] {
   const cars: Car[] = [];
   const now = new Date();
   
   for (let i = 0; i < count; i++) {
     const brand = randomElement(brands);
-    const model = randomElement(models[brand] || ['Unknown']);
+    const modelName = randomElement(models[brand] || ['Unknown']);
     const year = randomInt(2000, 2023);
-    const status = randomElement<CarStatus>(['Purchased', 'For Dismantling', 'Dismantled', 'Sold']);
+    const modelYear = randomInt(year - 2, year);
+    const fuelType = randomElement(fuelTypes);
+    const bodyType = randomElement(bodyTypes);
     
     cars.push({
-      id: `CAR-${String(i + 1).padStart(4, '0')}`,
+      id: i + 1,
+      photo: `https://picsum.photos/seed/car-${i}-main/400/300`,
+      photo_gallery: [
+        `https://picsum.photos/seed/car-${i}-1/400/300`,
+        `https://picsum.photos/seed/car-${i}-2/400/300`,
+        `https://picsum.photos/seed/car-${i}-3/400/300`,
+      ],
       brand,
-      model,
+      model: {
+        id: randomInt(100, 999),
+        name: modelName,
+      },
       year,
-      fuelType: randomElement<FuelType>(['Petrol', 'Diesel', 'Electric', 'Hybrid']),
-      bodyType: randomElement<BodyType>(['Sedan', 'Hatchback', 'SUV', 'Coupe', 'Estate', 'Van']),
-      vin: `VIN${Math.random().toString(36).substring(2, 17).toUpperCase()}`,
-      status,
-      totalPartsAvailable: randomInt(0, 100),
-      totalPartsSold: randomInt(0, 150),
-      valueRemaining: randomInt(500, 5000),
-      photo: `https://picsum.photos/seed/${brand}-${model}-${i}/200/150`,
-      datePurchased: randomDate(new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000), now),
-      dateDismantled: status === 'Dismantled' || status === 'Sold' 
-        ? randomDate(new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000), now)
-        : undefined,
+      model_year: modelYear,
+      engine: {
+        code: `ENG${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        capacity: randomElement([1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500, 3000, 3500, 4000]),
+        power: randomInt(75, 350),
+      },
+      fuel: {
+        id: fuelTypes.indexOf(fuelType) + 1,
+        name: fuelType,
+      },
+      body_type: {
+        id: bodyTypes.indexOf(bodyType) + 1,
+        name: bodyType,
+      },
+      wheel_drive: {
+        id: randomInt(1, 4),
+        name: randomElement(wheelDrives),
+      },
+      wheel_type: {
+        id: randomInt(1, 3),
+        name: randomElement(wheelTypes),
+      },
+      gearbox_type: {
+        id: randomInt(1, 5),
+        name: randomElement(gearboxTypes),
+      },
+      color: {
+        id: randomInt(1, 10),
+        name: randomElement(colors),
+      },
+      color_code: `${randomInt(100, 999)}`,
+      interior: randomElement(['Black leather', 'Beige fabric', 'Gray fabric', 'Brown leather', 'Black fabric']),
+      category: {
+        id: randomInt(900, 1000),
+        name: randomElement(categories),
+      },
+      mileage: randomInt(50000, 250000),
+      defectation_notes: randomElement([
+        'Minor front-end damage',
+        'No defects',
+        'Scratches on rear bumper',
+        'Dent on driver side door',
+        'Windshield crack',
+        'Minor rust spots',
+      ]),
+      last_synced_at: randomDate(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), now).toISOString(),
     });
   }
   
@@ -85,9 +138,9 @@ export function generateMockParts(count: number = 500, cars: Car[]): Part[] {
       name: `${randomElement(partTypes)} - ${randomElement(partCategories)}`,
       category: randomElement(partCategories),
       partType: randomElement(partTypes),
-      carId: car.id,
+      carId: car.id.toString(),
       carBrand: car.brand,
-      carModel: car.model,
+      carModel: car.model.name,
       carYear: car.year,
       manufacturerCode: `MFR-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
       status,

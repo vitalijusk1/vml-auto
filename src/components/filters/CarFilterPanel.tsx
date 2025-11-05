@@ -1,44 +1,31 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/store/hooks";
-import { selectCars, selectParts } from "@/store/selectors";
-import { FilterState, PartStatus, PartQuality } from "@/types";
+import { selectCars } from "@/store/selectors";
+import { FuelType, BodyType } from "@/types";
 import { X, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
+import { CarFilterState, defaultCarFilters } from "@/utils/filterCars";
 
-interface FilterPanelProps {
-  filters: FilterState;
-  onFiltersChange: (filters: FilterState) => void;
+interface CarFilterPanelProps {
+  filters: CarFilterState;
+  onFiltersChange: (filters: CarFilterState) => void;
 }
 
-export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
+export function CarFilterPanel({
+  filters,
+  onFiltersChange,
+}: CarFilterPanelProps) {
   const cars = useAppSelector(selectCars);
-  const parts = useAppSelector(selectParts);
   const [isOpen, setIsOpen] = useState(true);
 
-  const updateFilters = (updates: Partial<FilterState>) => {
+  const updateFilters = (updates: Partial<CarFilterState>) => {
     onFiltersChange({ ...filters, ...updates });
   };
 
   const resetFilters = () => {
-    onFiltersChange({
-      search: "",
-      status: "All",
-      dateRange: {},
-      carBrand: [],
-      carModel: [],
-      carYear: [],
-      fuelType: [],
-      bodyType: [],
-      partCategory: [],
-      partType: [],
-      quality: [],
-      position: [],
-      priceRange: {},
-      inventoryAge: {},
-    });
+    onFiltersChange(defaultCarFilters);
   };
 
   const uniqueBrands = useMemo(() => {
@@ -46,21 +33,17 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
   }, [cars]);
 
   const uniqueModels = useMemo(() => {
-    if (filters.carBrand.length === 0) {
+    if (filters.brand.length === 0) {
       return Array.from(new Set(cars.map((c) => c.model.name))).sort();
     }
     return Array.from(
       new Set(
         cars
-          .filter((c) => filters.carBrand.includes(c.brand))
+          .filter((c) => filters.brand.includes(c.brand))
           .map((c) => c.model.name)
       )
     ).sort();
-  }, [cars, filters.carBrand]);
-
-  const uniqueCategories = useMemo(() => {
-    return Array.from(new Set(parts.map((p) => p.category))).sort();
-  }, [parts]);
+  }, [cars, filters.brand]);
 
   const uniqueYears = useMemo(() => {
     return Array.from(new Set(cars.map((c) => c.year))).sort((a, b) => b - a);
@@ -90,32 +73,15 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
           <div>
             <label className="text-sm font-medium mb-2 block">Search</label>
             <Input
-              placeholder="Part name, code, manufacturer..."
+              placeholder="Brand, model, ID, engine code..."
               value={filters.search}
               onChange={(e) => updateFilters({ search: e.target.value })}
             />
           </div>
 
-          {/* Status */}
+          {/* Brand */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Status</label>
-            <Select
-              value={filters.status}
-              onChange={(e) =>
-                updateFilters({ status: e.target.value as PartStatus | "All" })
-              }
-            >
-              <option value="All">All</option>
-              <option value="In Stock">In Stock</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Sold">Sold</option>
-              <option value="Returned">Returned</option>
-            </Select>
-          </div>
-
-          {/* Car Brand */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Car Brand</label>
+            <label className="text-sm font-medium mb-2 block">Brand</label>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
               {uniqueBrands.map((brand) => (
                 <label
@@ -124,15 +90,13 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                 >
                   <input
                     type="checkbox"
-                    checked={filters.carBrand.includes(brand)}
+                    checked={filters.brand.includes(brand)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        updateFilters({
-                          carBrand: [...filters.carBrand, brand],
-                        });
+                        updateFilters({ brand: [...filters.brand, brand] });
                       } else {
                         updateFilters({
-                          carBrand: filters.carBrand.filter((b) => b !== brand),
+                          brand: filters.brand.filter((b) => b !== brand),
                         });
                       }
                     }}
@@ -144,9 +108,9 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             </div>
           </div>
 
-          {/* Car Model */}
+          {/* Model */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Car Model</label>
+            <label className="text-sm font-medium mb-2 block">Model</label>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
               {uniqueModels.map((model) => (
                 <label
@@ -155,15 +119,13 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                 >
                   <input
                     type="checkbox"
-                    checked={filters.carModel.includes(model)}
+                    checked={filters.model.includes(model)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        updateFilters({
-                          carModel: [...filters.carModel, model],
-                        });
+                        updateFilters({ model: [...filters.model, model] });
                       } else {
                         updateFilters({
-                          carModel: filters.carModel.filter((m) => m !== model),
+                          model: filters.model.filter((m) => m !== model),
                         });
                       }
                     }}
@@ -175,9 +137,9 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             </div>
           </div>
 
-          {/* Car Year */}
+          {/* Year */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Car Year</label>
+            <label className="text-sm font-medium mb-2 block">Year</label>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
               {uniqueYears.map((year) => (
                 <label
@@ -186,13 +148,13 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                 >
                   <input
                     type="checkbox"
-                    checked={filters.carYear.includes(year)}
+                    checked={filters.year.includes(year)}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        updateFilters({ carYear: [...filters.carYear, year] });
+                        updateFilters({ year: [...filters.year, year] });
                       } else {
                         updateFilters({
-                          carYear: filters.carYear.filter((y) => y !== year),
+                          year: filters.year.filter((y) => y !== year),
                         });
                       }
                     }}
@@ -204,88 +166,97 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             </div>
           </div>
 
-          {/* Part Category */}
+          {/* Fuel Type */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
-              Part Category
-            </label>
+            <label className="text-sm font-medium mb-2 block">Fuel Type</label>
             <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueCategories.map((category) => (
+              {(["Petrol", "Diesel", "Electric", "Hybrid"] as FuelType[]).map(
+                (fuelType) => (
+                  <label
+                    key={fuelType}
+                    className="flex items-center space-x-2 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.fuelType.includes(fuelType)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateFilters({
+                            fuelType: [...filters.fuelType, fuelType],
+                          });
+                        } else {
+                          updateFilters({
+                            fuelType: filters.fuelType.filter(
+                              (f) => f !== fuelType
+                            ),
+                          });
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span>{fuelType}</span>
+                  </label>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Body Type */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Body Type</label>
+            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+              {(
+                [
+                  "Sedan",
+                  "Hatchback",
+                  "SUV",
+                  "Coupe",
+                  "Estate",
+                  "Van",
+                ] as BodyType[]
+              ).map((bodyType) => (
                 <label
-                  key={category}
+                  key={bodyType}
                   className="flex items-center space-x-2 text-sm cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={filters.partCategory.includes(category)}
+                    checked={filters.bodyType.includes(bodyType)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         updateFilters({
-                          partCategory: [...filters.partCategory, category],
+                          bodyType: [...filters.bodyType, bodyType],
                         });
                       } else {
                         updateFilters({
-                          partCategory: filters.partCategory.filter(
-                            (c) => c !== category
+                          bodyType: filters.bodyType.filter(
+                            (b) => b !== bodyType
                           ),
                         });
                       }
                     }}
                     className="rounded"
                   />
-                  <span>{category}</span>
+                  <span>{bodyType}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Quality */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Quality</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(
-                ["New", "Used", "With Defects", "Restored"] as PartQuality[]
-              ).map((quality) => (
-                <label
-                  key={quality}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.quality.includes(quality)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          quality: [...filters.quality, quality],
-                        });
-                      } else {
-                        updateFilters({
-                          quality: filters.quality.filter((q) => q !== quality),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{quality}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Price Range */}
+          {/* Mileage Range */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Price Range (EUR)
+              Mileage (km)
             </label>
             <div className="flex gap-2">
               <Input
                 type="number"
                 placeholder="Min"
-                value={filters.priceRange.min || ""}
+                value={filters.mileageRange.min || ""}
                 onChange={(e) =>
                   updateFilters({
-                    priceRange: {
-                      ...filters.priceRange,
+                    mileageRange: {
+                      ...filters.mileageRange,
                       min: e.target.value
                         ? parseFloat(e.target.value)
                         : undefined,
@@ -296,11 +267,11 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
               <Input
                 type="number"
                 placeholder="Max"
-                value={filters.priceRange.max || ""}
+                value={filters.mileageRange.max || ""}
                 onChange={(e) =>
                   updateFilters({
-                    priceRange: {
-                      ...filters.priceRange,
+                    mileageRange: {
+                      ...filters.mileageRange,
                       max: e.target.value
                         ? parseFloat(e.target.value)
                         : undefined,
@@ -311,54 +282,46 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             </div>
           </div>
 
-          {/* Inventory Age Quick Filters */}
+          {/* Date Synced Range */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Inventory Age
+              Last Synced
             </label>
             <div className="space-y-2">
-              <Button
-                variant={
-                  filters.inventoryAge.quickFilter === "stale"
-                    ? "default"
-                    : "outline"
+              <Input
+                type="date"
+                value={
+                  filters.dateSyncedRange.from
+                    ? filters.dateSyncedRange.from.toISOString().split("T")[0]
+                    : ""
                 }
-                size="sm"
-                className="w-full"
-                onClick={() =>
+                onChange={(e) =>
                   updateFilters({
-                    inventoryAge: {
-                      quickFilter:
-                        filters.inventoryAge.quickFilter === "stale"
-                          ? undefined
-                          : "stale",
+                    dateSyncedRange: {
+                      ...filters.dateSyncedRange,
+                      from: e.target.value
+                        ? new Date(e.target.value)
+                        : undefined,
                     },
                   })
                 }
-              >
-                Stale (6+ months)
-              </Button>
-              <Button
-                variant={
-                  filters.inventoryAge.quickFilter === "new"
-                    ? "default"
-                    : "outline"
+              />
+              <Input
+                type="date"
+                value={
+                  filters.dateSyncedRange.to
+                    ? filters.dateSyncedRange.to.toISOString().split("T")[0]
+                    : ""
                 }
-                size="sm"
-                className="w-full"
-                onClick={() =>
+                onChange={(e) =>
                   updateFilters({
-                    inventoryAge: {
-                      quickFilter:
-                        filters.inventoryAge.quickFilter === "new"
-                          ? undefined
-                          : "new",
+                    dateSyncedRange: {
+                      ...filters.dateSyncedRange,
+                      to: e.target.value ? new Date(e.target.value) : undefined,
                     },
                   })
                 }
-              >
-                New Arrivals (&lt; 1 month)
-              </Button>
+              />
             </div>
           </div>
 
