@@ -1,6 +1,7 @@
+import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectCars } from "@/store/selectors";
-import { CarStatus } from "@/types";
+import { Car } from "@/types";
 import {
   Table,
   TableBody,
@@ -11,21 +12,30 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-
-import { getStatusBadgeClass } from "@/theme/utils";
-
-const getCarStatusClass = (status: CarStatus) => {
-  const statusMap: Record<CarStatus, string> = {
-    Purchased: getStatusBadgeClass("car", "Purchased"),
-    "For Dismantling": getStatusBadgeClass("car", "For Dismantling"),
-    Dismantled: getStatusBadgeClass("car", "Dismantled"),
-    Sold: getStatusBadgeClass("car", "Sold"),
-  };
-  return statusMap[status] || getStatusBadgeClass("car", "Sold");
-};
+import { CarFilterPanel } from "../filters/CarFilterPanel";
+import { filterCars, defaultCarFilters, CarFilterState } from "@/utils/filterCars";
+import { CarDetailModal } from "./CarDetailModal";
 
 export function CarsView() {
   const cars = useAppSelector(selectCars);
+  const [filters, setFilters] = useState<CarFilterState>(defaultCarFilters);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const filteredCars = useMemo(
+    () => filterCars(cars, filters),
+    [cars, filters]
+  );
+
+  const handlePhotoClick = (car: Car) => {
+    setSelectedCar(car);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCar(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -36,70 +46,93 @@ export function CarsView() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cars</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Photo</TableHead>
-                <TableHead>Car ID</TableHead>
-                <TableHead>Brand & Model</TableHead>
-                <TableHead>Year</TableHead>
-                <TableHead>Fuel Type</TableHead>
-                <TableHead>Body Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Parts Available</TableHead>
-                <TableHead>Parts Sold</TableHead>
-                <TableHead>Value Remaining</TableHead>
-                <TableHead>Date Purchased</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cars.map((car) => (
-                <TableRow key={car.id}>
-                  <TableCell>
-                    <img
-                      src={car.photo}
-                      alt={`${car.brand} ${car.model}`}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{car.id}</TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {car.brand} {car.model}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        VIN: {car.vin}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{car.year}</TableCell>
-                  <TableCell>{car.fuelType}</TableCell>
-                  <TableCell>{car.bodyType}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getCarStatusClass(car.status)}`}
-                    >
-                      {car.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{car.totalPartsAvailable}</TableCell>
-                  <TableCell>{car.totalPartsSold}</TableCell>
-                  <TableCell>€{car.valueRemaining.toLocaleString()}</TableCell>
-                  <TableCell>
-                    {format(car.datePurchased, "MMM dd, yyyy")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-1">
+          <CarFilterPanel filters={filters} onFiltersChange={setFilters} />
+        </div>
+        <div className="lg:col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cars</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Photo</TableHead>
+                    <TableHead>Car ID</TableHead>
+                    <TableHead>Brand & Model</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead>Fuel Type</TableHead>
+                    <TableHead>Body Type</TableHead>
+                    <TableHead>Gearbox</TableHead>
+                    <TableHead>Engine</TableHead>
+                    <TableHead>Mileage</TableHead>
+                    <TableHead>Color</TableHead>
+                    <TableHead>Last Synced</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCars.map((car) => {
+                    return (
+                      <TableRow key={car.id}>
+                        <TableCell>
+                          <button
+                            onClick={() => handlePhotoClick(car)}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            <img
+                              src={car.photo}
+                              alt={`${car.brand} ${car.model.name}`}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          </button>
+                        </TableCell>
+                        <TableCell className="font-medium">{car.id}</TableCell>
+                        <TableCell>
+                          <div className="font-medium">{car.brand} {car.model.name}</div>
+                        </TableCell>
+                        <TableCell>{car.year}</TableCell>
+                        <TableCell>{car.fuel.name}</TableCell>
+                        <TableCell>{car.body_type.name}</TableCell>
+                        <TableCell>{car.gearbox_type.name}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{car.engine.code}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {car.engine.capacity}cc / {car.engine.power}hp
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{car.mileage.toLocaleString()} km</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{car.color.name}</div>
+                            {car.color_code && (
+                              <div className="text-xs text-muted-foreground">
+                                {car.color_code}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(car.last_synced_at), "MMM dd, yyyy")}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <CarDetailModal
+        car={selectedCar}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }

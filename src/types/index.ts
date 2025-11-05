@@ -8,20 +8,54 @@ export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
 export type BodyType = 'Sedan' | 'Hatchback' | 'SUV' | 'Coupe' | 'Estate' | 'Van';
 
 export interface Car {
-  id: string;
+  id: number;
+  photo: string;
+  photo_gallery: string[];
   brand: string;
-  model: string;
+  model: {
+    id: number;
+    name: string;
+  };
   year: number;
-  fuelType: FuelType;
-  bodyType: BodyType;
-  vin: string;
-  status: CarStatus;
-  totalPartsAvailable: number;
-  totalPartsSold: number;
-  valueRemaining: number;
-  photo?: string;
-  datePurchased: Date;
-  dateDismantled?: Date;
+  model_year: number;
+  engine: {
+    code: string;
+    capacity: number;
+    power: number;
+  };
+  fuel: {
+    id: number;
+    name: string;
+  };
+  body_type: {
+    id: number;
+    name: string;
+  };
+  wheel_drive: {
+    id: number;
+    name: string;
+  };
+  wheel_type: {
+    id: number;
+    name: string;
+  };
+  gearbox_type: {
+    id: number;
+    name: string;
+  };
+  color: {
+    id: number;
+    name: string;
+  };
+  color_code: string;
+  interior: string;
+  category: {
+    id: number;
+    name: string;
+  };
+  mileage: number;
+  defectation_notes: string;
+  last_synced_at: string;
 }
 
 export interface Part {
