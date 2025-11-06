@@ -4,7 +4,7 @@ import { selectMetrics, selectParts, selectCars } from "@/store/selectors";
 import { MetricsCards } from "./MetricsCards";
 import { TopPerformersSection } from "./TopPerformersSection";
 import { PartsInventoryTable } from "../parts/PartsInventoryTable";
-import { FilterPanel } from "../filters/FilterPanel";
+import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
 import { StaleInventoryAlert } from "./StaleInventoryAlert";
 import { filterParts, defaultFilters } from "@/utils/filterParts";
 import { FilterState } from "@/types";
@@ -33,14 +33,13 @@ export function DashboardView() {
 
       <StaleInventoryAlert />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <FilterPanel filters={filters} onFiltersChange={setFilters} />
-        </div>
-        <div className="lg:col-span-3">
-          <TopPerformersSection />
-        </div>
-      </div>
+      <UnifiedFilterPanel
+        type="parts"
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
+
+      <TopPerformersSection />
 
       <div>
         <h2 className="text-2xl font-semibold mb-4">Parts Inventory</h2>

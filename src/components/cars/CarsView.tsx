@@ -12,8 +12,12 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { CarFilterPanel } from "../filters/CarFilterPanel";
-import { filterCars, defaultCarFilters, CarFilterState } from "@/utils/filterCars";
+import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
+import {
+  filterCars,
+  defaultCarFilters,
+  CarFilterState,
+} from "@/utils/filterCars";
 import { CarDetailModal } from "./CarDetailModal";
 
 export function CarsView() {
@@ -46,87 +50,88 @@ export function CarsView() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <CarFilterPanel filters={filters} onFiltersChange={setFilters} />
-        </div>
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cars</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Photo</TableHead>
-                    <TableHead>Car ID</TableHead>
-                    <TableHead>Brand & Model</TableHead>
-                    <TableHead>Year</TableHead>
-                    <TableHead>Fuel Type</TableHead>
-                    <TableHead>Body Type</TableHead>
-                    <TableHead>Gearbox</TableHead>
-                    <TableHead>Engine</TableHead>
-                    <TableHead>Mileage</TableHead>
-                    <TableHead>Color</TableHead>
-                    <TableHead>Last Synced</TableHead>
+      <UnifiedFilterPanel
+        type="car"
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Cars</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Photo</TableHead>
+                <TableHead>Car ID</TableHead>
+                <TableHead>Brand & Model</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead>Fuel Type</TableHead>
+                <TableHead>Body Type</TableHead>
+                <TableHead>Gearbox</TableHead>
+                <TableHead>Engine</TableHead>
+                <TableHead>Mileage</TableHead>
+                <TableHead>Color</TableHead>
+                <TableHead>Last Synced</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredCars.map((car) => {
+                return (
+                  <TableRow key={car.id}>
+                    <TableCell>
+                      <button
+                        onClick={() => handlePhotoClick(car)}
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
+                      >
+                        <img
+                          src={car.photo}
+                          alt={`${car.brand} ${car.model.name}`}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium">{car.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">
+                        {car.brand} {car.model.name}
+                      </div>
+                    </TableCell>
+                    <TableCell>{car.year}</TableCell>
+                    <TableCell>{car.fuel.name}</TableCell>
+                    <TableCell>{car.body_type.name}</TableCell>
+                    <TableCell>{car.gearbox_type.name}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{car.engine.code}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {car.engine.capacity}cc / {car.engine.power}hp
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{car.mileage.toLocaleString()} km</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{car.color.name}</div>
+                        {car.color_code && (
+                          <div className="text-xs text-muted-foreground">
+                            {car.color_code}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(car.last_synced_at), "MMM dd, yyyy")}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCars.map((car) => {
-                    return (
-                      <TableRow key={car.id}>
-                        <TableCell>
-                          <button
-                            onClick={() => handlePhotoClick(car)}
-                            className="cursor-pointer hover:opacity-80 transition-opacity"
-                          >
-                            <img
-                              src={car.photo}
-                              alt={`${car.brand} ${car.model.name}`}
-                              className="w-16 h-16 object-cover rounded"
-                            />
-                          </button>
-                        </TableCell>
-                        <TableCell className="font-medium">{car.id}</TableCell>
-                        <TableCell>
-                          <div className="font-medium">{car.brand} {car.model.name}</div>
-                        </TableCell>
-                        <TableCell>{car.year}</TableCell>
-                        <TableCell>{car.fuel.name}</TableCell>
-                        <TableCell>{car.body_type.name}</TableCell>
-                        <TableCell>{car.gearbox_type.name}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>{car.engine.code}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {car.engine.capacity}cc / {car.engine.power}hp
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{car.mileage.toLocaleString()} km</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>{car.color.name}</div>
-                            {car.color_code && (
-                              <div className="text-xs text-muted-foreground">
-                                {car.color_code}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(car.last_synced_at), "MMM dd, yyyy")}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <CarDetailModal
         car={selectedCar}

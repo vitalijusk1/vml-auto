@@ -8,6 +8,7 @@ export const defaultFilters: FilterState = {
   carBrand: [],
   carModel: [],
   carYear: [],
+  yearRange: {},
   fuelType: [],
   bodyType: [],
   partCategory: [],
@@ -16,6 +17,7 @@ export const defaultFilters: FilterState = {
   position: [],
   priceRange: {},
   inventoryAge: {},
+  staleMonths: undefined,
 };
 
 export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): Part[] {
@@ -52,6 +54,14 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
   // Car year filter
   if (filters.carYear.length > 0) {
     filtered = filtered.filter((p) => filters.carYear.includes(p.carYear));
+  }
+
+  // Year range filter
+  if (filters.yearRange.min !== undefined) {
+    filtered = filtered.filter((p) => p.carYear >= filters.yearRange.min!);
+  }
+  if (filters.yearRange.max !== undefined) {
+    filtered = filtered.filter((p) => p.carYear <= filters.yearRange.max!);
   }
 
   // Fuel type filter
@@ -131,6 +141,15 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
     filtered = filtered.filter((p) => p.dateAdded >= oneMonthAgo);
+  }
+
+  // Stale months filter
+  if (filters.staleMonths !== undefined) {
+    const monthsAgo = new Date();
+    monthsAgo.setMonth(monthsAgo.getMonth() - filters.staleMonths);
+    filtered = filtered.filter(
+      (p) => p.status === 'In Stock' && p.dateAdded <= monthsAgo
+    );
   }
 
   return filtered;

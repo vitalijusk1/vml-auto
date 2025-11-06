@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
 import { X, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
@@ -92,30 +93,54 @@ export function AnalyticsFiltersPanel({
       </CardHeader>
       {isOpen && (
         <CardContent className="space-y-4">
-          {/* Time Period */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Time Period Grouping
-            </label>
-            <Select
-              value={filters.timePeriod}
-              onChange={(e) =>
-                updateFilters({
-                  timePeriod: e.target.value as "day" | "week" | "month" | "year",
-                })
-              }
-            >
-              <option value="day">By Day</option>
-              <option value="week">By Week</option>
-              <option value="month">By Month</option>
-              <option value="year">By Year</option>
-            </Select>
+          {/* Time Period and Metric Type in a row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Time Period Grouping
+              </label>
+              <Select
+                value={filters.timePeriod}
+                onChange={(e) =>
+                  updateFilters({
+                    timePeriod: e.target.value as
+                      | "day"
+                      | "week"
+                      | "month"
+                      | "year",
+                  })
+                }
+              >
+                <option value="day">By Day</option>
+                <option value="week">By Week</option>
+                <option value="month">By Month</option>
+                <option value="year">By Year</option>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Metric Type
+              </label>
+              <Select
+                value={filters.metric}
+                onChange={(e) =>
+                  updateFilters({
+                    metric: e.target.value as "revenue" | "count" | "both",
+                  })
+                }
+              >
+                <option value="revenue">Revenue (EUR)</option>
+                <option value="count">Count</option>
+                <option value="both">Both</option>
+              </Select>
+            </div>
           </div>
 
           {/* Date Range */}
           <div>
             <label className="text-sm font-medium mb-2 block">Date Range</label>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Input
                 type="date"
                 value={
@@ -127,7 +152,9 @@ export function AnalyticsFiltersPanel({
                   updateFilters({
                     dateRange: {
                       ...filters.dateRange,
-                      from: e.target.value ? new Date(e.target.value) : undefined,
+                      from: e.target.value
+                        ? new Date(e.target.value)
+                        : undefined,
                     },
                   })
                 }
@@ -153,7 +180,9 @@ export function AnalyticsFiltersPanel({
 
           {/* Quick Date Presets */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Quick Presets</label>
+            <label className="text-sm font-medium mb-2 block">
+              Quick Presets
+            </label>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
@@ -214,159 +243,71 @@ export function AnalyticsFiltersPanel({
             </div>
           </div>
 
-          {/* Order Status */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Order Status</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(
-                [
-                  "Pending",
-                  "Processing",
-                  "Shipped",
-                  "Delivered",
-                  "Cancelled",
-                ] as OrderStatus[]
-              ).map((status) => (
-                <label
-                  key={status}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.orderStatus.includes(status)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          orderStatus: [...filters.orderStatus, status],
-                        });
-                      } else {
-                        updateFilters({
-                          orderStatus: filters.orderStatus.filter(
-                            (s) => s !== status
-                          ),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{status}</span>
-                </label>
-              ))}
+          {/* Multi-select filters in a grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Order Status */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Order Status
+              </label>
+              <MultiSelectDropdown
+                options={
+                  [
+                    "Pending",
+                    "Processing",
+                    "Shipped",
+                    "Delivered",
+                    "Cancelled",
+                  ] as OrderStatus[]
+                }
+                selected={filters.orderStatus}
+                onChange={(selected) =>
+                  updateFilters({ orderStatus: selected })
+                }
+                placeholder="Select order status..."
+              />
             </div>
-          </div>
 
-          {/* Part Status */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Part Status</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(["In Stock", "Reserved", "Sold", "Returned"] as PartStatus[]).map(
-                (status) => (
-                  <label
-                    key={status}
-                    className="flex items-center space-x-2 text-sm cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={filters.partStatus.includes(status)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          updateFilters({
-                            partStatus: [...filters.partStatus, status],
-                          });
-                        } else {
-                          updateFilters({
-                            partStatus: filters.partStatus.filter(
-                              (s) => s !== status
-                            ),
-                          });
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span>{status}</span>
-                  </label>
-                )
-              )}
+            {/* Part Status */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Part Status
+              </label>
+              <MultiSelectDropdown
+                options={
+                  ["In Stock", "Reserved", "Sold", "Returned"] as PartStatus[]
+                }
+                selected={filters.partStatus}
+                onChange={(selected) => updateFilters({ partStatus: selected })}
+                placeholder="Select part status..."
+              />
             </div>
-          </div>
 
-          {/* Category */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Part Category</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueCategories.map((category) => (
-                <label
-                  key={category}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.category.includes(category)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          category: [...filters.category, category],
-                        });
-                      } else {
-                        updateFilters({
-                          category: filters.category.filter((c) => c !== category),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{category}</span>
-                </label>
-              ))}
+            {/* Category */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Part Category
+              </label>
+              <MultiSelectDropdown
+                options={uniqueCategories}
+                selected={filters.category}
+                onChange={(selected) => updateFilters({ category: selected })}
+                placeholder="Select categories..."
+              />
             </div>
-          </div>
 
-          {/* Brand */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Car Brand</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueBrands.map((brand) => (
-                <label
-                  key={brand}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.brand.includes(brand)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          brand: [...filters.brand, brand],
-                        });
-                      } else {
-                        updateFilters({
-                          brand: filters.brand.filter((b) => b !== brand),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{brand}</span>
-                </label>
-              ))}
+            {/* Brand */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Car Brand
+              </label>
+              <MultiSelectDropdown
+                options={uniqueBrands}
+                selected={filters.brand}
+                onChange={(selected) => updateFilters({ brand: selected })}
+                placeholder="Select brands..."
+              />
             </div>
-          </div>
-
-          {/* Metric Type */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Metric Type</label>
-            <Select
-              value={filters.metric}
-              onChange={(e) =>
-                updateFilters({
-                  metric: e.target.value as "revenue" | "count" | "both",
-                })
-              }
-            >
-              <option value="revenue">Revenue (EUR)</option>
-              <option value="count">Count</option>
-              <option value="both">Both</option>
-            </Select>
           </div>
 
           {/* Reset Filters */}

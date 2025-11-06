@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
 import { useAppSelector } from "@/store/hooks";
 import { selectCars, selectParts } from "@/store/selectors";
 import { FilterState, PartStatus, PartQuality } from "@/types";
@@ -86,189 +87,33 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
       </CardHeader>
       {isOpen && (
         <CardContent className="space-y-4">
-          {/* Search */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Search</label>
-            <Input
-              placeholder="Part name, code, manufacturer..."
-              value={filters.search}
-              onChange={(e) => updateFilters({ search: e.target.value })}
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Status</label>
-            <Select
-              value={filters.status}
-              onChange={(e) =>
-                updateFilters({ status: e.target.value as PartStatus | "All" })
-              }
-            >
-              <option value="All">All</option>
-              <option value="In Stock">In Stock</option>
-              <option value="Reserved">Reserved</option>
-              <option value="Sold">Sold</option>
-              <option value="Returned">Returned</option>
-            </Select>
-          </div>
-
-          {/* Car Brand */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Car Brand</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueBrands.map((brand) => (
-                <label
-                  key={brand}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.carBrand.includes(brand)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          carBrand: [...filters.carBrand, brand],
-                        });
-                      } else {
-                        updateFilters({
-                          carBrand: filters.carBrand.filter((b) => b !== brand),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{brand}</span>
-                </label>
-              ))}
+          {/* Search and Status in a row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Search</label>
+              <Input
+                placeholder="Part name, code, manufacturer..."
+                value={filters.search}
+                onChange={(e) => updateFilters({ search: e.target.value })}
+              />
             </div>
-          </div>
 
-          {/* Car Model */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Car Model</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueModels.map((model) => (
-                <label
-                  key={model}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.carModel.includes(model)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          carModel: [...filters.carModel, model],
-                        });
-                      } else {
-                        updateFilters({
-                          carModel: filters.carModel.filter((m) => m !== model),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{model}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Car Year */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Car Year</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueYears.map((year) => (
-                <label
-                  key={year}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.carYear.includes(year)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({ carYear: [...filters.carYear, year] });
-                      } else {
-                        updateFilters({
-                          carYear: filters.carYear.filter((y) => y !== year),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{year}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Part Category */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Part Category
-            </label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueCategories.map((category) => (
-                <label
-                  key={category}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.partCategory.includes(category)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          partCategory: [...filters.partCategory, category],
-                        });
-                      } else {
-                        updateFilters({
-                          partCategory: filters.partCategory.filter(
-                            (c) => c !== category
-                          ),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{category}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Quality */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Quality</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(
-                ["New", "Used", "With Defects", "Restored"] as PartQuality[]
-              ).map((quality) => (
-                <label
-                  key={quality}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.quality.includes(quality)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          quality: [...filters.quality, quality],
-                        });
-                      } else {
-                        updateFilters({
-                          quality: filters.quality.filter((q) => q !== quality),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{quality}</span>
-                </label>
-              ))}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Status</label>
+              <Select
+                value={filters.status}
+                onChange={(e) =>
+                  updateFilters({
+                    status: e.target.value as PartStatus | "All",
+                  })
+                }
+              >
+                <option value="All">All</option>
+                <option value="In Stock">In Stock</option>
+                <option value="Reserved">Reserved</option>
+                <option value="Sold">Sold</option>
+                <option value="Returned">Returned</option>
+              </Select>
             </div>
           </div>
 
@@ -277,7 +122,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             <label className="text-sm font-medium mb-2 block">
               Price Range (EUR)
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Input
                 type="number"
                 placeholder="Min"
@@ -311,12 +156,82 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
             </div>
           </div>
 
+          {/* Multi-select filters in a grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Car Brand */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Car Brand
+              </label>
+              <MultiSelectDropdown
+                options={uniqueBrands}
+                selected={filters.carBrand}
+                onChange={(selected) => updateFilters({ carBrand: selected })}
+                placeholder="Select brands..."
+              />
+            </div>
+
+            {/* Car Model */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Car Model
+              </label>
+              <MultiSelectDropdown
+                options={uniqueModels}
+                selected={filters.carModel}
+                onChange={(selected) => updateFilters({ carModel: selected })}
+                placeholder="Select models..."
+              />
+            </div>
+
+            {/* Car Year */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Car Year</label>
+              <MultiSelectDropdown
+                options={uniqueYears.map(String)}
+                selected={filters.carYear.map(String)}
+                onChange={(selected) =>
+                  updateFilters({ carYear: selected.map(Number) })
+                }
+                placeholder="Select years..."
+              />
+            </div>
+
+            {/* Part Category */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Part Category
+              </label>
+              <MultiSelectDropdown
+                options={uniqueCategories}
+                selected={filters.partCategory}
+                onChange={(selected) =>
+                  updateFilters({ partCategory: selected })
+                }
+                placeholder="Select categories..."
+              />
+            </div>
+
+            {/* Quality */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Quality</label>
+              <MultiSelectDropdown
+                options={
+                  ["New", "Used", "With Defects", "Restored"] as PartQuality[]
+                }
+                selected={filters.quality}
+                onChange={(selected) => updateFilters({ quality: selected })}
+                placeholder="Select quality..."
+              />
+            </div>
+          </div>
+
           {/* Inventory Age Quick Filters */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Inventory Age
             </label>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={
                   filters.inventoryAge.quickFilter === "stale"
@@ -324,7 +239,6 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                     : "outline"
                 }
                 size="sm"
-                className="w-full"
                 onClick={() =>
                   updateFilters({
                     inventoryAge: {
@@ -345,7 +259,6 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                     : "outline"
                 }
                 size="sm"
-                className="w-full"
                 onClick={() =>
                   updateFilters({
                     inventoryAge: {

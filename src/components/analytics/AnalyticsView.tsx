@@ -17,7 +17,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
-import { AnalyticsFilters, AnalyticsFiltersPanel } from "./AnalyticsFilters";
+import { AnalyticsFilters } from "./AnalyticsFilters";
+import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
 import { DollarSign, Package, TrendingUp, TrendingDown } from "lucide-react";
 import { theme } from "@/theme/theme";
 
@@ -379,17 +380,16 @@ export function AnalyticsView() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
+      <div className="space-y-6">
         {/* Filters Panel */}
-        <div className="lg:col-span-1">
-          <AnalyticsFiltersPanel
-            filters={filters}
-            onFiltersChange={setFilters}
-          />
-        </div>
+        <UnifiedFilterPanel
+          type="analytics"
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
 
         {/* Charts */}
-        <div className="lg:col-span-3">
+        <div>
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>

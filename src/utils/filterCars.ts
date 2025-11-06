@@ -7,13 +7,10 @@ export interface CarFilterState {
   year: number[];
   fuelType: FuelType[];
   bodyType: BodyType[];
+  gearbox: string[];
   mileageRange: {
     min?: number;
     max?: number;
-  };
-  dateSyncedRange: {
-    from?: Date;
-    to?: Date;
   };
 }
 
@@ -24,8 +21,8 @@ export const defaultCarFilters: CarFilterState = {
   year: [],
   fuelType: [],
   bodyType: [],
+  gearbox: [],
   mileageRange: {},
-  dateSyncedRange: {},
 };
 
 export function filterCars(cars: Car[], filters: CarFilterState): Car[] {
@@ -76,20 +73,17 @@ export function filterCars(cars: Car[], filters: CarFilterState): Car[] {
     });
   }
 
+  // Gearbox filter
+  if (filters.gearbox.length > 0) {
+    filtered = filtered.filter((c) => filters.gearbox.includes(c.gearbox_type.name));
+  }
+
   // Mileage range filter
   if (filters.mileageRange.min !== undefined) {
     filtered = filtered.filter((c) => c.mileage >= filters.mileageRange.min!);
   }
   if (filters.mileageRange.max !== undefined) {
     filtered = filtered.filter((c) => c.mileage <= filters.mileageRange.max!);
-  }
-
-  // Date synced range filter
-  if (filters.dateSyncedRange.from) {
-    filtered = filtered.filter((c) => new Date(c.last_synced_at) >= filters.dateSyncedRange.from!);
-  }
-  if (filters.dateSyncedRange.to) {
-    filtered = filtered.filter((c) => new Date(c.last_synced_at) <= filters.dateSyncedRange.to!);
   }
 
   return filtered;

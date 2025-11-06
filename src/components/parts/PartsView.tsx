@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectParts, selectCars } from "@/store/selectors";
-import { FilterPanel } from "../filters/FilterPanel";
+import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
 import { PartsInventoryTable } from "./PartsInventoryTable";
 import { filterParts, defaultFilters } from "@/utils/filterParts";
 import { FilterState } from "@/types";
@@ -25,14 +25,13 @@ export function PartsView() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <FilterPanel filters={filters} onFiltersChange={setFilters} />
-        </div>
-        <div className="lg:col-span-3">
-          <PartsInventoryTable parts={filteredParts} />
-        </div>
-      </div>
+      <UnifiedFilterPanel
+        type="parts"
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
+
+      <PartsInventoryTable parts={filteredParts} />
     </div>
   );
 }

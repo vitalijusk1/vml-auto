@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
 import { useAppSelector } from "@/store/hooks";
 import { selectCars } from "@/store/selectors";
 import { FuelType, BodyType } from "@/types";
@@ -49,6 +50,10 @@ export function CarFilterPanel({
     return Array.from(new Set(cars.map((c) => c.year))).sort((a, b) => b - a);
   }, [cars]);
 
+  const uniqueGearboxes = useMemo(() => {
+    return Array.from(new Set(cars.map((c) => c.gearbox_type.name))).sort();
+  }, [cars]);
+
   return (
     <Card>
       <CardHeader>
@@ -79,176 +84,12 @@ export function CarFilterPanel({
             />
           </div>
 
-          {/* Brand */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Brand</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueBrands.map((brand) => (
-                <label
-                  key={brand}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.brand.includes(brand)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({ brand: [...filters.brand, brand] });
-                      } else {
-                        updateFilters({
-                          brand: filters.brand.filter((b) => b !== brand),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{brand}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Model */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Model</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueModels.map((model) => (
-                <label
-                  key={model}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.model.includes(model)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({ model: [...filters.model, model] });
-                      } else {
-                        updateFilters({
-                          model: filters.model.filter((m) => m !== model),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{model}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Year */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Year</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {uniqueYears.map((year) => (
-                <label
-                  key={year}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.year.includes(year)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({ year: [...filters.year, year] });
-                      } else {
-                        updateFilters({
-                          year: filters.year.filter((y) => y !== year),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{year}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Fuel Type */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Fuel Type</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(["Petrol", "Diesel", "Electric", "Hybrid"] as FuelType[]).map(
-                (fuelType) => (
-                  <label
-                    key={fuelType}
-                    className="flex items-center space-x-2 text-sm cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={filters.fuelType.includes(fuelType)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          updateFilters({
-                            fuelType: [...filters.fuelType, fuelType],
-                          });
-                        } else {
-                          updateFilters({
-                            fuelType: filters.fuelType.filter(
-                              (f) => f !== fuelType
-                            ),
-                          });
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span>{fuelType}</span>
-                  </label>
-                )
-              )}
-            </div>
-          </div>
-
-          {/* Body Type */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Body Type</label>
-            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
-              {(
-                [
-                  "Sedan",
-                  "Hatchback",
-                  "SUV",
-                  "Coupe",
-                  "Estate",
-                  "Van",
-                ] as BodyType[]
-              ).map((bodyType) => (
-                <label
-                  key={bodyType}
-                  className="flex items-center space-x-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.bodyType.includes(bodyType)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        updateFilters({
-                          bodyType: [...filters.bodyType, bodyType],
-                        });
-                      } else {
-                        updateFilters({
-                          bodyType: filters.bodyType.filter(
-                            (b) => b !== bodyType
-                          ),
-                        });
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  <span>{bodyType}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
           {/* Mileage Range */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Mileage (km)
             </label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <Input
                 type="number"
                 placeholder="Min"
@@ -282,45 +123,71 @@ export function CarFilterPanel({
             </div>
           </div>
 
-          {/* Date Synced Range */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Last Synced
-            </label>
-            <div className="space-y-2">
-              <Input
-                type="date"
-                value={
-                  filters.dateSyncedRange.from
-                    ? filters.dateSyncedRange.from.toISOString().split("T")[0]
-                    : ""
-                }
-                onChange={(e) =>
-                  updateFilters({
-                    dateSyncedRange: {
-                      ...filters.dateSyncedRange,
-                      from: e.target.value
-                        ? new Date(e.target.value)
-                        : undefined,
-                    },
-                  })
-                }
+          {/* Multi-select filters in a grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Brand */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Brand</label>
+              <MultiSelectDropdown
+                options={uniqueBrands}
+                selected={filters.brand}
+                onChange={(selected) => updateFilters({ brand: selected })}
+                placeholder="Select brands..."
               />
-              <Input
-                type="date"
-                value={
-                  filters.dateSyncedRange.to
-                    ? filters.dateSyncedRange.to.toISOString().split("T")[0]
-                    : ""
-                }
-                onChange={(e) =>
-                  updateFilters({
-                    dateSyncedRange: {
-                      ...filters.dateSyncedRange,
-                      to: e.target.value ? new Date(e.target.value) : undefined,
-                    },
-                  })
-                }
+            </div>
+
+            {/* Model */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Model</label>
+              <MultiSelectDropdown
+                options={uniqueModels}
+                selected={filters.model}
+                onChange={(selected) => updateFilters({ model: selected })}
+                placeholder="Select models..."
+              />
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Year</label>
+              <MultiSelectDropdown
+                options={uniqueYears.map(String)}
+                selected={filters.year.map(String)}
+                onChange={(selected) => updateFilters({ year: selected.map(Number) })}
+                placeholder="Select years..."
+              />
+            </div>
+
+            {/* Fuel Type */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Fuel Type</label>
+              <MultiSelectDropdown
+                options={["Petrol", "Diesel", "Electric", "Hybrid"] as FuelType[]}
+                selected={filters.fuelType}
+                onChange={(selected) => updateFilters({ fuelType: selected })}
+                placeholder="Select fuel types..."
+              />
+            </div>
+
+            {/* Body Type */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Body Type</label>
+              <MultiSelectDropdown
+                options={["Sedan", "Hatchback", "SUV", "Coupe", "Estate", "Van"] as BodyType[]}
+                selected={filters.bodyType}
+                onChange={(selected) => updateFilters({ bodyType: selected })}
+                placeholder="Select body types..."
+              />
+            </div>
+
+            {/* Gearbox */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Gearbox</label>
+              <MultiSelectDropdown
+                options={uniqueGearboxes}
+                selected={filters.gearbox}
+                onChange={(selected) => updateFilters({ gearbox: selected })}
+                placeholder="Select gearbox types..."
               />
             </div>
           </div>

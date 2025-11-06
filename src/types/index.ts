@@ -1,11 +1,22 @@
-export type PartStatus = 'In Stock' | 'Reserved' | 'Sold' | 'Returned';
-export type CarStatus = 'Purchased' | 'For Dismantling' | 'Dismantled' | 'Sold';
-export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
-export type ReturnStatus = 'Requested' | 'Approved' | 'Refunded' | 'Rejected';
-export type PartQuality = 'New' | 'Used' | 'With Defects' | 'Restored';
-export type PartPosition = 'Left' | 'Right' | 'Front' | 'Rear' | 'Set';
-export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid';
-export type BodyType = 'Sedan' | 'Hatchback' | 'SUV' | 'Coupe' | 'Estate' | 'Van';
+export type PartStatus = "In Stock" | "Reserved" | "Sold" | "Returned";
+export type CarStatus = "Purchased" | "For Dismantling" | "Dismantled" | "Sold";
+export type OrderStatus =
+  | "Pending"
+  | "Processing"
+  | "Shipped"
+  | "Delivered"
+  | "Cancelled";
+export type ReturnStatus = "Requested" | "Approved" | "Refunded" | "Rejected";
+export type PartQuality = "New" | "Used" | "With Defects" | "Restored";
+export type PartPosition = "Left" | "Right" | "Front" | "Rear" | "Set";
+export type FuelType = "Petrol" | "Diesel" | "Electric" | "Hybrid";
+export type BodyType =
+  | "Sedan"
+  | "Hatchback"
+  | "SUV"
+  | "Coupe"
+  | "Estate"
+  | "Van";
 
 export interface Car {
   id: number;
@@ -152,7 +163,7 @@ export interface DashboardMetrics {
 
 export interface FilterState {
   search: string;
-  status: PartStatus | 'All';
+  status: PartStatus | "All";
   dateRange: {
     from?: Date;
     to?: Date;
@@ -160,6 +171,10 @@ export interface FilterState {
   carBrand: string[];
   carModel: string[];
   carYear: number[];
+  yearRange: {
+    min?: number;
+    max?: number;
+  };
   fuelType: FuelType[];
   bodyType: BodyType[];
   partCategory: string[];
@@ -172,8 +187,9 @@ export interface FilterState {
   };
   inventoryAge: {
     notSoldMonths?: number;
-    quickFilter?: 'stale' | 'new';
+    quickFilter?: "stale" | "new";
   };
+  staleMonths?: number;
   topPerformers?: {
     limit: number;
     brand?: string;
