@@ -123,7 +123,9 @@ export const PartFilters = ({
                 onFiltersChange({
                   priceRange: {
                     ...filters.priceRange,
-                    min: e.target.value ? parseFloat(e.target.value) : undefined,
+                    min: e.target.value
+                      ? parseFloat(e.target.value)
+                      : undefined,
                   },
                 })
               }
@@ -136,7 +138,9 @@ export const PartFilters = ({
                 onFiltersChange({
                   priceRange: {
                     ...filters.priceRange,
-                    max: e.target.value ? parseFloat(e.target.value) : undefined,
+                    max: e.target.value
+                      ? parseFloat(e.target.value)
+                      : undefined,
                   },
                 })
               }

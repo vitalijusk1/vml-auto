@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectParts, selectCars } from "@/store/selectors";
-import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
-import { PartsInventoryTable } from "./PartsInventoryTable";
+import { FilterPanel } from "../../components/filters/FilterPanel";
+import { Table } from "../../components/tables/Table";
 import { filterParts, defaultFilters } from "@/utils/filterParts";
 import { FilterState } from "@/types";
 
@@ -25,13 +25,13 @@ export function PartsView() {
         </p>
       </div>
 
-      <UnifiedFilterPanel
+      <FilterPanel
         type="parts"
         filters={filters}
         onFiltersChange={setFilters}
       />
 
-      <PartsInventoryTable parts={filteredParts} />
+      <Table type="parts" data={filteredParts} />
     </div>
   );
 }

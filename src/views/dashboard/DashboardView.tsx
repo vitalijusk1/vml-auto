@@ -3,8 +3,8 @@ import { useAppSelector } from "@/store/hooks";
 import { selectMetrics, selectParts, selectCars } from "@/store/selectors";
 import { MetricsCards } from "./MetricsCards";
 import { TopPerformersSection } from "./TopPerformersSection";
-import { PartsInventoryTable } from "../parts/PartsInventoryTable";
-import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
+import { Table } from "../../components/tables/Table";
+import { FilterPanel } from "../../components/filters/FilterPanel";
 import { StaleInventoryAlert } from "./StaleInventoryAlert";
 import { filterParts, defaultFilters } from "@/utils/filterParts";
 import { FilterState } from "@/types";
@@ -33,7 +33,7 @@ export function DashboardView() {
 
       <StaleInventoryAlert />
 
-      <UnifiedFilterPanel
+      <FilterPanel
         type="parts"
         filters={filters}
         onFiltersChange={setFilters}
@@ -41,10 +41,7 @@ export function DashboardView() {
 
       <TopPerformersSection />
 
-      <div>
-        <h2 className="text-2xl font-semibold mb-4">Parts Inventory</h2>
-        <PartsInventoryTable parts={filteredParts} />
-      </div>
+      <Table type="parts" data={filteredParts} title="Parts Inventory" />
     </div>
   );
 }

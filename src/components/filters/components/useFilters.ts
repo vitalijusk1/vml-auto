@@ -3,7 +3,7 @@ import { useAppSelector } from "@/store/hooks";
 import { selectCars, selectParts } from "@/store/selectors";
 import { FilterState } from "@/types";
 import { CarFilterState } from "@/utils/filterCars";
-import { AnalyticsFilters } from "@/components/analytics/AnalyticsFilters";
+import { AnalyticsFilters } from "@/views/analytics/AnalyticsFilters";
 
 type FilterType = FilterState | CarFilterState | AnalyticsFilters;
 

@@ -144,10 +144,8 @@ export function generateMockParts(count: number = 500, cars: Car[]): Part[] {
       carYear: car.year,
       manufacturerCode: `MFR-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
       status,
-      quantity: randomInt(1, 5),
       priceEUR: randomInt(10, 500),
       pricePLN: randomInt(50, 2500),
-      quality: randomElement<PartQuality>(['New', 'Used', 'With Defects', 'Restored']),
       position: randomElement<PartPosition>(['Left', 'Right', 'Front', 'Rear', 'Set']),
       daysInInventory,
       dateAdded,
@@ -198,7 +196,8 @@ export function generateMockOrders(count: number = 100, parts: Part[], customers
     
     for (let j = 0; j < itemCount; j++) {
       const part = randomElement(parts);
-      const quantity = randomInt(1, 3);
+      // Each part is individual, so quantity is always 1
+      const quantity = 1;
       items.push({
         partId: part.id,
         partName: part.name,

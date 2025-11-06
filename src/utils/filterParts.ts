@@ -1,9 +1,9 @@
-import { Part, FilterState } from '@/types';
-import { Car } from '@/types';
+import { Part, FilterState } from "@/types";
+import { Car } from "@/types";
 
 export const defaultFilters: FilterState = {
-  search: '',
-  status: 'All',
+  search: "",
+  status: "All",
   dateRange: {},
   carBrand: [],
   carModel: [],
@@ -20,7 +20,11 @@ export const defaultFilters: FilterState = {
   staleMonths: undefined,
 };
 
-export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): Part[] {
+export function filterParts(
+  parts: Part[],
+  filters: FilterState,
+  cars: Car[]
+): Part[] {
   let filtered = [...parts];
 
   // Search filter
@@ -37,7 +41,7 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
   }
 
   // Status filter
-  if (filters.status !== 'All') {
+  if (filters.status !== "All") {
     filtered = filtered.filter((p) => p.status === filters.status);
   }
 
@@ -69,7 +73,9 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
     const carFuelTypes = cars
       .filter((c) => {
         const fuelName = c.fuel.name.toLowerCase();
-        return filters.fuelType.some((ft) => fuelName.includes(ft.toLowerCase()));
+        return filters.fuelType.some((ft) =>
+          fuelName.includes(ft.toLowerCase())
+        );
       })
       .map((c) => c.id.toString());
     filtered = filtered.filter((p) => carFuelTypes.includes(p.carId));
@@ -80,7 +86,9 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
     const carBodyTypes = cars
       .filter((c) => {
         const bodyName = c.body_type.name.toLowerCase();
-        return filters.bodyType.some((bt) => bodyName.includes(bt.toLowerCase()));
+        return filters.bodyType.some((bt) =>
+          bodyName.includes(bt.toLowerCase())
+        );
       })
       .map((c) => c.id.toString());
     filtered = filtered.filter((p) => carBodyTypes.includes(p.carId));
@@ -88,7 +96,9 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
 
   // Part category filter
   if (filters.partCategory.length > 0) {
-    filtered = filtered.filter((p) => filters.partCategory.includes(p.category));
+    filtered = filtered.filter((p) =>
+      filters.partCategory.includes(p.category)
+    );
   }
 
   // Part type filter
@@ -96,14 +106,11 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
     filtered = filtered.filter((p) => filters.partType.includes(p.partType));
   }
 
-  // Quality filter
-  if (filters.quality.length > 0) {
-    filtered = filtered.filter((p) => filters.quality.includes(p.quality));
-  }
-
   // Position filter
   if (filters.position.length > 0) {
-    filtered = filtered.filter((p) => p.position && filters.position.includes(p.position));
+    filtered = filtered.filter(
+      (p) => p.position && filters.position.includes(p.position)
+    );
   }
 
   // Price range filter
@@ -125,19 +132,21 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
   // Inventory age filter
   if (filters.inventoryAge.notSoldMonths) {
     const monthsAgo = new Date();
-    monthsAgo.setMonth(monthsAgo.getMonth() - filters.inventoryAge.notSoldMonths!);
+    monthsAgo.setMonth(
+      monthsAgo.getMonth() - filters.inventoryAge.notSoldMonths!
+    );
     filtered = filtered.filter(
-      (p) => p.status === 'In Stock' && p.dateAdded <= monthsAgo
+      (p) => p.status === "In Stock" && p.dateAdded <= monthsAgo
     );
   }
-  if (filters.inventoryAge.quickFilter === 'stale') {
+  if (filters.inventoryAge.quickFilter === "stale") {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     filtered = filtered.filter(
-      (p) => p.status === 'In Stock' && p.dateAdded <= sixMonthsAgo
+      (p) => p.status === "In Stock" && p.dateAdded <= sixMonthsAgo
     );
   }
-  if (filters.inventoryAge.quickFilter === 'new') {
+  if (filters.inventoryAge.quickFilter === "new") {
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
     filtered = filtered.filter((p) => p.dateAdded >= oneMonthAgo);
@@ -148,7 +157,7 @@ export function filterParts(parts: Part[], filters: FilterState, cars: Car[]): P
     const monthsAgo = new Date();
     monthsAgo.setMonth(monthsAgo.getMonth() - filters.staleMonths);
     filtered = filtered.filter(
-      (p) => p.status === 'In Stock' && p.dateAdded <= monthsAgo
+      (p) => p.status === "In Stock" && p.dateAdded <= monthsAgo
     );
   }
 
