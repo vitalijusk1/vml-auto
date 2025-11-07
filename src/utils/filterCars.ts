@@ -1,13 +1,13 @@
-import { Car, FuelType, BodyType } from '@/types';
+import { Car, FuelType, BodyType } from "@/types";
 
 export interface CarFilterState {
-  search: string;
   brand: string[];
   model: string[];
   year: number[];
   fuelType: FuelType[];
   bodyType: BodyType[];
   gearbox: string[];
+  wheelDrive: string[];
   mileageRange: {
     min?: number;
     max?: number;
@@ -15,30 +15,18 @@ export interface CarFilterState {
 }
 
 export const defaultCarFilters: CarFilterState = {
-  search: '',
   brand: [],
   model: [],
   year: [],
   fuelType: [],
   bodyType: [],
   gearbox: [],
+  wheelDrive: [],
   mileageRange: {},
 };
 
 export function filterCars(cars: Car[], filters: CarFilterState): Car[] {
   let filtered = [...cars];
-
-  // Search filter
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(
-      (c) =>
-        c.brand.toLowerCase().includes(searchLower) ||
-        c.model.name.toLowerCase().includes(searchLower) ||
-        c.id.toString().includes(searchLower) ||
-        c.engine.code.toLowerCase().includes(searchLower)
-    );
-  }
 
   // Brand filter
   if (filters.brand.length > 0) {
@@ -75,7 +63,16 @@ export function filterCars(cars: Car[], filters: CarFilterState): Car[] {
 
   // Gearbox filter
   if (filters.gearbox.length > 0) {
-    filtered = filtered.filter((c) => filters.gearbox.includes(c.gearbox_type.name));
+    filtered = filtered.filter((c) =>
+      filters.gearbox.includes(c.gearbox_type.name)
+    );
+  }
+
+  // Wheel drive filter
+  if (filters.wheelDrive.length > 0) {
+    filtered = filtered.filter((c) =>
+      filters.wheelDrive.includes(c.wheel_drive.name)
+    );
   }
 
   // Mileage range filter

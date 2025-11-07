@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FilterState } from "@/types";
 import { CarFilterState } from "@/utils/filterCars";
 import { AnalyticsFilters } from "@/views/analytics/AnalyticsFilters";
-import { X, Filter } from "lucide-react";
+import { X, Filter, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { defaultFilters } from "@/utils/filterParts";
 import { defaultCarFilters } from "@/utils/filterCars";
@@ -112,7 +112,11 @@ export function FilterPanel<
             onClick={() => setIsOpen(!isOpen)}
             className="h-6 w-6"
           >
-            <X className="h-4 w-4" />
+            {isOpen ? (
+              <X className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardHeader>

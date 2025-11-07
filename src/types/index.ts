@@ -88,6 +88,16 @@ export interface Part {
   dateAdded: Date;
   dateSold?: Date;
   photos: string[];
+  warehouse?: string;
+  // Wheel-specific fields (optional)
+  wheelDrive?: "AWD" | "RWD" | "FWD";
+  wheelSide?: "Left" | "Right";
+  wheelCentralDiameter?: number;
+  wheelFixingPoints?: number;
+  wheelHeight?: number;
+  wheelSpacing?: number;
+  wheelTreadDepth?: number;
+  wheelWidth?: number;
 }
 
 export interface OrderItem {
@@ -174,6 +184,7 @@ export interface FilterState {
     max?: number;
   };
   fuelType: FuelType[];
+  gearbox?: string[];
   bodyType: BodyType[];
   partCategory: string[];
   partType: string[];
@@ -194,4 +205,15 @@ export interface FilterState {
     model?: string;
     category?: string;
   };
+  // Wheel-specific filters
+  wheelDrive?: ("AWD" | "RWD" | "FWD")[];
+  wheelSide?: ("Left" | "Right")[];
+  wheelCentralDiameter?: number[];
+  wheelFixingPoints?: number[];
+  wheelHeight?: number[];
+  wheelSpacing?: number[];
+  wheelTreadDepth?: number[];
+  wheelWidth?: number[];
+  // Warehouse filter
+  warehouse?: string[];
 }

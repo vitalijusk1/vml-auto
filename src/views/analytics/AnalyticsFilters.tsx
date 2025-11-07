@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { X, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";

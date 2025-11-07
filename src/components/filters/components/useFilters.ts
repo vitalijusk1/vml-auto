@@ -54,6 +54,14 @@ export const useFilters = (filters: FilterType) => {
     return Array.from(new Set(cars.map((c) => c.gearbox_type.name))).sort();
   }, [cars]);
 
+  const uniqueWheelDrives = useMemo(() => {
+    return Array.from(new Set(cars.map((c) => c.wheel_drive.name))).sort();
+  }, [cars]);
+
+  const uniqueFuelTypes = useMemo(() => {
+    return Array.from(new Set(cars.map((c) => c.fuel.name))).sort();
+  }, [cars]);
+
   const uniqueBodyTypes = useMemo(() => {
     return Array.from(new Set(cars.map((c) => c.body_type.name))).sort();
   }, [cars]);
@@ -62,13 +70,22 @@ export const useFilters = (filters: FilterType) => {
     return Array.from(new Set(parts.map((p) => p.partType))).sort();
   }, [parts]);
 
+  const uniqueWarehouses = useMemo(() => {
+    return Array.from(
+      new Set(parts.map((p) => p.warehouse).filter(Boolean))
+    ).sort() as string[];
+  }, [parts]);
+
   return {
     uniqueBrands,
     uniqueModels,
     uniqueYears,
     uniqueGearboxes,
+    uniqueWheelDrives,
+    uniqueFuelTypes,
     uniqueCategories,
     uniqueBodyTypes,
     uniquePartTypes,
+    uniqueWarehouses,
   };
 };

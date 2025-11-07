@@ -2,7 +2,7 @@ import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { MultiSelectDropdown } from "@/components/ui/multi-select-dropdown";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { AnalyticsFilters as AnalyticsFiltersType } from "@/views/analytics/AnalyticsFilters";
 import { OrderStatus, PartStatus } from "@/types";
 import { useFilters } from "../useFilters";
