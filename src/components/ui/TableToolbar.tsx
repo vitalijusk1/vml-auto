@@ -1,6 +1,7 @@
 import { PaginationState } from "@tanstack/react-table";
 import { PageSizeSelector } from "./PageSizeSelector";
 import { TableFilter } from "./TableFilter";
+import { DynamicInputRow } from "./DynamicInputRow";
 
 interface TableToolbarProps {
   // Results info
@@ -39,7 +40,7 @@ export function TableToolbar({
       <div className="text-sm text-muted-foreground">
         Showing {showing} of {total} {itemName}
       </div>
-      <div className="flex items-center gap-2">
+      <DynamicInputRow gap={2} maxPerRow={4}>
         <PageSizeSelector
           pagination={pagination}
           onPageSizeChange={onPageSizeChange}
@@ -51,7 +52,7 @@ export function TableToolbar({
           placeholder={filterPlaceholder}
         />
         {children}
-      </div>
+      </DynamicInputRow>
     </div>
   );
 }
