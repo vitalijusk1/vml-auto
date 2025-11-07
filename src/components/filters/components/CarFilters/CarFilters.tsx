@@ -17,20 +17,15 @@ export const CarFilters = ({
   onFiltersChange,
   onReset,
 }: CarFiltersProps) => {
-  const { uniqueBrands, uniqueModels, uniqueYears, uniqueGearboxes } =
-    useFilters(filters);
+  const {
+    uniqueBrands,
+    uniqueModels,
+    uniqueYears,
+    uniqueGearboxes,
+    uniqueWheelDrives,
+  } = useFilters(filters);
   return (
     <CardContent className="space-y-4">
-      {/* Search */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Search</label>
-        <Input
-          placeholder="Brand, model, ID, engine code..."
-          value={filters.search}
-          onChange={(e) => onFiltersChange({ search: e.target.value })}
-        />
-      </div>
-
       {/* Mileage Range */}
       <div>
         <label className="text-sm font-medium mb-2 block">Mileage (km)</label>
@@ -140,6 +135,17 @@ export const CarFilters = ({
             selected={filters.gearbox || []}
             onChange={(selected) => onFiltersChange({ gearbox: selected })}
             placeholder="Select gearbox types..."
+          />
+        </div>
+
+        {/* Wheel Drive */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Wheel Drive</label>
+          <MultiSelectDropdown
+            options={uniqueWheelDrives}
+            selected={filters.wheelDrive || []}
+            onChange={(selected) => onFiltersChange({ wheelDrive: selected })}
+            placeholder="Select wheel drive..."
           />
         </div>
       </div>

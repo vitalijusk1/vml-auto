@@ -9,6 +9,7 @@ const defaultFilters: FilterState = {
   carModel: [],
   carYear: [],
   fuelType: [],
+  gearbox: undefined,
   bodyType: [],
   partCategory: [],
   partType: [],

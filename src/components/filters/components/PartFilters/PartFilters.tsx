@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
-import { FilterState, PartStatus, BodyType } from "@/types";
+import { FilterState, PartStatus, BodyType, FuelType } from "@/types";
 import { useFilters } from "../useFilters";
 import { useAppSelector } from "@/store/hooks";
 import { selectParts } from "@/store/selectors";
@@ -27,6 +27,8 @@ export const PartFilters = ({
     uniqueBodyTypes,
     uniquePartTypes,
     uniqueWarehouses,
+    uniqueGearboxes,
+    uniqueFuelTypes,
   } = useFilters(filters);
 
   const parts = useAppSelector(selectParts);
@@ -89,8 +91,7 @@ export const PartFilters = ({
             <div
               className="grid gap-4 mb-4"
               style={{
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(max(200px, calc((100% - 3 * 1rem) / 4)), 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
               }}
             >
               {/* Brand */}
@@ -146,6 +147,68 @@ export const PartFilters = ({
                     onFiltersChange({ partType: selected })
                   }
                   placeholder="Select part types..."
+                />
+              </div>
+
+              {/* Gearbox */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Gearbox
+                </label>
+                <MultiSelectDropdown
+                  options={uniqueGearboxes}
+                  selected={filters.gearbox || []}
+                  onChange={(selected) =>
+                    onFiltersChange({ gearbox: selected })
+                  }
+                  placeholder="Select gearbox..."
+                />
+              </div>
+
+              {/* Fuel Type */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Fuel Type
+                </label>
+                <MultiSelectDropdown
+                  options={uniqueFuelTypes}
+                  selected={filters.fuelType || []}
+                  onChange={(selected) =>
+                    onFiltersChange({ fuelType: selected as FuelType[] })
+                  }
+                  placeholder="Select fuel type..."
+                />
+              </div>
+
+              {/* Wheel Drive */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Wheel Drive
+                </label>
+                <MultiSelectDropdown
+                  options={wheelDriveOptions}
+                  selected={filters.wheelDrive || []}
+                  onChange={(selected) =>
+                    onFiltersChange({
+                      wheelDrive: selected as ("AWD" | "RWD" | "FWD")[],
+                    })
+                  }
+                  placeholder="Select wheel drive..."
+                />
+              </div>
+
+              {/* Side */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Side</label>
+                <MultiSelectDropdown
+                  options={wheelSideOptions}
+                  selected={filters.wheelSide || []}
+                  onChange={(selected) =>
+                    onFiltersChange({
+                      wheelSide: selected as ("Left" | "Right")[],
+                    })
+                  }
+                  placeholder="Select side..."
                 />
               </div>
             </div>
@@ -332,38 +395,6 @@ export const PartFilters = ({
                   "repeat(auto-fit, minmax(max(200px, calc((100% - 3 * 1rem) / 4)), 1fr))",
               }}
             >
-              {/* Wheel Drive */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Wheel Drive
-                </label>
-                <MultiSelectDropdown
-                  options={wheelDriveOptions}
-                  selected={filters.wheelDrive || []}
-                  onChange={(selected) =>
-                    onFiltersChange({
-                      wheelDrive: selected as ("AWD" | "RWD" | "FWD")[],
-                    })
-                  }
-                  placeholder="Select wheel drive..."
-                />
-              </div>
-
-              {/* Side */}
-              <div>
-                <label className="text-sm font-medium mb-2 block">Side</label>
-                <MultiSelectDropdown
-                  options={wheelSideOptions}
-                  selected={filters.wheelSide || []}
-                  onChange={(selected) =>
-                    onFiltersChange({
-                      wheelSide: selected as ("Left" | "Right")[],
-                    })
-                  }
-                  placeholder="Select side..."
-                />
-              </div>
-
               {/* Central Diameter */}
               <div>
                 <label className="text-sm font-medium mb-2 block">

@@ -54,6 +54,14 @@ export const useFilters = (filters: FilterType) => {
     return Array.from(new Set(cars.map((c) => c.gearbox_type.name))).sort();
   }, [cars]);
 
+  const uniqueWheelDrives = useMemo(() => {
+    return Array.from(new Set(cars.map((c) => c.wheel_drive.name))).sort();
+  }, [cars]);
+
+  const uniqueFuelTypes = useMemo(() => {
+    return Array.from(new Set(cars.map((c) => c.fuel.name))).sort();
+  }, [cars]);
+
   const uniqueBodyTypes = useMemo(() => {
     return Array.from(new Set(cars.map((c) => c.body_type.name))).sort();
   }, [cars]);
@@ -73,6 +81,8 @@ export const useFilters = (filters: FilterType) => {
     uniqueModels,
     uniqueYears,
     uniqueGearboxes,
+    uniqueWheelDrives,
+    uniqueFuelTypes,
     uniqueCategories,
     uniqueBodyTypes,
     uniquePartTypes,

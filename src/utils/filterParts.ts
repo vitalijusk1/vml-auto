@@ -10,6 +10,7 @@ export const defaultFilters: FilterState = {
   carYear: [],
   yearRange: {},
   fuelType: [],
+  gearbox: undefined,
   bodyType: [],
   partCategory: [],
   partType: [],
@@ -90,6 +91,14 @@ export function filterParts(
       })
       .map((c) => c.id.toString());
     filtered = filtered.filter((p) => carFuelTypes.includes(p.carId));
+  }
+
+  // Gearbox filter
+  if (filters.gearbox && filters.gearbox.length > 0) {
+    const carGearboxes = cars
+      .filter((c) => filters.gearbox!.includes(c.gearbox_type.name))
+      .map((c) => c.id.toString());
+    filtered = filtered.filter((p) => carGearboxes.includes(p.carId));
   }
 
   // Body type filter

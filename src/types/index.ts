@@ -184,6 +184,7 @@ export interface FilterState {
     max?: number;
   };
   fuelType: FuelType[];
+  gearbox?: string[];
   bodyType: BodyType[];
   partCategory: string[];
   partType: string[];
