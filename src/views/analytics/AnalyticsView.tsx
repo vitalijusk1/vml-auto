@@ -386,6 +386,7 @@ export function AnalyticsView() {
           type="analytics"
           filters={filters}
           onFiltersChange={setFilters}
+          cars={[]}
         />
 
         {/* Charts */}

@@ -108,7 +108,22 @@ export function PartDetailContent({ part }: PartDetailContentProps) {
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm">
             <strong>Date Added:</strong>{" "}
-            {format(part.dateAdded, "MMM dd, yyyy")}
+            {(() => {
+              try {
+                const date = part.dateAdded;
+                if (!date) return "-";
+                const dateObj = date instanceof Date ? date : new Date(date);
+                if (isNaN(dateObj.getTime())) return "-";
+                return format(dateObj, "MMM dd, yyyy");
+              } catch (error) {
+                console.error(
+                  "Error formatting dateAdded:",
+                  error,
+                  part.dateAdded
+                );
+                return "-";
+              }
+            })()}
           </span>
         </div>
         <div className="text-sm">
@@ -116,7 +131,23 @@ export function PartDetailContent({ part }: PartDetailContentProps) {
         </div>
         {part.dateSold && (
           <div className="text-sm mt-2">
-            <strong>Date Sold:</strong> {format(part.dateSold, "MMM dd, yyyy")}
+            <strong>Date Sold:</strong>{" "}
+            {(() => {
+              try {
+                const date = part.dateSold;
+                if (!date) return "-";
+                const dateObj = date instanceof Date ? date : new Date(date);
+                if (isNaN(dateObj.getTime())) return "-";
+                return format(dateObj, "MMM dd, yyyy");
+              } catch (error) {
+                console.error(
+                  "Error formatting dateSold:",
+                  error,
+                  part.dateSold
+                );
+                return "-";
+              }
+            })()}
           </div>
         )}
       </div>

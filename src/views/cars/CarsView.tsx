@@ -1,42 +1,55 @@
-import { useState, useMemo, useEffect } from "react";
-import { useAppSelector } from "@/store/hooks";
-import { selectCars } from "@/store/selectors";
-import { FilterPanel } from "../../components/filters/FilterPanel";
-import {
-  filterCars,
-  defaultCarFilters,
-  CarFilterState,
-} from "@/utils/filterCars";
-import { Table } from "../../components/tables/Table";
-import { getCars } from "@/api/cars";
+import { useState, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectCarsPagination } from "@/store/selectors";
+import { setCarsPagination } from "@/store/slices/uiSlice";
+import { getCars, getFilters } from "@/api/cars";
 import { Car } from "@/types";
+import { FilterPanel } from "../../components/filters/FilterPanel";
+import { CarFilters } from "@/utils/filterCars";
+import { Table } from "../../components/tables/Table";
 
 export function CarsView() {
-  const cars = useAppSelector(selectCars);
-  const [filters, setFilters] = useState<CarFilterState>(defaultCarFilters);
-  const [fetchedCars, setFetchedCars] = useState<Car[]>([]);
+  const dispatch = useAppDispatch();
+  const savedPagination = useAppSelector(selectCarsPagination);
+  const [cars, setCars] = useState<Car[]>([]);
+  const [filters, setFilters] = useState<CarFilters | null>(null);
+  const [pagination, setPagination] = useState(
+    savedPagination || {
+      current_page: 1,
+      per_page: 15,
+      total: 0,
+      last_page: 1,
+    }
+  );
 
+  // Fetch cars and filters when entering this view or when filters/pagination change
   useEffect(() => {
-    const fetchCars = async () => {
+    const fetchData = async () => {
       try {
-        const response = await getCars();
-        console.log("Fetched cars from API:", response);
-        setFetchedCars(response);
+        // Fetch filters from backend
+        if (filters === null) {
+          const filtersData = await getFilters();
+          setFilters(filtersData);
+        }
+
+        // Fetch cars
+        const response = await getCars({
+          page: pagination.current_page,
+          per_page: pagination.per_page,
+          // TODO: Add filter parameters when backend filtering is ready
+          // ...filters
+        });
+        setCars(response.cars);
+        setPagination(response.pagination);
+        // Save pagination to Redux
+        dispatch(setCarsPagination(response.pagination));
       } catch (error) {
-        console.error("Error fetching cars:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchCars();
-  }, []);
-
-  // Use fetched cars if available, otherwise fall back to Redux store
-  const carsToDisplay = fetchedCars.length > 0 ? fetchedCars : cars;
-
-  const filteredCars = useMemo(
-    () => filterCars(carsToDisplay, filters),
-    [carsToDisplay, filters]
-  );
+    fetchData();
+  }, [dispatch, pagination.current_page, pagination.per_page, filters]);
 
   return (
     <div className="space-y-6">
@@ -47,9 +60,30 @@ export function CarsView() {
         </p>
       </div>
 
-      <FilterPanel type="car" filters={filters} onFiltersChange={setFilters} />
+      {filters && (
+        <FilterPanel
+          type="car"
+          filters={filters}
+          onFiltersChange={setFilters}
+          cars={cars}
+        />
+      )}
 
-      <Table type="car" data={filteredCars} />
+      <Table
+        type="car"
+        data={cars}
+        serverPagination={pagination}
+        onPageChange={(page) => {
+          setPagination((prev) => ({ ...prev, current_page: page }));
+        }}
+        onPageSizeChange={(pageSize) => {
+          setPagination((prev) => ({
+            ...prev,
+            per_page: pageSize,
+            current_page: 1,
+          }));
+        }}
+      />
     </div>
   );
 }

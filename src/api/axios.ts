@@ -19,7 +19,7 @@ const authInstance: AxiosInstance = axios.create({
 authInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Hardcoded token for now
-    const token = "2|LKySvv1mSQ3o5XteTa9pbXoNOkIgBhFun8qJg4t0c74c58ea";
+    const token = "1|FJrJudplslsPqrIBCWTpRNDCMv5TcSLhM27Cem6pfcc28081";
 
     if (token && config.headers) {
       console.log(import.meta.env.VITE_API_BASE_URL);

@@ -120,7 +120,18 @@ export function PartTableColumns({
     {
       accessorKey: "dateAdded",
       header: "Date Added",
-      cell: ({ row }) => format(row.original.dateAdded, "MMM dd, yyyy"),
+      cell: ({ row }) => {
+        const date = row.original.dateAdded;
+        if (!date) return "-";
+        try {
+          const dateObj = date instanceof Date ? date : new Date(date);
+          if (isNaN(dateObj.getTime())) return "-";
+          return format(dateObj, "MMM dd, yyyy");
+        } catch (error) {
+          console.error("Error formatting date:", error, date);
+          return "-";
+        }
+      },
     },
     {
       id: "actions",

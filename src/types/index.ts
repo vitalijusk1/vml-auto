@@ -20,7 +20,7 @@ export type BodyType =
 
 export interface Car {
   id: number;
-  photo: string;
+  photo: string | null;
   photo_gallery: string[];
   brand: string;
   model: {
@@ -28,43 +28,43 @@ export interface Car {
     name: string;
   };
   year: number;
-  model_year: number;
+  model_year: number | null;
   engine: {
-    code: string;
+    code: string | null;
     capacity: number;
-    power: number;
+    power: number | null;
   };
   fuel: {
     id: number;
     name: string;
-  };
+  } | null;
   body_type: {
     id: number;
     name: string;
-  };
+  } | null;
   wheel_drive: {
     id: number;
     name: string;
-  };
+  } | null;
   wheel_type: {
     id: number;
     name: string;
-  };
+  } | null;
   gearbox_type: {
     id: number;
     name: string;
-  };
+  } | null;
   color: {
     id: number;
     name: string;
-  };
-  color_code: string;
+  } | null;
+  color_code: string | null;
   interior: string;
   category: {
     id: number;
     name: string;
-  };
-  mileage: number;
+  } | null;
+  mileage: number | null;
   defectation_notes: string;
   last_synced_at: string;
 }

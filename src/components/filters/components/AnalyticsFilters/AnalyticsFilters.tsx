@@ -5,21 +5,25 @@ import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
 import { AnalyticsFilters as AnalyticsFiltersType } from "@/views/analytics/AnalyticsFilters";
-import { OrderStatus, PartStatus } from "@/types";
-import { useFilters } from "../useFilters";
+import { OrderStatus, PartStatus, Car } from "@/types";
 
 interface AnalyticsFiltersProps {
   filters: AnalyticsFiltersType;
   onFiltersChange: (updates: Partial<AnalyticsFiltersType>) => void;
   onReset: () => void;
+  cars?: Car[];
 }
 
 export const AnalyticsFilters = ({
   filters,
   onFiltersChange,
   onReset,
+  cars: _cars = [],
 }: AnalyticsFiltersProps) => {
-  const { uniqueBrands, uniqueCategories } = useFilters(filters);
+  // TODO: Get filter options (brands, categories) from backendFilters
+  // For now, using empty arrays until backend provides these filter options
+  const uniqueBrands: string[] = [];
+  const uniqueCategories: string[] = [];
   const hasActiveFilters =
     filters.dateRange?.from ||
     filters.dateRange?.to ||

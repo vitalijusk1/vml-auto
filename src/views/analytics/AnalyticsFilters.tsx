@@ -6,8 +6,8 @@ import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { X, Filter } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { selectParts, selectCars } from "@/store/selectors";
-import { OrderStatus, PartStatus } from "@/types";
+import { selectParts } from "@/store/selectors";
+import { OrderStatus, PartStatus, Car } from "@/types";
 
 export interface AnalyticsFilters {
   dateRange: {
@@ -35,15 +35,16 @@ const defaultFilters: AnalyticsFilters = {
 interface AnalyticsFiltersProps {
   filters: AnalyticsFilters;
   onFiltersChange: (filters: AnalyticsFilters) => void;
+  cars?: Car[];
 }
 
 export function AnalyticsFiltersPanel({
   filters,
   onFiltersChange,
+  cars = [],
 }: AnalyticsFiltersProps) {
   const [isOpen, setIsOpen] = useState(true);
   const parts = useAppSelector(selectParts);
-  const cars = useAppSelector(selectCars);
 
   const uniqueCategories = useMemo(() => {
     return Array.from(new Set(parts.map((p) => p.category))).sort();
