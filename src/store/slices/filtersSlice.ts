@@ -16,6 +16,18 @@ const defaultFilters: FilterState = {
   position: [],
   priceRange: {},
   inventoryAge: {},
+  staleMonths: undefined,
+  // Wheel-specific filters
+  wheelDrive: undefined,
+  wheelSide: undefined,
+  wheelCentralDiameter: undefined,
+  wheelFixingPoints: undefined,
+  wheelHeight: undefined,
+  wheelSpacing: undefined,
+  wheelTreadDepth: undefined,
+  wheelWidth: undefined,
+  // Warehouse filter
+  warehouse: undefined,
 };
 
 const filtersSlice = createSlice({

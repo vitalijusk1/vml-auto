@@ -11,13 +11,6 @@ import {
   PaginationState,
 } from "@tanstack/react-table";
 import { useState, useMemo, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectSelectedParts } from "@/store/selectors";
-import {
-  togglePartSelection,
-  selectAllParts,
-  clearSelection,
-} from "@/store/slices/uiSlice";
 import { Car, Part } from "@/types";
 import {
   Table as BaseTable,
@@ -48,8 +41,6 @@ export function Table<T extends Car | Part>({
   data,
   title,
 }: TableProps<T>) {
-  const dispatch = useAppDispatch();
-  const selectedParts = useAppSelector(selectSelectedParts);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -69,28 +60,6 @@ export function Table<T extends Car | Part>({
     setSelectedItem(null);
   };
 
-  const handleSelectAll = useCallback(
-    (checked: boolean) => {
-      if (type === LayoutType.PARTS) {
-        if (checked) {
-          dispatch(selectAllParts((data as Part[]).map((p) => p.id)));
-        } else {
-          dispatch(clearSelection());
-        }
-      }
-    },
-    [dispatch, data, type]
-  );
-
-  const handleToggleSelection = useCallback(
-    (partId: string) => {
-      if (type === LayoutType.PARTS) {
-        dispatch(togglePartSelection(partId));
-      }
-    },
-    [dispatch, type]
-  );
-
   const getColumns = (): ColumnDef<T>[] => {
     switch (type) {
       case LayoutType.CAR:
@@ -99,9 +68,6 @@ export function Table<T extends Car | Part>({
         ) as ColumnDef<T>[];
       case LayoutType.PARTS:
         return PartTableColumns({
-          selectedParts,
-          onSelectAll: handleSelectAll,
-          onToggleSelection: handleToggleSelection,
           onItemClick: handleItemClick as (part: Part) => void,
         }) as ColumnDef<T>[];
       default:
@@ -109,16 +75,7 @@ export function Table<T extends Car | Part>({
     }
   };
 
-  const columns = useMemo(
-    () => getColumns(),
-    [
-      type,
-      selectedParts,
-      handleSelectAll,
-      handleToggleSelection,
-      handleItemClick,
-    ]
-  );
+  const columns = useMemo(() => getColumns(), [type, handleItemClick]);
 
   const table = useReactTable({
     data,
@@ -196,6 +153,8 @@ export function Table<T extends Car | Part>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
+                  onClick={() => handleItemClick(row.original)}
+                  className="cursor-pointer"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

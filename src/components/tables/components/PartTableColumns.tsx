@@ -1,9 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Part, PartStatus } from "@/types";
 import { format } from "date-fns";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getStatusBadgeClass } from "@/theme/utils";
+import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 
 const getPartStatusClass = (status: PartStatus) => {
   const statusMap: Record<PartStatus, string> = {
@@ -16,46 +17,22 @@ const getPartStatusClass = (status: PartStatus) => {
 };
 
 interface PartTableColumnsProps {
-  selectedParts: string[];
-  onSelectAll: (checked: boolean) => void;
-  onToggleSelection: (partId: string) => void;
   onItemClick: (part: Part) => void;
 }
 
 export function PartTableColumns({
-  selectedParts,
-  onSelectAll,
-  onToggleSelection,
   onItemClick,
 }: PartTableColumnsProps): ColumnDef<Part>[] {
   return [
     {
-      id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={(e) => onSelectAll(e.target.checked)}
-          className="rounded border-gray-300"
-        />
-      ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={selectedParts.includes(row.original.id)}
-          onChange={() => onToggleSelection(row.original.id)}
-          className="rounded border-gray-300"
-        />
-      ),
-    },
-    {
       accessorKey: "photos",
       header: "Photo",
       cell: ({ row }) => (
-        <img
-          src={row.original.photos[0]}
+        <PhotoTableCell
+          src={row.original.photos}
           alt={row.original.name}
-          className="w-12 h-12 object-cover rounded"
+          onClick={() => onItemClick(row.original)}
+          size="md"
         />
       ),
     },
@@ -65,9 +42,7 @@ export function PartTableColumns({
       cell: ({ row }) => (
         <div>
           <div className="font-medium">{row.original.code}</div>
-          <div className="text-xs text-muted-foreground">
-            {row.original.id}
-          </div>
+          <div className="text-xs text-muted-foreground">{row.original.id}</div>
         </div>
       ),
     },
@@ -150,16 +125,11 @@ export function PartTableColumns({
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onItemClick(row.original)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+      cell: () => (
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <Edit className="h-4 w-4" />
           </Button>
@@ -171,4 +141,3 @@ export function PartTableColumns({
     },
   ];
 }
-

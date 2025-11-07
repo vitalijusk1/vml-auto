@@ -18,6 +18,17 @@ export const defaultFilters: FilterState = {
   priceRange: {},
   inventoryAge: {},
   staleMonths: undefined,
+  // Wheel-specific filters
+  wheelDrive: undefined,
+  wheelSide: undefined,
+  wheelCentralDiameter: undefined,
+  wheelFixingPoints: undefined,
+  wheelHeight: undefined,
+  wheelSpacing: undefined,
+  wheelTreadDepth: undefined,
+  wheelWidth: undefined,
+  // Warehouse filter
+  warehouse: undefined,
 };
 
 export function filterParts(
@@ -106,6 +117,13 @@ export function filterParts(
     filtered = filtered.filter((p) => filters.partType.includes(p.partType));
   }
 
+  // Warehouse filter
+  if (filters.warehouse && filters.warehouse.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.warehouse && filters.warehouse!.includes(p.warehouse)
+    );
+  }
+
   // Position filter
   if (filters.position.length > 0) {
     filtered = filtered.filter(
@@ -158,6 +176,61 @@ export function filterParts(
     monthsAgo.setMonth(monthsAgo.getMonth() - filters.staleMonths);
     filtered = filtered.filter(
       (p) => p.status === "In Stock" && p.dateAdded <= monthsAgo
+    );
+  }
+
+  // Wheel-specific filters
+  if (filters.wheelDrive && filters.wheelDrive.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.wheelDrive && filters.wheelDrive!.includes(p.wheelDrive)
+    );
+  }
+
+  if (filters.wheelSide && filters.wheelSide.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.wheelSide && filters.wheelSide!.includes(p.wheelSide)
+    );
+  }
+
+  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
+    filtered = filtered.filter(
+      (p) =>
+        p.wheelCentralDiameter &&
+        filters.wheelCentralDiameter!.includes(p.wheelCentralDiameter)
+    );
+  }
+
+  if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
+    filtered = filtered.filter(
+      (p) =>
+        p.wheelFixingPoints &&
+        filters.wheelFixingPoints!.includes(p.wheelFixingPoints)
+    );
+  }
+
+  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.wheelHeight && filters.wheelHeight!.includes(p.wheelHeight)
+    );
+  }
+
+  if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.wheelSpacing && filters.wheelSpacing!.includes(p.wheelSpacing)
+    );
+  }
+
+  if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
+    filtered = filtered.filter(
+      (p) =>
+        p.wheelTreadDepth &&
+        filters.wheelTreadDepth!.includes(p.wheelTreadDepth)
+    );
+  }
+
+  if (filters.wheelWidth && filters.wheelWidth.length > 0) {
+    filtered = filtered.filter(
+      (p) => p.wheelWidth && filters.wheelWidth!.includes(p.wheelWidth)
     );
   }
 

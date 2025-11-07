@@ -62,6 +62,12 @@ export const useFilters = (filters: FilterType) => {
     return Array.from(new Set(parts.map((p) => p.partType))).sort();
   }, [parts]);
 
+  const uniqueWarehouses = useMemo(() => {
+    return Array.from(
+      new Set(parts.map((p) => p.warehouse).filter(Boolean))
+    ).sort() as string[];
+  }, [parts]);
+
   return {
     uniqueBrands,
     uniqueModels,
@@ -70,5 +76,6 @@ export const useFilters = (filters: FilterType) => {
     uniqueCategories,
     uniqueBodyTypes,
     uniquePartTypes,
+    uniqueWarehouses,
   };
 };

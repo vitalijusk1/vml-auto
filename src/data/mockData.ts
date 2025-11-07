@@ -16,6 +16,7 @@ const models: Record<string, string[]> = {
 
 const partCategories = ['Engine', 'Transmission', 'Body Parts', 'Electrical', 'Suspension', 'Brakes', 'Interior', 'Exterior', 'Lighting', 'Wheels & Tires'];
 const partTypes = ['Engine Block', 'Gearbox', 'Door Panel', 'Headlight', 'Bumper', 'Seat', 'Dashboard', 'ECU', 'Shock Absorber', 'Brake Disc', 'Window', 'Mirror'];
+const warehouses = ['Warehouse A', 'Warehouse B', 'Warehouse C', 'Main Warehouse', 'Secondary Warehouse'];
 
 const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emma', 'Robert', 'Lisa', 'James', 'Maria'];
 const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Wilson', 'Moore'];
@@ -154,6 +155,7 @@ export function generateMockParts(count: number = 500, cars: Car[]): Part[] {
         `https://picsum.photos/seed/part-${i}-1/300/200`,
         `https://picsum.photos/seed/part-${i}-2/300/200`,
       ],
+      warehouse: randomElement(warehouses),
     });
   }
   

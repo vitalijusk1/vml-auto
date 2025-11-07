@@ -1,8 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Car } from "@/types";
 import { format } from "date-fns";
-import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 
 export function CarTableColumns(
   onItemClick: (car: Car) => void
@@ -12,24 +11,18 @@ export function CarTableColumns(
       accessorKey: "photo",
       header: "Photo",
       cell: ({ row }) => (
-        <button
+        <PhotoTableCell
+          src={row.original.photo}
+          alt={`${row.original.brand} ${row.original.model.name}`}
           onClick={() => onItemClick(row.original)}
-          className="cursor-pointer hover:opacity-80 transition-opacity"
-        >
-          <img
-            src={row.original.photo}
-            alt={`${row.original.brand} ${row.original.model.name}`}
-            className="w-16 h-16 object-cover rounded"
-          />
-        </button>
+          size="md"
+        />
       ),
     },
     {
       accessorKey: "id",
       header: "Car ID",
-      cell: ({ row }) => (
-        <span className="font-medium">{row.original.id}</span>
-      ),
+      cell: ({ row }) => <span className="font-medium">{row.original.id}</span>,
     },
     {
       accessorKey: "brand",
@@ -96,22 +89,5 @@ export function CarTableColumns(
       cell: ({ row }) =>
         format(new Date(row.original.last_synced_at), "MMM dd, yyyy"),
     },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => onItemClick(row.original)}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
   ];
 }
-
