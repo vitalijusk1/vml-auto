@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import { useMemo, useState } from "react";
 import { AnalyticsFilters } from "./AnalyticsFilters";
-import { UnifiedFilterPanel } from "../filters/UnifiedFilterPanel";
+import { FilterPanel } from "../../components/filters/FilterPanel";
 import { DollarSign, Package, TrendingUp, TrendingDown } from "lucide-react";
 import { theme } from "@/theme/theme";
 
@@ -382,7 +382,7 @@ export function AnalyticsView() {
 
       <div className="space-y-6">
         {/* Filters Panel */}
-        <UnifiedFilterPanel
+        <FilterPanel
           type="analytics"
           filters={filters}
           onFiltersChange={setFilters}

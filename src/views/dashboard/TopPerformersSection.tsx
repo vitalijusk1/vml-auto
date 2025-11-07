@@ -88,7 +88,7 @@ export function TopPerformersSection() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-1">
                       <Package className="h-4 w-4" />
-                      Stock: {part.quantity}
+                      Status: {part.status}
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4" />€{part.priceEUR}
@@ -114,7 +114,7 @@ export function TopPerformersSection() {
                   <th className="text-left p-2">Rank</th>
                   <th className="text-left p-2">Part</th>
                   <th className="text-left p-2">Car</th>
-                  <th className="text-left p-2">Stock</th>
+                  <th className="text-left p-2">Status</th>
                   <th className="text-left p-2">Price</th>
                   <th className="text-left p-2">Days</th>
                 </tr>
@@ -136,7 +136,7 @@ export function TopPerformersSection() {
                     <td className="p-2 text-sm">
                       {part.carBrand} {part.carModel} ({part.carYear})
                     </td>
-                    <td className="p-2 text-sm">{part.quantity}</td>
+                    <td className="p-2 text-sm">{part.status}</td>
                     <td className="p-2 text-sm">€{part.priceEUR}</td>
                     <td className="p-2 text-sm">{part.daysInInventory}</td>
                   </tr>

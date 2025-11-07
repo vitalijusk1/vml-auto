@@ -1,8 +1,8 @@
 // Alternative: as const object (easier interop, better type inference)
-export const FilterType = {
+export const LayoutType = {
   CAR: "car",
   PARTS: "parts",
   ANALYTICS: "analytics",
 } as const;
 
-export type FilterType = "car" | "parts" | "analytics";
+export type LayoutType = "car" | "parts" | "analytics";

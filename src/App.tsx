@@ -1,14 +1,14 @@
-import { useEffect } from 'react';
-import { MainLayout } from './components/layout/MainLayout';
-import { DashboardView } from './components/dashboard/DashboardView';
-import { PartsView } from './components/parts/PartsView';
-import { CarsView } from './components/cars/CarsView';
-import { OrdersView } from './components/orders/OrdersView';
-import { ReturnsView } from './components/returns/ReturnsView';
-import { AnalyticsView } from './components/analytics/AnalyticsView';
-import { useAppDispatch, useAppSelector } from './store/hooks';
-import { selectCurrentView, selectInitialized } from './store/selectors';
-import { initializeData } from './store/slices/dataSlice';
+import { useEffect } from "react";
+import { MainLayout } from "./layout/MainLayout";
+import { PartsView } from "./views/parts/PartsView";
+import { CarsView } from "./views/cars/CarsView";
+import { OrdersView } from "./views/orders/OrdersView";
+import { ReturnsView } from "./views/returns/ReturnsView";
+import { AnalyticsView } from "./views/analytics/AnalyticsView";
+import { useAppDispatch, useAppSelector } from "./store/hooks";
+import { selectCurrentView, selectInitialized } from "./store/selectors";
+import { initializeData } from "./store/slices/dataSlice";
+import { DashboardView } from "./views/dashboard/DashboardView";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -24,17 +24,17 @@ function App() {
 
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard':
+      case "dashboard":
         return <DashboardView />;
-      case 'parts':
+      case "parts":
         return <PartsView />;
-      case 'cars':
+      case "cars":
         return <CarsView />;
-      case 'orders':
+      case "orders":
         return <OrdersView />;
-      case 'returns':
+      case "returns":
         return <ReturnsView />;
-      case 'analytics':
+      case "analytics":
         return <AnalyticsView />;
       default:
         return <DashboardView />;

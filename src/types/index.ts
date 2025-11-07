@@ -81,10 +81,8 @@ export interface Part {
   carYear: number;
   manufacturerCode?: string;
   status: PartStatus;
-  quantity: number;
   priceEUR: number;
   pricePLN: number;
-  quality: PartQuality;
   position?: PartPosition;
   daysInInventory: number;
   dateAdded: Date;
