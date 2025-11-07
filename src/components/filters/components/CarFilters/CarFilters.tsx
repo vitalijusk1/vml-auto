@@ -2,6 +2,7 @@ import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
 import { CarFilterState } from "@/utils/filterCars";
 import { FuelType, BodyType } from "@/types";
 import { useFilters } from "../useFilters";
@@ -17,19 +18,14 @@ export const CarFilters = ({
   onFiltersChange,
   onReset,
 }: CarFiltersProps) => {
-  const {
-    uniqueBrands,
-    uniqueModels,
-    uniqueYears,
-    uniqueGearboxes,
-    uniqueWheelDrives,
-  } = useFilters(filters);
+  const { uniqueBrands, uniqueModels, uniqueYears, uniqueGearboxes } =
+    useFilters(filters);
   return (
     <CardContent className="space-y-4">
       {/* Mileage Range */}
       <div>
         <label className="text-sm font-medium mb-2 block">Mileage (km)</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <DynamicInputRow gap={2} maxPerRow={2}>
           <Input
             type="number"
             placeholder="Min"
@@ -56,11 +52,11 @@ export const CarFilters = ({
               })
             }
           />
-        </div>
+        </DynamicInputRow>
       </div>
 
       {/* Multi-select filters in a grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <DynamicInputRow gap={4}>
         {/* Brand */}
         <div>
           <label className="text-sm font-medium mb-2 block">Brand</label>
@@ -68,7 +64,7 @@ export const CarFilters = ({
             options={uniqueBrands}
             selected={filters.brand || []}
             onChange={(selected) => onFiltersChange({ brand: selected })}
-            placeholder="Select brands..."
+            placeholder="Select brands"
           />
         </div>
 
@@ -79,7 +75,7 @@ export const CarFilters = ({
             options={uniqueModels}
             selected={filters.model || []}
             onChange={(selected) => onFiltersChange({ model: selected })}
-            placeholder="Select models..."
+            placeholder="Select models"
           />
         </div>
 
@@ -92,7 +88,7 @@ export const CarFilters = ({
             onChange={(selected) =>
               onFiltersChange({ year: selected.map(Number) })
             }
-            placeholder="Select years..."
+            placeholder="Select years"
           />
         </div>
 
@@ -103,7 +99,7 @@ export const CarFilters = ({
             options={["Petrol", "Diesel", "Electric", "Hybrid"] as FuelType[]}
             selected={filters.fuelType || []}
             onChange={(selected) => onFiltersChange({ fuelType: selected })}
-            placeholder="Select fuel types..."
+            placeholder="Select fuel types"
           />
         </div>
 
@@ -123,7 +119,7 @@ export const CarFilters = ({
             }
             selected={filters.bodyType || []}
             onChange={(selected) => onFiltersChange({ bodyType: selected })}
-            placeholder="Select body types..."
+            placeholder="Select body types"
           />
         </div>
 
@@ -134,21 +130,10 @@ export const CarFilters = ({
             options={uniqueGearboxes}
             selected={filters.gearbox || []}
             onChange={(selected) => onFiltersChange({ gearbox: selected })}
-            placeholder="Select gearbox types..."
+            placeholder="Select gearbox types"
           />
         </div>
-
-        {/* Wheel Drive */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Wheel Drive</label>
-          <MultiSelectDropdown
-            options={uniqueWheelDrives}
-            selected={filters.wheelDrive || []}
-            onChange={(selected) => onFiltersChange({ wheelDrive: selected })}
-            placeholder="Select wheel drive..."
-          />
-        </div>
-      </div>
+      </DynamicInputRow>
 
       {/* Reset Filters */}
       <Button variant="outline" className="w-full" onClick={onReset}>

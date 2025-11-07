@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
 import { AnalyticsFilters as AnalyticsFiltersType } from "@/views/analytics/AnalyticsFilters";
 import { OrderStatus, PartStatus } from "@/types";
 import { useFilters } from "../useFilters";
@@ -36,7 +37,7 @@ export const AnalyticsFilters = ({
   return (
     <CardContent className="space-y-4">
       {/* Time Period and Metric Type in a row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <DynamicInputRow gap={4} maxPerRow={2}>
         <div>
           <label className="text-sm font-medium mb-2 block">
             Time Period Grouping
@@ -71,12 +72,12 @@ export const AnalyticsFilters = ({
             <option value="both">Both</option>
           </Select>
         </div>
-      </div>
+      </DynamicInputRow>
 
       {/* Date Range */}
       <div>
         <label className="text-sm font-medium mb-2 block">Date Range</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <DynamicInputRow gap={2} maxPerRow={2}>
           <Input
             type="date"
             value={
@@ -109,16 +110,17 @@ export const AnalyticsFilters = ({
               } as Partial<AnalyticsFiltersType>)
             }
           />
-        </div>
+        </DynamicInputRow>
       </div>
 
       {/* Quick Date Presets */}
       <div>
         <label className="text-sm font-medium mb-2 block">Quick Presets</label>
-        <div className="grid grid-cols-2 gap-2">
+        <DynamicInputRow gap={2} maxPerRow={4}>
           <Button
             variant="outline"
             size="sm"
+            className="w-full"
             onClick={() => {
               const now = new Date();
               const thirtyDaysAgo = new Date();
@@ -133,6 +135,7 @@ export const AnalyticsFilters = ({
           <Button
             variant="outline"
             size="sm"
+            className="w-full"
             onClick={() => {
               const now = new Date();
               const threeMonthsAgo = new Date();
@@ -147,6 +150,7 @@ export const AnalyticsFilters = ({
           <Button
             variant="outline"
             size="sm"
+            className="w-full"
             onClick={() => {
               const now = new Date();
               const sixMonthsAgo = new Date();
@@ -161,6 +165,7 @@ export const AnalyticsFilters = ({
           <Button
             variant="outline"
             size="sm"
+            className="w-full"
             onClick={() => {
               const now = new Date();
               const oneYearAgo = new Date();
@@ -172,11 +177,11 @@ export const AnalyticsFilters = ({
           >
             Last Year
           </Button>
-        </div>
+        </DynamicInputRow>
       </div>
 
       {/* Multi-select filters in a grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <DynamicInputRow gap={4}>
         {/* Order Status */}
         <div>
           <label className="text-sm font-medium mb-2 block">Order Status</label>
@@ -192,7 +197,7 @@ export const AnalyticsFilters = ({
             }
             selected={filters.orderStatus || []}
             onChange={(selected) => onFiltersChange({ orderStatus: selected })}
-            placeholder="Select order status..."
+            placeholder="Select order status"
           />
         </div>
 
@@ -205,7 +210,7 @@ export const AnalyticsFilters = ({
             }
             selected={filters.partStatus || []}
             onChange={(selected) => onFiltersChange({ partStatus: selected })}
-            placeholder="Select part status..."
+            placeholder="Select part status"
           />
         </div>
 
@@ -218,7 +223,7 @@ export const AnalyticsFilters = ({
             options={uniqueCategories}
             selected={filters.category || []}
             onChange={(selected) => onFiltersChange({ category: selected })}
-            placeholder="Select categories..."
+            placeholder="Select categories"
           />
         </div>
 
@@ -229,10 +234,10 @@ export const AnalyticsFilters = ({
             options={uniqueBrands}
             selected={filters.brand || []}
             onChange={(selected) => onFiltersChange({ brand: selected })}
-            placeholder="Select brands..."
+            placeholder="Select brands"
           />
         </div>
-      </div>
+      </DynamicInputRow>
 
       {/* Reset Filters */}
       {hasActiveFilters && (
