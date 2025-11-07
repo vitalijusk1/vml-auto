@@ -1,14 +1,13 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilterState } from "@/types";
-import { CarFilterState } from "@/utils/filterCars";
+import { FilterState, Car } from "@/types";
+import { CarFilters } from "@/utils/filterCars";
 import { AnalyticsFilters } from "@/views/analytics/AnalyticsFilters";
 import { X, Filter, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { defaultFilters } from "@/utils/filterParts";
-import { defaultCarFilters } from "@/utils/filterCars";
 import { LayoutType } from "./type";
-import { CarFilters } from "./components/CarFilters/CarFilters";
+import { CarFilters as CarFiltersComponent } from "./components/CarFilters/CarFilters";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
 
@@ -23,30 +22,35 @@ const defaultAnalyticsFilters: AnalyticsFilters = {
 };
 
 interface FilterPanelProps<
-  T extends FilterState | CarFilterState | AnalyticsFilters
+  T extends FilterState | CarFilters | AnalyticsFilters
 > {
   type: LayoutType;
   filters: T;
   onFiltersChange: (filters: T) => void;
+  cars?: Car[];
+  backendFilters?: CarFilters | null;
 }
 
 const getFilter = (
   type: LayoutType,
-  filters: FilterState | CarFilterState | AnalyticsFilters,
+  filters: FilterState | CarFilters | AnalyticsFilters,
   onFiltersChange: (
-    updates: Partial<FilterState | CarFilterState | AnalyticsFilters>
+    updates: Partial<FilterState | CarFilters | AnalyticsFilters>
   ) => void,
-  onReset: () => void
+  onReset: () => void,
+  cars: Car[] = [],
+  backendFilters?: CarFilters | null
 ) => {
   switch (type) {
     case LayoutType.CAR:
       return (
-        <CarFilters
-          filters={filters as CarFilterState}
+        <CarFiltersComponent
+          filters={filters as CarFilters}
           onFiltersChange={
-            onFiltersChange as (updates: Partial<CarFilterState>) => void
+            onFiltersChange as (updates: Partial<CarFilters>) => void
           }
           onReset={onReset}
+          cars={cars}
         />
       );
     case LayoutType.PARTS:
@@ -57,6 +61,8 @@ const getFilter = (
             onFiltersChange as (updates: Partial<FilterState>) => void
           }
           onReset={onReset}
+          cars={cars}
+          backendFilters={backendFilters}
         />
       );
     case LayoutType.ANALYTICS:
@@ -67,6 +73,7 @@ const getFilter = (
             onFiltersChange as (updates: Partial<AnalyticsFilters>) => void
           }
           onReset={onReset}
+          cars={cars}
         />
       );
     default:
@@ -75,19 +82,26 @@ const getFilter = (
 };
 
 export function FilterPanel<
-  T extends FilterState | CarFilterState | AnalyticsFilters
->({ type, filters, onFiltersChange }: FilterPanelProps<T>) {
+  T extends FilterState | CarFilters | AnalyticsFilters
+>({
+  type,
+  filters,
+  onFiltersChange,
+  cars = [],
+  backendFilters,
+}: FilterPanelProps<T>) {
   const [isOpen, setIsOpen] = useState(true);
 
   const updateFilters = (
-    updates: Partial<FilterState | CarFilterState | AnalyticsFilters>
+    updates: Partial<FilterState | CarFilters | AnalyticsFilters>
   ) => {
     onFiltersChange({ ...filters, ...updates });
   };
 
   const resetFilters = () => {
     if (type === LayoutType.CAR) {
-      onFiltersChange(defaultCarFilters as T);
+      // Reset to empty filters object (will be fetched from backend)
+      onFiltersChange({} as unknown as T);
     } else if (type === LayoutType.ANALYTICS) {
       onFiltersChange(defaultAnalyticsFilters as T);
     } else {
@@ -120,7 +134,15 @@ export function FilterPanel<
           </Button>
         </div>
       </CardHeader>
-      {isOpen && getFilter(type, filters, updateFilters, resetFilters)}
+      {isOpen &&
+        getFilter(
+          type,
+          filters,
+          updateFilters,
+          resetFilters,
+          cars,
+          backendFilters
+        )}
     </Card>
   );
 }

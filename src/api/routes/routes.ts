@@ -9,6 +9,12 @@ export interface CarQueryParams {
   page?: number;
 }
 
+// Parts query parameters interface
+export interface PartsQueryParams {
+  per_page?: number;
+  page?: number;
+}
+
 // Helper function to build query string from parameters
 const buildQueryString = (params: Record<string, unknown>): string => {
   const queryParams = new URLSearchParams();
@@ -38,7 +44,12 @@ export const apiEndpoints = {
   deleteCar: (id: number) => `/cars/${id}`,
 
   // Parts
-  getParts: () => `/parts`,
+  getParts: (queryParams?: PartsQueryParams) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/parts${queryString}`;
+  },
   getPartById: (id: string) => `/parts/${id}`,
   createPart: () => `/parts`,
   updatePart: (id: string) => `/parts/${id}`,
@@ -57,4 +68,7 @@ export const apiEndpoints = {
   createReturn: () => `/returns`,
   updateReturn: (id: string) => `/returns/${id}`,
   deleteReturn: (id: string) => `/returns/${id}`,
+
+  // Filters
+  getFilters: () => `/filters`,
 };

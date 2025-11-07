@@ -1,5 +1,12 @@
 import { Car } from "@/types";
-import { Calendar, Car as CarIcon, Gauge, Palette, Settings, Info } from "lucide-react";
+import {
+  Calendar,
+  Car as CarIcon,
+  Gauge,
+  Palette,
+  Settings,
+  Info,
+} from "lucide-react";
 import { format } from "date-fns";
 import { PhotoGallery } from "./PhotoGallery";
 
@@ -9,7 +16,10 @@ interface CarDetailContentProps {
 }
 
 export function CarDetailContent({ car }: CarDetailContentProps) {
-  const allPhotos = [car.photo, ...car.photo_gallery];
+  const allPhotos = [
+    ...(car.photo ? [car.photo] : []),
+    ...car.photo_gallery.filter((photo): photo is string => photo !== null),
+  ];
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
@@ -61,12 +71,14 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <Gauge className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Mileage:</strong> {car.mileage.toLocaleString()} km
-              </span>
-            </div>
+            {car.mileage !== null && (
+              <div className="flex items-center gap-2">
+                <Gauge className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Mileage:</strong> {car.mileage.toLocaleString()} km
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -77,24 +89,28 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             Engine Specifications
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Engine Code:</strong> {car.engine.code}
-              </span>
-            </div>
+            {car.engine.code && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Engine Code:</strong> {car.engine.code}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Info className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
                 <strong>Capacity:</strong> {car.engine.capacity} cc
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Power:</strong> {car.engine.power} hp
-              </span>
-            </div>
+            {car.engine.power !== null && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Power:</strong> {car.engine.power} hp
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -105,42 +121,54 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             Vehicle Details
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Fuel Type:</strong> {car.fuel.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Body Type:</strong> {car.body_type.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Wheel Drive:</strong> {car.wheel_drive.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Wheel Type:</strong> {car.wheel_type.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Gearbox Type:</strong> {car.gearbox_type.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Category:</strong> {car.category.name}
-              </span>
-            </div>
+            {car.fuel && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Fuel Type:</strong> {car.fuel.name}
+                </span>
+              </div>
+            )}
+            {car.body_type && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Body Type:</strong> {car.body_type.name}
+                </span>
+              </div>
+            )}
+            {car.wheel_drive && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Wheel Drive:</strong> {car.wheel_drive.name}
+                </span>
+              </div>
+            )}
+            {car.wheel_type && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Wheel Type:</strong> {car.wheel_type.name}
+                </span>
+              </div>
+            )}
+            {car.gearbox_type && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Gearbox Type:</strong> {car.gearbox_type.name}
+                </span>
+              </div>
+            )}
+            {car.category && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Category:</strong> {car.category.name}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -151,12 +179,14 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             Appearance
           </h3>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <strong>Color:</strong> {car.color.name}
-              </span>
-            </div>
+            {car.color && (
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm">
+                  <strong>Color:</strong> {car.color.name}
+                </span>
+              </div>
+            )}
             {car.color_code && (
               <div className="flex items-center gap-2">
                 <Info className="h-4 w-4 text-muted-foreground" />
@@ -180,7 +210,9 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
         {car.defectation_notes && (
           <div>
             <h3 className="font-semibold mb-3">Defectation Notes</h3>
-            <p className="text-sm text-muted-foreground">{car.defectation_notes}</p>
+            <p className="text-sm text-muted-foreground">
+              {car.defectation_notes}
+            </p>
           </div>
         )}
 
@@ -198,4 +230,3 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
     </div>
   );
 }
-

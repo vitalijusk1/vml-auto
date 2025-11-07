@@ -5,7 +5,6 @@ import { filterParts } from "../utils/filterParts";
 
 // Base selectors
 export const selectParts = (state: RootState) => state.data.parts;
-export const selectCars = (state: RootState) => state.data.cars;
 export const selectOrders = (state: RootState) => state.data.orders;
 export const selectReturns = (state: RootState) => state.data.returns;
 export const selectFilters = (state: RootState) => state.filters;
@@ -13,15 +12,18 @@ export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
 export const selectSidebarCollapsed = (state: RootState) =>
   state.ui.sidebarCollapsed;
-export const selectInitialized = (state: RootState) => state.data.initialized;
+export const selectCarsPagination = (state: RootState) =>
+  state.ui.carsPagination;
+export const selectPartsPagination = (state: RootState) =>
+  state.ui.partsPagination;
 
 // Computed selectors
-export const selectFilteredParts = createSelector(
-  [selectParts, selectFilters, selectCars],
-  (parts, filters, cars) => {
+// Note: selectFilteredParts now requires cars to be passed as parameter
+// since cars are no longer in Redux store
+export const makeSelectFilteredParts = (cars: any[]) =>
+  createSelector([selectParts, selectFilters], (parts, filters) => {
     return filterParts(parts, filters, cars);
-  }
-);
+  });
 
 export const selectMetrics = createSelector(
   [selectParts, selectOrders],

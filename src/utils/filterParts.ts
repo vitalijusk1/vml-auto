@@ -84,6 +84,7 @@ export function filterParts(
   if (filters.fuelType.length > 0) {
     const carFuelTypes = cars
       .filter((c) => {
+        if (!c.fuel) return false;
         const fuelName = c.fuel.name.toLowerCase();
         return filters.fuelType.some((ft) =>
           fuelName.includes(ft.toLowerCase())
@@ -96,7 +97,9 @@ export function filterParts(
   // Gearbox filter
   if (filters.gearbox && filters.gearbox.length > 0) {
     const carGearboxes = cars
-      .filter((c) => filters.gearbox!.includes(c.gearbox_type.name))
+      .filter(
+        (c) => c.gearbox_type && filters.gearbox!.includes(c.gearbox_type.name)
+      )
       .map((c) => c.id.toString());
     filtered = filtered.filter((p) => carGearboxes.includes(p.carId));
   }
@@ -105,6 +108,7 @@ export function filterParts(
   if (filters.bodyType.length > 0) {
     const carBodyTypes = cars
       .filter((c) => {
+        if (!c.body_type) return false;
         const bodyName = c.body_type.name.toLowerCase();
         return filters.bodyType.some((bt) =>
           bodyName.includes(bt.toLowerCase())

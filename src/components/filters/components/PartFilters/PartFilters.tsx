@@ -1,28 +1,74 @@
+import { useState, useMemo } from "react";
 import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
-import { FilterState, PartStatus, BodyType } from "@/types";
-import { useFilters } from "../useFilters";
+import { FilterState, PartStatus, BodyType, Car } from "@/types";
+import { CategorySection } from "../CategorySection/CategorySection";
+import { CarFilters } from "@/utils/filterCars";
 
 interface PartFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
+  cars?: Car[];
+  backendFilters?: CarFilters | null;
 }
 
 export const PartFilters = ({
   filters,
   onFiltersChange,
   onReset,
+  cars: _cars = [],
+  backendFilters,
 }: PartFiltersProps) => {
-  const { uniqueBrands, uniqueModels, uniqueBodyTypes, uniquePartTypes } =
-    useFilters(filters);
+  // TODO: Get filter options (brands, models, body types, part types) from backendFilters
+  // For now, using empty arrays until backend provides these filter options
+  const uniqueBrands: string[] = [];
+  const uniqueModels: string[] = [];
+  const uniqueBodyTypes: BodyType[] = [];
+  const uniquePartTypes: string[] = [];
+
+  // Track selected category IDs
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+
+  // Handle category selection
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // Extract categories from backend filters
+  const categories = useMemo(() => {
+    if (
+      backendFilters?.categories &&
+      Array.isArray(backendFilters.categories)
+    ) {
+      return backendFilters.categories;
+    }
+    return [];
+  }, [backendFilters]);
 
   return (
-    <CardContent className="space-y-4">
+    <CardContent className="space-y-6">
+      {/* Categories Section */}
+      {backendFilters === null ? (
+        <p className="text-muted-foreground text-sm">Loading filters...</p>
+      ) : (
+        <CategorySection
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onCategoryToggle={handleCategoryToggle}
+        />
+      )}
+
       {/* Multi-select filters in a grid */}
       <DynamicInputRow gap={4}>
         {/* Brand */}

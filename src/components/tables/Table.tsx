@@ -10,7 +10,7 @@ import {
   ColumnFiltersState,
   PaginationState,
 } from "@tanstack/react-table";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Car, Part } from "@/types";
 import {
   Table as BaseTable,
@@ -30,25 +30,55 @@ import { DetailModal } from "../modals/DetailModal";
 
 type TableType = Exclude<LayoutType, "analytics">;
 
+interface ServerPagination {
+  current_page: number;
+  per_page: number;
+  total: number;
+  last_page: number;
+}
+
 interface TableProps<T extends Car | Part> {
   type: TableType;
   data: T[];
   title?: string;
+  serverPagination?: ServerPagination;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }
 
 export function Table<T extends Car | Part>({
   type,
   data,
   title,
+  serverPagination,
+  onPageChange,
+  onPageSizeChange,
 }: TableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  // Use server-side pagination if provided, otherwise use client-side
+  const isServerSide = !!serverPagination;
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 50,
+    pageIndex: serverPagination ? serverPagination.current_page - 1 : 0,
+    pageSize: serverPagination ? serverPagination.per_page : 50,
   });
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Sync pagination state when serverPagination changes
+  useEffect(() => {
+    if (isServerSide && serverPagination) {
+      setPagination({
+        pageIndex: serverPagination.current_page - 1,
+        pageSize: serverPagination.per_page,
+      });
+    }
+  }, [
+    isServerSide,
+    serverPagination?.current_page,
+    serverPagination?.per_page,
+  ]);
 
   const handleItemClick = useCallback((item: T) => {
     setSelectedItem(item);
@@ -81,12 +111,24 @@ export function Table<T extends Car | Part>({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isServerSide ? undefined : getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      const newPagination =
+        typeof updater === "function" ? updater(pagination) : updater;
+      setPagination(newPagination);
+
+      // If server-side pagination, trigger page change
+      if (isServerSide && onPageChange) {
+        onPageChange(newPagination.pageIndex + 1);
+      }
+    },
+    manualPagination: isServerSide,
+    pageCount:
+      isServerSide && serverPagination ? serverPagination.last_page : undefined,
     state: {
       sorting,
       columnFilters,
@@ -105,16 +147,33 @@ export function Table<T extends Car | Part>({
       )}
 
       <TableToolbar
-        showing={table.getRowModel().rows.length}
-        total={data.length}
+        showing={
+          isServerSide && serverPagination
+            ? Math.min(
+                (serverPagination.current_page - 1) *
+                  serverPagination.per_page +
+                  data.length,
+                serverPagination.total
+              )
+            : table.getRowModel().rows.length
+        }
+        total={
+          isServerSide && serverPagination
+            ? serverPagination.total
+            : data.length
+        }
         itemName={itemName}
         pagination={pagination}
         onPageSizeChange={(pageSize: number) => {
-          setPagination({
-            ...pagination,
-            pageSize,
-            pageIndex: 0,
-          });
+          if (isServerSide && onPageSizeChange) {
+            onPageSizeChange(pageSize);
+          } else {
+            setPagination({
+              ...pagination,
+              pageSize,
+              pageIndex: 0,
+            });
+          }
         }}
         filterValue={
           (table
@@ -182,15 +241,42 @@ export function Table<T extends Car | Part>({
 
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of{" "}
-          {table.getPageCount()}
+          {isServerSide && serverPagination ? (
+            <>
+              Showing{" "}
+              {(serverPagination.current_page - 1) * serverPagination.per_page +
+                1}{" "}
+              to{" "}
+              {Math.min(
+                serverPagination.current_page * serverPagination.per_page,
+                serverPagination.total
+              )}{" "}
+              of {serverPagination.total} {itemName} (Page{" "}
+              {serverPagination.current_page} of {serverPagination.last_page})
+            </>
+          ) : (
+            <>
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => {
+              if (isServerSide && serverPagination && onPageChange) {
+                onPageChange(serverPagination.current_page - 1);
+              } else {
+                table.previousPage();
+              }
+            }}
+            disabled={
+              isServerSide && serverPagination
+                ? serverPagination.current_page <= 1
+                : !table.getCanPreviousPage()
+            }
           >
             <ChevronLeft className="h-4 w-4" />
             Previous
@@ -198,8 +284,18 @@ export function Table<T extends Car | Part>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => {
+              if (isServerSide && serverPagination && onPageChange) {
+                onPageChange(serverPagination.current_page + 1);
+              } else {
+                table.nextPage();
+              }
+            }}
+            disabled={
+              isServerSide && serverPagination
+                ? serverPagination.current_page >= serverPagination.last_page
+                : !table.getCanNextPage()
+            }
           >
             Next
             <ChevronRight className="h-4 w-4" />

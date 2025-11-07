@@ -12,7 +12,7 @@ export function CarTableColumns(
       header: "Photo",
       cell: ({ row }) => (
         <PhotoTableCell
-          src={row.original.photo}
+          src={row.original.photo || ""}
           alt={`${row.original.brand} ${row.original.model.name}`}
           onClick={() => onItemClick(row.original)}
           size="md"
@@ -40,26 +40,29 @@ export function CarTableColumns(
     {
       accessorKey: "fuel",
       header: "Fuel Type",
-      cell: ({ row }) => row.original.fuel.name,
+      cell: ({ row }) => row.original.fuel?.name || "-",
     },
     {
       accessorKey: "body_type",
       header: "Body Type",
-      cell: ({ row }) => row.original.body_type.name,
+      cell: ({ row }) => row.original.body_type?.name || "-",
     },
     {
       accessorKey: "gearbox_type",
       header: "Gearbox",
-      cell: ({ row }) => row.original.gearbox_type.name,
+      cell: ({ row }) => row.original.gearbox_type?.name || "-",
     },
     {
       accessorKey: "engine",
       header: "Engine",
       cell: ({ row }) => (
         <div className="text-sm">
-          <div>{row.original.engine.code}</div>
+          <div>{row.original.engine.code || "-"}</div>
           <div className="text-xs text-muted-foreground">
-            {row.original.engine.capacity}cc / {row.original.engine.power}hp
+            {row.original.engine.capacity}cc{" "}
+            {row.original.engine.power
+              ? `/ ${row.original.engine.power}hp`
+              : ""}
           </div>
         </div>
       ),
@@ -67,14 +70,17 @@ export function CarTableColumns(
     {
       accessorKey: "mileage",
       header: "Mileage",
-      cell: ({ row }) => `${row.original.mileage.toLocaleString()} km`,
+      cell: ({ row }) =>
+        row.original.mileage
+          ? `${row.original.mileage.toLocaleString()} km`
+          : "-",
     },
     {
       accessorKey: "color",
       header: "Color",
       cell: ({ row }) => (
         <div className="text-sm">
-          <div>{row.original.color.name}</div>
+          <div>{row.original.color?.name || "-"}</div>
           {row.original.color_code && (
             <div className="text-xs text-muted-foreground">
               {row.original.color_code}

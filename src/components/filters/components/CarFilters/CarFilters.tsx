@@ -1,141 +1,96 @@
+import { useState, useMemo } from "react";
 import { CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
-import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
-import { CarFilterState } from "@/utils/filterCars";
-import { FuelType, BodyType } from "@/types";
-import { useFilters } from "../useFilters";
+import { CarFilters as CarFiltersType } from "@/utils/filterCars";
+import { Car } from "@/types";
+import { CategorySection } from "../CategorySection/CategorySection";
+import { WheelsSection } from "../WheelsSection/WheelsSection";
 
 interface CarFiltersProps {
-  filters: CarFilterState;
-  onFiltersChange: (updates: Partial<CarFilterState>) => void;
+  filters: CarFiltersType;
+  onFiltersChange: (updates: Partial<CarFiltersType>) => void;
   onReset: () => void;
+  cars?: Car[];
 }
 
 export const CarFilters = ({
   filters,
-  onFiltersChange,
+  onFiltersChange: _onFiltersChange, // TODO: Use when sending selected categories to backend
   onReset,
+  cars: _cars = [],
 }: CarFiltersProps) => {
-  const { uniqueBrands, uniqueModels, uniqueYears, uniqueGearboxes } =
-    useFilters(filters);
+  // Track selected category IDs
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+
+  // Track selected wheel filter values
+  const [selectedWheelFilters, setSelectedWheelFilters] = useState<
+    Record<string, string[]>
+  >({});
+
+  // Handle category selection
+  const handleCategoryToggle = (categoryId: number) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // Handle wheel filter changes
+  const handleWheelFilterChange = (filterKey: string, selected: string[]) => {
+    setSelectedWheelFilters((prev) => ({
+      ...prev,
+      [filterKey]: selected,
+    }));
+  };
+
+  // Extract categories from filters
+  const categories = useMemo(() => {
+    if (filters?.categories && Array.isArray(filters.categories)) {
+      return filters.categories;
+    }
+    return [];
+  }, [filters]);
+
+  // Extract wheels from filters
+  const wheels = useMemo(() => {
+    if (filters?.wheels && typeof filters.wheels === "object") {
+      return filters.wheels;
+    }
+    return undefined;
+  }, [filters]);
+
+  const hasFilters = filters && Object.keys(filters).length > 0;
+  const hasWheels = wheels && Object.keys(wheels).length > 0;
+
   return (
-    <CardContent className="space-y-4">
-      {/* Mileage Range */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Mileage (km)</label>
-        <DynamicInputRow gap={2} maxPerRow={2}>
-          <Input
-            type="number"
-            placeholder="Min"
-            value={filters.mileageRange.min || ""}
-            onChange={(e) =>
-              onFiltersChange({
-                mileageRange: {
-                  ...filters.mileageRange,
-                  min: e.target.value ? parseFloat(e.target.value) : undefined,
-                },
-              })
-            }
+    <CardContent className="space-y-6">
+      {!hasFilters ? (
+        <p className="text-muted-foreground text-sm">
+          No filters available. Filters will be loaded from the backend.
+        </p>
+      ) : (
+        <>
+          {/* Categories Section */}
+          <CategorySection
+            categories={categories}
+            selectedCategories={selectedCategories}
+            onCategoryToggle={handleCategoryToggle}
           />
-          <Input
-            type="number"
-            placeholder="Max"
-            value={filters.mileageRange.max || ""}
-            onChange={(e) =>
-              onFiltersChange({
-                mileageRange: {
-                  ...filters.mileageRange,
-                  max: e.target.value ? parseFloat(e.target.value) : undefined,
-                },
-              })
-            }
-          />
-        </DynamicInputRow>
-      </div>
 
-      {/* Multi-select filters in a grid */}
-      <DynamicInputRow gap={4}>
-        {/* Brand */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Brand</label>
-          <MultiSelectDropdown
-            options={uniqueBrands}
-            selected={filters.brand || []}
-            onChange={(selected) => onFiltersChange({ brand: selected })}
-            placeholder="Select brands"
-          />
-        </div>
+          {/* Wheels Section */}
+          {hasWheels && (
+            <WheelsSection
+              wheels={wheels}
+              selectedFilters={selectedWheelFilters}
+              onFilterChange={handleWheelFilterChange}
+            />
+          )}
+        </>
+      )}
 
-        {/* Model */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Model</label>
-          <MultiSelectDropdown
-            options={uniqueModels}
-            selected={filters.model || []}
-            onChange={(selected) => onFiltersChange({ model: selected })}
-            placeholder="Select models"
-          />
-        </div>
-
-        {/* Year */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Year</label>
-          <MultiSelectDropdown
-            options={uniqueYears.map(String)}
-            selected={(filters.year || []).map(String)}
-            onChange={(selected) =>
-              onFiltersChange({ year: selected.map(Number) })
-            }
-            placeholder="Select years"
-          />
-        </div>
-
-        {/* Fuel Type */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Fuel Type</label>
-          <MultiSelectDropdown
-            options={["Petrol", "Diesel", "Electric", "Hybrid"] as FuelType[]}
-            selected={filters.fuelType || []}
-            onChange={(selected) => onFiltersChange({ fuelType: selected })}
-            placeholder="Select fuel types"
-          />
-        </div>
-
-        {/* Body Type */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Body Type</label>
-          <MultiSelectDropdown
-            options={
-              [
-                "Sedan",
-                "Hatchback",
-                "SUV",
-                "Coupe",
-                "Estate",
-                "Van",
-              ] as BodyType[]
-            }
-            selected={filters.bodyType || []}
-            onChange={(selected) => onFiltersChange({ bodyType: selected })}
-            placeholder="Select body types"
-          />
-        </div>
-
-        {/* Gearbox */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Gearbox</label>
-          <MultiSelectDropdown
-            options={uniqueGearboxes}
-            selected={filters.gearbox || []}
-            onChange={(selected) => onFiltersChange({ gearbox: selected })}
-            placeholder="Select gearbox types"
-          />
-        </div>
-      </DynamicInputRow>
-
-      {/* Reset Filters */}
       <Button variant="outline" className="w-full" onClick={onReset}>
         Clear All Filters
       </Button>

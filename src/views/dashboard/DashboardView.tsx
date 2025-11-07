@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { selectMetrics, selectParts, selectCars } from "@/store/selectors";
+import { selectMetrics, selectParts } from "@/store/selectors";
 import { MetricsCards } from "./MetricsCards";
 import { TopPerformersSection } from "./TopPerformersSection";
 import { Table } from "../../components/tables/Table";
@@ -12,8 +12,9 @@ import { FilterState } from "@/types";
 export function DashboardView() {
   const metrics = useAppSelector(selectMetrics);
   const parts = useAppSelector(selectParts);
-  const cars = useAppSelector(selectCars);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  // Use empty array for cars since parts are mock data
+  const cars: never[] = [];
 
   const filteredParts = useMemo(
     () => filterParts(parts, filters, cars),
@@ -37,6 +38,7 @@ export function DashboardView() {
         type="parts"
         filters={filters}
         onFiltersChange={setFilters}
+        cars={cars}
       />
 
       <TopPerformersSection />
