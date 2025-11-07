@@ -11,6 +11,8 @@ export const selectReturns = (state: RootState) => state.data.returns;
 export const selectFilters = (state: RootState) => state.filters;
 export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
+export const selectSidebarCollapsed = (state: RootState) =>
+  state.ui.sidebarCollapsed;
 export const selectInitialized = (state: RootState) => state.data.initialized;
 
 // Computed selectors

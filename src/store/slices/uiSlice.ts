@@ -5,11 +5,13 @@ type ViewType = 'dashboard' | 'parts' | 'cars' | 'orders' | 'returns' | 'analyti
 interface UIState {
   selectedParts: string[];
   currentView: ViewType;
+  sidebarCollapsed: boolean;
 }
 
 const initialState: UIState = {
   selectedParts: [],
   currentView: 'dashboard',
+  sidebarCollapsed: false,
 };
 
 const uiSlice = createSlice({
@@ -33,9 +35,12 @@ const uiSlice = createSlice({
     setCurrentView: (state, action: PayloadAction<ViewType>) => {
       state.currentView = action.payload;
     },
+    toggleSidebar: (state) => {
+      state.sidebarCollapsed = !state.sidebarCollapsed;
+    },
   },
 });
 
-export const { togglePartSelection, selectAllParts, clearSelection, setCurrentView } = uiSlice.actions;
+export const { togglePartSelection, selectAllParts, clearSelection, setCurrentView, toggleSidebar } = uiSlice.actions;
 export default uiSlice.reducer;
 
