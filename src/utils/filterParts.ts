@@ -37,6 +37,12 @@ export function filterParts(
   filters: FilterState,
   cars: Car[]
 ): Part[] {
+  // All filtering is now handled by the backend
+  // This function is kept for compatibility but returns parts unchanged
+  return parts;
+  
+  // Disabled client-side filtering - will be handled by backend
+  /*
   let filtered = [...parts];
 
   // Search filter
@@ -52,10 +58,10 @@ export function filterParts(
     );
   }
 
-  // Status filter
-  if (filters.status !== "All") {
-    filtered = filtered.filter((p) => p.status === filters.status);
-  }
+  // Status filter - disabled for now, will be handled by backend
+  // if (filters.status !== "All" && Array.isArray(filters.status) && filters.status.length > 0) {
+  //   filtered = filtered.filter((p) => filters.status.includes(p.status));
+  // }
 
   // Car brand filter
   if (filters.carBrand.length > 0) {
@@ -248,4 +254,5 @@ export function filterParts(
   }
 
   return filtered;
+  */
 }

@@ -13,20 +13,75 @@ export interface CarQueryParams {
 export interface PartsQueryParams {
   per_page?: number;
   page?: number;
+  // Search
+  search?: string;
+  // Status filters
+  status?: number | number[]; // IDs
+  // Car filters
+  car_brand?: number | number[]; // IDs
+  car_model?: number | number[]; // IDs
+  car_year?: number | number[];
+  year_min?: number;
+  year_max?: number;
+  // Part filters
+  category?: number | number[]; // IDs
+  part_type?: string | string[];
+  quality?: number | number[]; // IDs
+  position?: number | number[]; // IDs
+  body_type?: number | number[]; // IDs
+  // Price range
+  price_min?: number;
+  price_max?: number;
+  // Wheel filters - all are IDs now
+  wheel_drive?: number | number[]; // IDs
+  wheel_side?: number | number[]; // IDs
+  wheel_central_diameter?: number | number[]; // IDs
+  wheel_fixing_points?: number | number[]; // IDs
+  wheel_height?: number | number[]; // IDs
+  wheel_spacing?: number | number[]; // IDs
+  wheel_tread_depth?: number | number[]; // IDs
+  wheel_width?: number | number[]; // IDs
+  // Stale inventory
+  stale_months?: number;
+  // Warehouse
+  warehouse?: string | string[];
 }
 
 // Helper function to build query string from parameters
+// Builds query string manually to avoid URL encoding commas in comma-separated values
 const buildQueryString = (params: Record<string, unknown>): string => {
-  const queryParams = new URLSearchParams();
+  const queryParts: string[] = [];
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      queryParams.append(key, String(value));
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+
+    // Encode the key
+    const encodedKey = encodeURIComponent(key);
+
+    // Handle arrays - join with commas for comma-separated values (don't encode commas)
+    if (Array.isArray(value)) {
+      if (value.length > 0) {
+        const validValues = value
+          .filter((item) => item !== undefined && item !== null && item !== "")
+          .map((item) => String(item));
+        if (validValues.length > 0) {
+          // Join with commas and encode each value separately, but keep commas unencoded
+          const commaSeparated = validValues
+            .map((v) => encodeURIComponent(v))
+            .join(",");
+          queryParts.push(`${encodedKey}=${commaSeparated}`);
+        }
+      }
+    } else {
+      // Encode single values normally
+      const encodedValue = encodeURIComponent(String(value));
+      queryParts.push(`${encodedKey}=${encodedValue}`);
     }
   });
 
-  const queryString = queryParams.toString();
-  return queryString ? `?${queryString}` : "";
+  return queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
 };
 
 // API Routes

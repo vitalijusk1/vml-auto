@@ -1,19 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
-import { FilterOption } from "@/utils/filterCars";
 import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
+import { cn } from "@/lib/utils";
 
 interface WheelsSectionProps {
   wheels: {
-    wheels?: FilterOption[];
-    wheel_drives?: FilterOption[];
-    wheels_fixing_points?: FilterOption[];
-    wheels_spacing?: FilterOption[];
-    wheels_central_diameter?: FilterOption[];
-    wheels_width?: FilterOption[];
-    wheels_height?: FilterOption[];
-    wheels_tread_depth?: FilterOption[];
+    wheels?: string[];
+    wheel_drives?: string[];
+    wheels_fixing_points?: string[];
+    wheels_spacing?: string[];
+    wheels_central_diameter?: string[];
+    wheels_width?: string[];
+    wheels_height?: string[];
+    wheels_tread_depth?: string[];
   };
   selectedFilters: Record<string, string[]>;
   onFilterChange: (filterKey: string, selected: string[]) => void;
@@ -24,32 +24,43 @@ export function WheelsSection({
   selectedFilters,
   onFilterChange,
 }: WheelsSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const hasWheels = wheels && Object.keys(wheels).length > 0;
+
+  // Count total selected wheel filters
+  const selectedCount = useMemo(() => {
+    return Object.values(selectedFilters).reduce(
+      (total, selected) => total + (selected?.length || 0),
+      0
+    );
+  }, [selectedFilters]);
+
+  const hasSelection = selectedCount > 0;
 
   if (!hasWheels) {
     return null;
   }
 
-  // Helper to get display name from FilterOption
-  const getOptionName = (option: FilterOption): string => {
-    return option.languages?.en || option.name;
-  };
-
-  // Helper to convert FilterOption[] to string[] for MultiSelectDropdown
-  const getOptions = (options?: FilterOption[]): string[] => {
-    if (!options || !Array.isArray(options)) return [];
-    return options.map(getOptionName);
-  };
-
   return (
     <div className="space-y-3">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors"
+        className={cn(
+          "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
+          hasSelection
+            ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
+            : "hover:bg-accent/50"
+        )}
       >
-        <h3 className="text-sm font-semibold text-foreground">Wheels</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Wheels</h3>
+          {hasSelection && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+              {selectedCount}
+            </span>
+          )}
+        </div>
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (
@@ -67,10 +78,12 @@ export function WheelsSection({
                   Wheel Side
                 </label>
                 <MultiSelectDropdown
-                  options={getOptions(wheels.wheels)}
+                  options={wheels.wheels}
                   selected={selectedFilters.wheels || []}
                   onChange={(selected) => onFilterChange("wheels", selected)}
                   placeholder="Select wheel side"
+                  searchable={true}
+                  searchPlaceholder="Search wheel side..."
                 />
               </div>
             )}
@@ -82,12 +95,14 @@ export function WheelsSection({
                   Wheel Drive
                 </label>
                 <MultiSelectDropdown
-                  options={getOptions(wheels.wheel_drives)}
+                  options={wheels.wheel_drives}
                   selected={selectedFilters.wheel_drives || []}
                   onChange={(selected) =>
                     onFilterChange("wheel_drives", selected)
                   }
                   placeholder="Select wheel drive"
+                  searchable={true}
+                  searchPlaceholder="Search wheel drive..."
                 />
               </div>
             )}
@@ -100,12 +115,14 @@ export function WheelsSection({
                     Fixing Points
                   </label>
                   <MultiSelectDropdown
-                    options={getOptions(wheels.wheels_fixing_points)}
+                    options={wheels.wheels_fixing_points}
                     selected={selectedFilters.wheels_fixing_points || []}
                     onChange={(selected) =>
                       onFilterChange("wheels_fixing_points", selected)
                     }
                     placeholder="Select fixing points"
+                    searchable={true}
+                    searchPlaceholder="Search fixing points..."
                   />
                 </div>
               )}
@@ -117,12 +134,14 @@ export function WheelsSection({
                   Spacing
                 </label>
                 <MultiSelectDropdown
-                  options={getOptions(wheels.wheels_spacing)}
+                  options={wheels.wheels_spacing}
                   selected={selectedFilters.wheels_spacing || []}
                   onChange={(selected) =>
                     onFilterChange("wheels_spacing", selected)
                   }
                   placeholder="Select spacing"
+                  searchable={true}
+                  searchPlaceholder="Search spacing..."
                 />
               </div>
             )}
@@ -135,12 +154,14 @@ export function WheelsSection({
                     Central Diameter
                   </label>
                   <MultiSelectDropdown
-                    options={getOptions(wheels.wheels_central_diameter)}
+                    options={wheels.wheels_central_diameter}
                     selected={selectedFilters.wheels_central_diameter || []}
                     onChange={(selected) =>
                       onFilterChange("wheels_central_diameter", selected)
                     }
                     placeholder="Select central diameter"
+                    searchable={true}
+                    searchPlaceholder="Search central diameter..."
                   />
                 </div>
               )}
@@ -150,12 +171,14 @@ export function WheelsSection({
               <div>
                 <label className="text-sm font-medium mb-2 block">Width</label>
                 <MultiSelectDropdown
-                  options={getOptions(wheels.wheels_width)}
+                  options={wheels.wheels_width}
                   selected={selectedFilters.wheels_width || []}
                   onChange={(selected) =>
                     onFilterChange("wheels_width", selected)
                   }
                   placeholder="Select width"
+                  searchable={true}
+                  searchPlaceholder="Search width..."
                 />
               </div>
             )}
@@ -165,12 +188,14 @@ export function WheelsSection({
               <div>
                 <label className="text-sm font-medium mb-2 block">Height</label>
                 <MultiSelectDropdown
-                  options={getOptions(wheels.wheels_height)}
+                  options={wheels.wheels_height}
                   selected={selectedFilters.wheels_height || []}
                   onChange={(selected) =>
                     onFilterChange("wheels_height", selected)
                   }
                   placeholder="Select height"
+                  searchable={true}
+                  searchPlaceholder="Search height..."
                 />
               </div>
             )}
@@ -183,12 +208,14 @@ export function WheelsSection({
                     Tread Depth
                   </label>
                   <MultiSelectDropdown
-                    options={getOptions(wheels.wheels_tread_depth)}
+                    options={wheels.wheels_tread_depth}
                     selected={selectedFilters.wheels_tread_depth || []}
                     onChange={(selected) =>
                       onFilterChange("wheels_tread_depth", selected)
                     }
                     placeholder="Select tread depth"
+                    searchable={true}
+                    searchPlaceholder="Search tread depth..."
                   />
                 </div>
               )}

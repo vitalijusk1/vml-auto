@@ -73,10 +73,6 @@ export function PartTableColumns({
       ),
     },
     {
-      accessorKey: "partType",
-      header: "Part Type",
-    },
-    {
       accessorKey: "manufacturerCode",
       header: "Manufacturer Code",
       cell: ({ row }) => row.original.manufacturerCode || "N/A",
