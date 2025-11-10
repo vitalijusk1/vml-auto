@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CategoryTree } from "../CategoryTree/CategoryTree";
 import { Category } from "@/utils/filterCars";
+import { cn } from "@/lib/utils";
 
 interface CategorySectionProps {
   categories: Category[];
@@ -15,7 +16,7 @@ export function CategorySection({
   selectedCategories,
   onCategoryToggle,
 }: CategorySectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const hasCategories = categories.length > 0;
@@ -24,13 +25,27 @@ export function CategorySection({
     return null;
   }
 
+  const hasSelection = selectedCategories.length > 0;
+
   return (
     <div className="space-y-3">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent/50 transition-colors"
+        className={cn(
+          "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
+          hasSelection
+            ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
+            : "hover:bg-accent/50"
+        )}
       >
-        <h3 className="text-sm font-semibold text-foreground">Categories</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Categories</h3>
+          {hasSelection && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+              {selectedCategories.length}
+            </span>
+          )}
+        </div>
         {isExpanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         ) : (

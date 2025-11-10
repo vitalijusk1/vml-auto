@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Button } from "./button";
-import { ChevronDown } from "lucide-react";
+import { Input } from "./input";
+import { ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MultiSelectDropdownProps<T extends string> {
@@ -9,6 +10,8 @@ interface MultiSelectDropdownProps<T extends string> {
   onChange: (selected: T[]) => void;
   placeholder?: string;
   className?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export function MultiSelectDropdown<T extends string>({
@@ -17,9 +20,13 @@ export function MultiSelectDropdown<T extends string>({
   onChange,
   placeholder = "Select options...",
   className,
+  searchable = false,
+  searchPlaceholder = "Search...",
 }: MultiSelectDropdownProps<T>) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,12 +48,58 @@ export function MultiSelectDropdown<T extends string>({
   }, [isOpen]);
 
   const toggleOption = (option: T) => {
-    if (selected.includes(option)) {
-      onChange(selected.filter((item) => item !== option));
+    // Normalize strings for comparison (trim whitespace, handle numbers)
+    const normalize = (val: T | string): string => {
+      const str = String(val).trim();
+      // Try to normalize numbers (e.g., "10.0" -> "10")
+      const num = Number(str);
+      if (!isNaN(num) && isFinite(num)) {
+        return String(num);
+      }
+      return str;
+    };
+
+    const normalizedOption = normalize(option);
+    const isSelected = selected.some(
+      (item) => normalize(item) === normalizedOption
+    );
+
+    if (isSelected) {
+      // Remove all instances of this option (in case of duplicates)
+      onChange(selected.filter((item) => normalize(item) !== normalizedOption));
     } else {
-      onChange([...selected, option]);
+      // Add the option only if it's not already selected
+      if (!selected.some((item) => normalize(item) === normalizedOption)) {
+        onChange([...selected, option]);
+      }
     }
   };
+
+  // Filter options based on search query
+  const filteredOptions = React.useMemo(() => {
+    if (!searchable || !searchQuery.trim()) {
+      return options;
+    }
+    const query = searchQuery.toLowerCase();
+    return options.filter((option) => option.toLowerCase().includes(query));
+  }, [options, searchQuery, searchable]);
+
+  // Focus search input when dropdown opens
+  React.useEffect(() => {
+    if (isOpen && searchable && searchInputRef.current) {
+      // Small delay to ensure the dropdown is rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
+    }
+  }, [isOpen, searchable]);
+
+  // Clear search when dropdown closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+    }
+  }, [isOpen]);
 
   const displayText =
     selected.length === 0
@@ -55,33 +108,125 @@ export function MultiSelectDropdown<T extends string>({
       ? selected[0]
       : `${selected.length} selected`;
 
+  const hasSelection = selected.length > 0;
+
   return (
     <div className={cn("relative w-full", className)} ref={dropdownRef}>
       <Button
         type="button"
-        variant="outline"
-        className="w-full justify-between"
+        variant={hasSelection ? "default" : "outline"}
+        className={cn(
+          "w-full justify-between",
+          hasSelection &&
+            "bg-primary text-primary-foreground hover:bg-primary/90"
+        )}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{displayText}</span>
-        <ChevronDown
-          className={cn(
-            "ml-2 h-4 w-4 shrink-0 transition-transform",
-            isOpen && "rotate-180"
+        <div className="flex items-center gap-1">
+          {hasSelection && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-foreground/20 text-xs font-medium">
+              {selected.length}
+            </span>
           )}
-        />
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform",
+              isOpen && "rotate-180"
+            )}
+          />
+        </div>
       </Button>
 
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-background shadow-lg">
+          {searchable && (
+            <div className="sticky top-0 z-10 border-b bg-background p-2">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder={searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 pr-8 h-8"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      // Prevent closing dropdown when typing
+                      e.stopPropagation();
+                    }}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {hasSelection && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 shrink-0 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChange([]);
+                    }}
+                    title="Clear selection"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          {!searchable && hasSelection && (
+            <div className="border-b bg-background p-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full h-8 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange([]);
+                }}
+                title="Clear selection"
+              >
+                Clear
+              </Button>
+            </div>
+          )}
           <div className="max-h-60 overflow-auto p-1">
-            {options.length === 0 ? (
+            {filteredOptions.length === 0 ? (
               <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                No options available
+                {searchQuery ? "No results found" : "No options available"}
               </div>
             ) : (
-              options.map((option) => {
-                const isSelected = selected.includes(option);
+              filteredOptions.map((option) => {
+                // Normalize strings for comparison (trim whitespace, handle numbers)
+                const normalize = (val: T | string): string => {
+                  const str = String(val).trim();
+                  // Try to normalize numbers (e.g., "10.0" -> "10")
+                  const num = Number(str);
+                  if (!isNaN(num) && isFinite(num)) {
+                    return String(num);
+                  }
+                  return str;
+                };
+
+                const normalizedOption = normalize(option);
+                const isSelected = selected.some(
+                  (item) => normalize(item) === normalizedOption
+                );
+
                 return (
                   <label
                     key={option}
@@ -104,4 +249,3 @@ export function MultiSelectDropdown<T extends string>({
     </div>
   );
 }
-

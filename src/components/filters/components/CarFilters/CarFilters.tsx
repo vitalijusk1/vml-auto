@@ -1,10 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CarFilters as CarFiltersType } from "@/utils/filterCars";
 import { Car } from "@/types";
 import { CategorySection } from "../CategorySection/CategorySection";
 import { WheelsSection } from "../WheelsSection/WheelsSection";
+import { useBackendFilters } from "@/hooks/useBackendFilters";
+import { useAppSelector } from "@/store/hooks";
+import { selectBackendFilters } from "@/store/selectors";
 
 interface CarFiltersProps {
   filters: CarFiltersType;
@@ -14,11 +17,16 @@ interface CarFiltersProps {
 }
 
 export const CarFilters = ({
-  filters,
+  filters: _filters,
   onFiltersChange: _onFiltersChange, // TODO: Use when sending selected categories to backend
   onReset,
   cars: _cars = [],
 }: CarFiltersProps) => {
+  const backendFilters = useAppSelector(selectBackendFilters);
+
+  // Extract all filter options from backend using shared hook
+  const { categories, wheelsFilters } = useBackendFilters();
+
   // Track selected category IDs
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
 
@@ -46,24 +54,8 @@ export const CarFilters = ({
     }));
   };
 
-  // Extract categories from filters
-  const categories = useMemo(() => {
-    if (filters?.categories && Array.isArray(filters.categories)) {
-      return filters.categories;
-    }
-    return [];
-  }, [filters]);
-
-  // Extract wheels from filters
-  const wheels = useMemo(() => {
-    if (filters?.wheels && typeof filters.wheels === "object") {
-      return filters.wheels;
-    }
-    return undefined;
-  }, [filters]);
-
-  const hasFilters = filters && Object.keys(filters).length > 0;
-  const hasWheels = wheels && Object.keys(wheels).length > 0;
+  const hasFilters = backendFilters && Object.keys(backendFilters).length > 0;
+  const hasWheels = wheelsFilters && Object.keys(wheelsFilters).length > 0;
 
   return (
     <CardContent className="space-y-6">
@@ -81,9 +73,9 @@ export const CarFilters = ({
           />
 
           {/* Wheels Section */}
-          {hasWheels && (
+          {hasWheels && wheelsFilters && (
             <WheelsSection
-              wheels={wheels}
+              wheels={wheelsFilters}
               selectedFilters={selectedWheelFilters}
               onFilterChange={handleWheelFilterChange}
             />

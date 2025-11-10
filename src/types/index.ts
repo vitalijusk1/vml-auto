@@ -171,7 +171,7 @@ export interface DashboardMetrics {
 
 export interface FilterState {
   search: string;
-  status: PartStatus | "All";
+  status: PartStatus[] | "All";
   dateRange: {
     from?: Date;
     to?: Date;

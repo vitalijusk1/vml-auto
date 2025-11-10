@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectCarsPagination } from "@/store/selectors";
+import { selectCarsPagination, selectBackendFilters } from "@/store/selectors";
 import { setCarsPagination } from "@/store/slices/uiSlice";
+import { setBackendFilters } from "@/store/slices/dataSlice";
 import { getCars, getFilters } from "@/api/cars";
 import { Car } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
@@ -11,6 +12,7 @@ import { Table } from "../../components/tables/Table";
 export function CarsView() {
   const dispatch = useAppDispatch();
   const savedPagination = useAppSelector(selectCarsPagination);
+  const backendFilters = useAppSelector(selectBackendFilters);
   const [cars, setCars] = useState<Car[]>([]);
   const [filters, setFilters] = useState<CarFilters | null>(null);
   const [pagination, setPagination] = useState(
@@ -22,16 +24,33 @@ export function CarsView() {
     }
   );
 
-  // Fetch cars and filters when entering this view or when filters/pagination change
+  // Fetch filters on mount if not already in Redux
+  useEffect(() => {
+    const fetchFilters = async () => {
+      if (backendFilters === null) {
+        try {
+          const filtersData = await getFilters();
+          dispatch(setBackendFilters(filtersData));
+        } catch (error) {
+          console.error("Error fetching filters:", error);
+        }
+      }
+    };
+
+    fetchFilters();
+  }, [dispatch, backendFilters]);
+
+  // Set filters from Redux when available
+  useEffect(() => {
+    if (backendFilters !== null) {
+      setFilters(backendFilters);
+    }
+  }, [backendFilters]);
+
+  // Fetch cars when pagination changes
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch filters from backend
-        if (filters === null) {
-          const filtersData = await getFilters();
-          setFilters(filtersData);
-        }
-
         // Fetch cars
         const response = await getCars({
           page: pagination.current_page,
@@ -49,7 +68,7 @@ export function CarsView() {
     };
 
     fetchData();
-  }, [dispatch, pagination.current_page, pagination.per_page, filters]);
+  }, [dispatch, pagination.current_page, pagination.per_page]);
 
   return (
     <div className="space-y-6">

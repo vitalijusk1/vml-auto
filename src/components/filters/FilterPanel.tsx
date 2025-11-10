@@ -10,6 +10,8 @@ import { LayoutType } from "./type";
 import { CarFilters as CarFiltersComponent } from "./components/CarFilters/CarFilters";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
+import { useAppDispatch } from "@/store/hooks";
+import { resetFilters as resetFiltersAction } from "@/store/slices/filtersSlice";
 
 const defaultAnalyticsFilters: AnalyticsFilters = {
   dateRange: {},
@@ -28,7 +30,6 @@ interface FilterPanelProps<
   filters: T;
   onFiltersChange: (filters: T) => void;
   cars?: Car[];
-  backendFilters?: CarFilters | null;
 }
 
 const getFilter = (
@@ -38,8 +39,7 @@ const getFilter = (
     updates: Partial<FilterState | CarFilters | AnalyticsFilters>
   ) => void,
   onReset: () => void,
-  cars: Car[] = [],
-  backendFilters?: CarFilters | null
+  cars: Car[] = []
 ) => {
   switch (type) {
     case LayoutType.CAR:
@@ -62,7 +62,6 @@ const getFilter = (
           }
           onReset={onReset}
           cars={cars}
-          backendFilters={backendFilters}
         />
       );
     case LayoutType.ANALYTICS:
@@ -83,13 +82,8 @@ const getFilter = (
 
 export function FilterPanel<
   T extends FilterState | CarFilters | AnalyticsFilters
->({
-  type,
-  filters,
-  onFiltersChange,
-  cars = [],
-  backendFilters,
-}: FilterPanelProps<T>) {
+>({ type, filters, onFiltersChange, cars = [] }: FilterPanelProps<T>) {
+  const dispatch = useAppDispatch();
   const [isOpen, setIsOpen] = useState(true);
 
   const updateFilters = (
@@ -105,6 +99,8 @@ export function FilterPanel<
     } else if (type === LayoutType.ANALYTICS) {
       onFiltersChange(defaultAnalyticsFilters as T);
     } else {
+      // For parts filters, dispatch reset action to Redux
+      dispatch(resetFiltersAction());
       onFiltersChange(defaultFilters as T);
     }
   };
@@ -134,15 +130,7 @@ export function FilterPanel<
           </Button>
         </div>
       </CardHeader>
-      {isOpen &&
-        getFilter(
-          type,
-          filters,
-          updateFilters,
-          resetFilters,
-          cars,
-          backendFilters
-        )}
+      {isOpen && getFilter(type, filters, updateFilters, resetFilters, cars)}
     </Card>
   );
 }

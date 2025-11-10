@@ -7,6 +7,7 @@ import { filterParts } from "../utils/filterParts";
 export const selectParts = (state: RootState) => state.data.parts;
 export const selectOrders = (state: RootState) => state.data.orders;
 export const selectReturns = (state: RootState) => state.data.returns;
+export const selectBackendFilters = (state: RootState) => state.data.backendFilters;
 export const selectFilters = (state: RootState) => state.filters;
 export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
