@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import {
   FilterState,
   PartStatus,
@@ -231,31 +231,51 @@ export const PartFilters = ({
             Metų pasirinkimas
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="number"
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Nuo" },
+                ...Array.from(
+                  { length: new Date().getFullYear() - 1959 },
+                  (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return { value: year.toString(), label: year.toString() };
+                  }
+                ),
+              ]}
+              value={filters.yearRange?.min?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  yearRange: {
+                    ...(filters.yearRange || {}),
+                    min: value ? parseInt(value) : undefined,
+                  },
+                })
+              }
               placeholder="Nuo"
-              value={filters.yearRange?.min || ""}
-              onChange={(e) =>
-                onFiltersChange({
-                  yearRange: {
-                    ...(filters.yearRange || {}),
-                    min: e.target.value ? parseInt(e.target.value) : undefined,
-                  },
-                })
-              }
+              className="[&>button]:h-10"
             />
-            <Input
-              type="number"
-              placeholder="Iki"
-              value={filters.yearRange?.max || ""}
-              onChange={(e) =>
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Iki" },
+                ...Array.from(
+                  { length: new Date().getFullYear() - 1959 },
+                  (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return { value: year.toString(), label: year.toString() };
+                  }
+                ),
+              ]}
+              value={filters.yearRange?.max?.toString() || ""}
+              onChange={(value: string) =>
                 onFiltersChange({
                   yearRange: {
                     ...(filters.yearRange || {}),
-                    max: e.target.value ? parseInt(e.target.value) : undefined,
+                    max: value ? parseInt(value) : undefined,
                   },
                 })
               }
+              placeholder="Iki"
+              className="[&>button]:h-10"
             />
           </div>
         </div>
@@ -266,35 +286,63 @@ export const PartFilters = ({
             Kainos pasirinkimas
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="number"
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Nuo" },
+                { value: "0", label: "0" },
+                { value: "10", label: "10" },
+                { value: "25", label: "25" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" },
+                { value: "250", label: "250" },
+                { value: "500", label: "500" },
+                { value: "1000", label: "1000" },
+                { value: "2500", label: "2500" },
+                { value: "5000", label: "5000" },
+                { value: "10000", label: "10000" },
+                { value: "25000", label: "25000" },
+                { value: "50000", label: "50000" },
+              ]}
+              value={filters.priceRange?.min?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  priceRange: {
+                    ...(filters.priceRange || {}),
+                    min: value ? parseFloat(value) : undefined,
+                  },
+                })
+              }
               placeholder="Nuo"
-              value={filters.priceRange?.min || ""}
-              onChange={(e) =>
-                onFiltersChange({
-                  priceRange: {
-                    ...(filters.priceRange || {}),
-                    min: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
-                  },
-                })
-              }
+              className="[&>button]:h-10"
             />
-            <Input
-              type="number"
-              placeholder="Iki"
-              value={filters.priceRange?.max || ""}
-              onChange={(e) =>
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Iki" },
+                { value: "10", label: "10" },
+                { value: "25", label: "25" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" },
+                { value: "250", label: "250" },
+                { value: "500", label: "500" },
+                { value: "1000", label: "1000" },
+                { value: "2500", label: "2500" },
+                { value: "5000", label: "5000" },
+                { value: "10000", label: "10000" },
+                { value: "25000", label: "25000" },
+                { value: "50000", label: "50000" },
+                { value: "100000", label: "100000+" },
+              ]}
+              value={filters.priceRange?.max?.toString() || ""}
+              onChange={(value: string) =>
                 onFiltersChange({
                   priceRange: {
                     ...(filters.priceRange || {}),
-                    max: e.target.value
-                      ? parseFloat(e.target.value)
-                      : undefined,
+                    max: value ? parseFloat(value) : undefined,
                   },
                 })
               }
+              placeholder="Iki"
+              className="[&>button]:h-10"
             />
           </div>
         </div>
