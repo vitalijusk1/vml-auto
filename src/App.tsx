@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { MainLayout } from "./layout/MainLayout";
 import { PartsView } from "./views/parts/PartsView";
-import { CarsView } from "./views/cars/CarsView";
 import { OrdersView } from "./views/orders/OrdersView";
 import { ReturnsView } from "./views/returns/ReturnsView";
 import { AnalyticsView } from "./views/analytics/AnalyticsView";
@@ -38,8 +37,6 @@ function App() {
         return <DashboardView />;
       case "parts":
         return <PartsView />;
-      case "cars":
-        return <CarsView />;
       case "orders":
         return <OrdersView />;
       case "returns":

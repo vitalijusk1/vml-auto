@@ -44,29 +44,33 @@ export function WheelsSection({
 
   return (
     <div className="space-y-3">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={cn(
-          "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
-          hasSelection
-            ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
-            : "hover:bg-accent/50"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Wheels</h3>
-          {hasSelection && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
-              {selectedCount}
-            </span>
+      <div>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
+            hasSelection
+              ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
+              : "hover:bg-accent/50"
           )}
-        </div>
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </button>
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">Wheels</h3>
+            {hasSelection && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                {selectedCount}
+              </span>
+            )}
+          </div>
+          {isExpanded ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
+        {/* Border line with 24px gap */}
+        <div className="mt-6 border-t border-border" />
+      </div>
 
       {isExpanded && (
         <div className="pl-2">

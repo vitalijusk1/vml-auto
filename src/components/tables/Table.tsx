@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { TableToolbar } from "@/components/ui/TableToolbar";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Pagination } from "@/components/ui/Pagination";
 import { LayoutType } from "../filters/type";
 import { CarTableColumns } from "./components/CarTableColumns";
 import { PartTableColumns } from "./components/PartTableColumns";
@@ -146,160 +146,149 @@ export function Table<T extends Car | Part>({
         </div>
       )}
 
-      <TableToolbar
-        showing={
-          isServerSide && serverPagination
-            ? Math.min(
-                (serverPagination.current_page - 1) *
-                  serverPagination.per_page +
-                  data.length,
-                serverPagination.total
-              )
-            : table.getRowModel().rows.length
-        }
-        total={
-          isServerSide && serverPagination
-            ? serverPagination.total
-            : data.length
-        }
-        itemName={itemName}
-        pagination={pagination}
-        onPageSizeChange={(pageSize: number) => {
-          if (isServerSide && onPageSizeChange) {
-            onPageSizeChange(pageSize);
-          } else {
-            setPagination({
-              ...pagination,
-              pageSize,
-              pageIndex: 0,
-            });
-          }
-        }}
-        filterValue={
-          (table
-            .getColumn(type === LayoutType.CAR ? "brand" : "name")
-            ?.getFilterValue() as string) ?? ""
-        }
-        onFilterChange={(value: string) =>
-          table
-            .getColumn(type === LayoutType.CAR ? "brand" : "name")
-            ?.setFilterValue(value)
-        }
-        filterPlaceholder="Filter table..."
-      />
+      {/* Table Wrapper with Border */}
+      <div className="rounded-md border border-border bg-white overflow-hidden px-3">
+        {/* Table Toolbar */}
+        <div className="py-3">
+          <TableToolbar
+            showing={
+              isServerSide && serverPagination
+                ? Math.min(
+                    (serverPagination.current_page - 1) *
+                      serverPagination.per_page +
+                      data.length,
+                    serverPagination.total
+                  )
+                : table.getRowModel().rows.length
+            }
+            total={
+              isServerSide && serverPagination
+                ? serverPagination.total
+                : data.length
+            }
+            itemName={itemName}
+            pagination={pagination}
+            onPageSizeChange={(pageSize: number) => {
+              if (isServerSide && onPageSizeChange) {
+                onPageSizeChange(pageSize);
+              } else {
+                setPagination({
+                  ...pagination,
+                  pageSize,
+                  pageIndex: 0,
+                });
+              }
+            }}
+            filterValue={
+              (table
+                .getColumn(type === LayoutType.CAR ? "brand" : "name")
+                ?.getFilterValue() as string) ?? ""
+            }
+            onFilterChange={(value: string) =>
+              table
+                .getColumn(type === LayoutType.CAR ? "brand" : "name")
+                ?.setFilterValue(value)
+            }
+            filterPlaceholder="Filter table..."
+          />
+        </div>
 
-      <div className="rounded-md border">
-        <BaseTable>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => handleItemClick(row.original)}
-                  className="cursor-pointer"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
+        {/* Table */}
+        <div className="overflow-x-auto my-3">
+          <div className="rounded-md border border-border">
+            <BaseTable>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </BaseTable>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {isServerSide && serverPagination ? (
-            <>
-              Showing{" "}
-              {(serverPagination.current_page - 1) * serverPagination.per_page +
-                1}{" "}
-              to{" "}
-              {Math.min(
-                serverPagination.current_page * serverPagination.per_page,
-                serverPagination.total
-              )}{" "}
-              of {serverPagination.total} {itemName} (Page{" "}
-              {serverPagination.current_page} of {serverPagination.last_page})
-            </>
-          ) : (
-            <>
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount()}
-            </>
-          )}
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    onClick={() => handleItemClick(row.original)}
+                    className="cursor-pointer"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </BaseTable>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (isServerSide && serverPagination && onPageChange) {
-                onPageChange(serverPagination.current_page - 1);
-              } else {
-                table.previousPage();
-              }
-            }}
-            disabled={
-              isServerSide && serverPagination
-                ? serverPagination.current_page <= 1
-                : !table.getCanPreviousPage()
-            }
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (isServerSide && serverPagination && onPageChange) {
-                onPageChange(serverPagination.current_page + 1);
-              } else {
-                table.nextPage();
-              }
-            }}
-            disabled={
-              isServerSide && serverPagination
-                ? serverPagination.current_page >= serverPagination.last_page
-                : !table.getCanNextPage()
-            }
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+
+        {/* Pagination Section */}
+        <div className="flex items-center justify-between py-3">
+          <div className="text-sm text-muted-foreground">
+            {isServerSide && serverPagination ? (
+              <>
+                Showing{" "}
+                {(serverPagination.current_page - 1) * serverPagination.per_page +
+                  1}{" "}
+                to{" "}
+                {Math.min(
+                  serverPagination.current_page * serverPagination.per_page,
+                  serverPagination.total
+                )}{" "}
+                of {serverPagination.total} {itemName} (Page{" "}
+                {serverPagination.current_page} of {serverPagination.last_page})
+              </>
+            ) : (
+              <>
+                Page {table.getState().pagination.pageIndex + 1} of{" "}
+                {table.getPageCount()}
+              </>
+            )}
+          </div>
+          {isServerSide && serverPagination ? (
+            <Pagination
+              currentPage={serverPagination.current_page}
+              totalPages={serverPagination.last_page}
+              onPageChange={(page) => {
+                if (onPageChange) {
+                  onPageChange(page);
+                }
+              }}
+            />
+          ) : (
+            <Pagination
+              currentPage={table.getState().pagination.pageIndex + 1}
+              totalPages={table.getPageCount()}
+              onPageChange={(page) => {
+                table.setPageIndex(page - 1);
+              }}
+            />
+          )}
         </div>
       </div>
 

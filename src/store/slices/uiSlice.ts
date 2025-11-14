@@ -3,17 +3,9 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 type ViewType =
   | "dashboard"
   | "parts"
-  | "cars"
   | "orders"
   | "returns"
   | "analytics";
-
-export interface CarsPagination {
-  current_page: number;
-  per_page: number;
-  total: number;
-  last_page: number;
-}
 
 export interface PartsPagination {
   current_page: number;
@@ -26,7 +18,6 @@ interface UIState {
   selectedParts: string[];
   currentView: ViewType;
   sidebarCollapsed: boolean;
-  carsPagination: CarsPagination | null;
   partsPagination: PartsPagination | null;
 }
 
@@ -34,7 +25,6 @@ const initialState: UIState = {
   selectedParts: [],
   currentView: "dashboard",
   sidebarCollapsed: false,
-  carsPagination: null,
   partsPagination: null,
 };
 
@@ -62,9 +52,6 @@ const uiSlice = createSlice({
     toggleSidebar: (state) => {
       state.sidebarCollapsed = !state.sidebarCollapsed;
     },
-    setCarsPagination: (state, action: PayloadAction<CarsPagination>) => {
-      state.carsPagination = action.payload;
-    },
     setPartsPagination: (state, action: PayloadAction<PartsPagination>) => {
       state.partsPagination = action.payload;
     },
@@ -77,7 +64,6 @@ export const {
   clearSelection,
   setCurrentView,
   toggleSidebar,
-  setCarsPagination,
   setPartsPagination,
 } = uiSlice.actions;
 export default uiSlice.reducer;

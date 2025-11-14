@@ -3,8 +3,6 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import { Category } from "@/utils/filterCars";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 
 interface CategoryTreeProps {
   categories: Category[];

@@ -185,12 +185,10 @@ export const getCars = async (
   const response = await authInstance.get<ApiCarsResponse>(
     apiEndpoints.getCars(queryParams)
   );
-  console.log("Cars API Response:", response.data);
   const result = {
     cars: response.data.data.map(transformApiCar),
     pagination: response.data.pagination,
   };
-  console.log("Transformed Cars:", result);
   return result;
 };
 
@@ -208,7 +206,6 @@ export const getFilters = async (): Promise<CarFilters> => {
   const response = await authInstance.get<CarFilters>(
     apiEndpoints.getFilters()
   );
-  console.log("Filters API Response:", response.data);
   return response.data;
 };
 

@@ -22,7 +22,6 @@ authInstance.interceptors.request.use(
     const token = "1|FJrJudplslsPqrIBCWTpRNDCMv5TcSLhM27Cem6pfcc28081";
 
     if (token && config.headers) {
-      console.log(import.meta.env.VITE_API_BASE_URL);
       config.headers.Authorization = `Bearer ${token}`;
     }
 

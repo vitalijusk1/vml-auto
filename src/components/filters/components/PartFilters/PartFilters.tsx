@@ -240,19 +240,7 @@ export const PartFilters = ({
   // Log available filters for debugging
   useMemo(() => {
     if (backendFilters) {
-      console.log("=== Available Backend Filters ===");
-      console.log("Filter keys:", Object.keys(backendFilters));
-      console.log("Brands:", brands);
-      console.log("Models:", models);
-      console.log("Body Types:", bodyTypes);
-      console.log("Qualities:", qualities);
-      console.log("Positions:", positions);
-      console.log("Categories:", categories.length);
-      console.log(
-        "Wheels:",
-        wheelsFilters ? Object.keys(wheelsFilters) : "None"
-      );
-      console.log("=================================");
+      // Debug logging removed
     }
   }, [
     backendFilters,
@@ -388,31 +376,35 @@ export const PartFilters = ({
 
       {/* Basic Filters Section */}
       <div className="space-y-3">
-        <button
-          onClick={() => setIsBasicFiltersExpanded(!isBasicFiltersExpanded)}
-          className={cn(
-            "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
-            hasActiveBasicFilters
-              ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
-              : "hover:bg-accent/50"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
-              Basic Filters
-            </h3>
-            {hasActiveBasicFilters && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                {activeBasicFiltersCount}
-              </span>
+        <div>
+          <button
+            onClick={() => setIsBasicFiltersExpanded(!isBasicFiltersExpanded)}
+            className={cn(
+              "flex w-full items-center justify-between rounded-md px-2 py-1.5 transition-colors",
+              hasActiveBasicFilters
+                ? "bg-primary/10 hover:bg-primary/20 border border-primary/30"
+                : "hover:bg-accent/50"
             )}
-          </div>
-          {isBasicFiltersExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
+          >
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                Basic Filters
+              </h3>
+              {hasActiveBasicFilters && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                  {activeBasicFiltersCount}
+                </span>
+              )}
+            </div>
+            {isBasicFiltersExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+          {/* Border line with 24px gap */}
+          <div className="mt-6 border-t border-border" />
+        </div>
 
         {isBasicFiltersExpanded && (
           <div className="pl-2 space-y-4">
