@@ -93,9 +93,9 @@ export function PartsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Parts Inventory</h1>
+        <h1 className="text-3xl font-bold mb-2">Sandėlys</h1>
         <p className="text-muted-foreground">
-          Manage and filter your parts inventory
+          Valdykite ir filtruokite sandėlio inventorių
         </p>
       </div>
 

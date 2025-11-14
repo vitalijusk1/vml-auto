@@ -48,7 +48,8 @@ export function SingleSelectDropdown({
       <Button
         type="button"
         variant="outline"
-        className="w-full justify-between"
+        size="sm"
+        className="h-8 w-full justify-between"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="truncate">{displayText}</span>

@@ -1,7 +1,6 @@
 import { PaginationState } from "@tanstack/react-table";
 import { PageSizeSelector } from "./PageSizeSelector";
 import { TableFilter } from "./TableFilter";
-import { DynamicInputRow } from "./DynamicInputRow";
 
 interface TableToolbarProps {
   // Results info
@@ -26,7 +25,7 @@ interface TableToolbarProps {
 export function TableToolbar({
   showing,
   total,
-  itemName = "items",
+  itemName = "detalių",
   pagination,
   onPageSizeChange,
   pageSizeOptions,
@@ -36,11 +35,11 @@ export function TableToolbar({
   children,
 }: TableToolbarProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      <div className="text-sm text-muted-foreground">
-        Showing {showing} of {total} {itemName}
+    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between">
+      <div className="text-sm text-muted-foreground sm:mr-3">
+        Rodoma {showing} iš {total} {itemName}
       </div>
-      <DynamicInputRow gap={2} maxPerRow={4}>
+      <div className="flex items-center gap-3">
         <PageSizeSelector
           pagination={pagination}
           onPageSizeChange={onPageSizeChange}
@@ -52,7 +51,7 @@ export function TableToolbar({
           placeholder={filterPlaceholder}
         />
         {children}
-      </DynamicInputRow>
+      </div>
     </div>
   );
 }

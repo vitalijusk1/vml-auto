@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import { Category } from "@/utils/filterCars";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getLocalizedText } from "@/utils/i18n";
 
 interface CategoryTreeProps {
   categories: Category[];
@@ -22,8 +23,7 @@ function filterCategories(
   const query = searchQuery.toLowerCase();
   return categories
     .map((category) => {
-      const displayName =
-        category.languages?.en || category.languages?.name || category.name;
+      const displayName = getLocalizedText(category.languages, category.name);
       const matchesSearch = displayName.toLowerCase().includes(query);
 
       // Filter subcategories recursively
@@ -56,7 +56,7 @@ export function CategoryTree({
   }, [categories, searchQuery]);
 
   return (
-    <div className={cn("space-y-0.5", level > 0 && "ml-4 mt-1 border-l border-border pl-3")}>
+    <div className="space-y-0">
       {filteredCategories.map((category) => (
         <CategoryItem
           key={category.id}
@@ -87,37 +87,18 @@ function CategoryItem({
   const hasChildren = category.subcategories && category.subcategories.length > 0;
   const isSelected = selectedCategories.includes(category.id);
 
-  // Get display name (prefer English, fallback to name)
-  const displayName =
-    category.languages?.en || category.languages?.name || category.name;
+  // Get display name (prefer Lithuanian, fallback to English, then name)
+  const displayName = getLocalizedText(category.languages, category.name);
 
   return (
-    <div className="space-y-0.5">
+    <div>
       <div
         className={cn(
-          "flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-accent/50 transition-colors group",
-          isSelected && "bg-accent",
-          level === 0 && "font-medium text-foreground",
-          level === 1 && "text-sm text-foreground/90",
-          level === 2 && "text-sm text-muted-foreground"
+          "flex items-center gap-2 py-1.5 px-2 hover:bg-accent/50 transition-colors",
+          isSelected && "bg-accent"
         )}
+        style={{ paddingLeft: level > 0 ? `${8 + level * 16}px` : "8px" }}
       >
-        {hasChildren ? (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="p-0.5 hover:bg-accent rounded transition-colors flex-shrink-0"
-            aria-label={isExpanded ? "Collapse" : "Expand"}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-            )}
-          </button>
-        ) : (
-          <div className="w-5 flex-shrink-0" /> // Spacer for alignment
-        )}
-
         <Checkbox
           id={`category-${category.id}`}
           checked={isSelected}
@@ -126,22 +107,42 @@ function CategoryItem({
           onClick={(e) => e.stopPropagation()}
         />
 
-        <label
-          htmlFor={`category-${category.id}`}
-          className="flex-1 cursor-pointer select-none py-0.5"
+        <div
+          className={cn(
+            "flex-1 cursor-pointer select-none text-sm",
+            hasChildren ? "text-foreground" : "text-muted-foreground"
+          )}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            // If has children, toggle expansion; otherwise toggle selection
             if (hasChildren) {
               setIsExpanded(!isExpanded);
             } else {
+              // If no children, clicking text selects the category
               onCategoryToggle(category.id);
             }
           }}
         >
           {displayName}
-        </label>
+        </div>
+
+        {hasChildren && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="p-0.5 hover:bg-accent rounded transition-colors flex-shrink-0 ml-auto"
+            aria-label={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        )}
       </div>
 
       {hasChildren && isExpanded && (

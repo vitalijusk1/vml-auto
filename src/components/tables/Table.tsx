@@ -12,6 +12,8 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Car, Part } from "@/types";
+import { useAppSelector } from "@/store/hooks";
+import { selectBackendFilters } from "@/store/selectors";
 import {
   Table as BaseTable,
   TableBody,
@@ -90,6 +92,8 @@ export function Table<T extends Car | Part>({
     setSelectedItem(null);
   };
 
+  const backendFilters = useAppSelector(selectBackendFilters);
+
   const getColumns = (): ColumnDef<T>[] => {
     switch (type) {
       case LayoutType.CAR:
@@ -99,13 +103,14 @@ export function Table<T extends Car | Part>({
       case LayoutType.PARTS:
         return PartTableColumns({
           onItemClick: handleItemClick as (part: Part) => void,
+          backendFilters,
         }) as ColumnDef<T>[];
       default:
         return [];
     }
   };
 
-  const columns = useMemo(() => getColumns(), [type, handleItemClick]);
+  const columns = useMemo(() => getColumns(), [type, handleItemClick, backendFilters]);
 
   const table = useReactTable({
     data,
@@ -136,8 +141,6 @@ export function Table<T extends Car | Part>({
     },
   });
 
-  const itemName = type === LayoutType.CAR ? "cars" : "parts";
-
   return (
     <div className="space-y-4">
       {title && (
@@ -166,7 +169,6 @@ export function Table<T extends Car | Part>({
                 ? serverPagination.total
                 : data.length
             }
-            itemName={itemName}
             pagination={pagination}
             onPageSizeChange={(pageSize: number) => {
               if (isServerSide && onPageSizeChange) {
@@ -189,7 +191,7 @@ export function Table<T extends Car | Part>({
                 .getColumn(type === LayoutType.CAR ? "brand" : "name")
                 ?.setFilterValue(value)
             }
-            filterPlaceholder="Filter table..."
+            filterPlaceholder="Filtruoti lentele"
           />
         </div>
 
@@ -238,7 +240,7 @@ export function Table<T extends Car | Part>({
                     colSpan={columns.length}
                     className="h-24 text-center"
                   >
-                    No results.
+                    Rezultatų nėra.
                   </TableCell>
                 </TableRow>
               )}
@@ -248,28 +250,7 @@ export function Table<T extends Car | Part>({
         </div>
 
         {/* Pagination Section */}
-        <div className="flex items-center justify-between py-3">
-          <div className="text-sm text-muted-foreground">
-            {isServerSide && serverPagination ? (
-              <>
-                Showing{" "}
-                {(serverPagination.current_page - 1) * serverPagination.per_page +
-                  1}{" "}
-                to{" "}
-                {Math.min(
-                  serverPagination.current_page * serverPagination.per_page,
-                  serverPagination.total
-                )}{" "}
-                of {serverPagination.total} {itemName} (Page{" "}
-                {serverPagination.current_page} of {serverPagination.last_page})
-              </>
-            ) : (
-              <>
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
-              </>
-            )}
-          </div>
+        <div className="flex items-center justify-end py-3">
           {isServerSide && serverPagination ? (
             <Pagination
               currentPage={serverPagination.current_page}
