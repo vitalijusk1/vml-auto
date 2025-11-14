@@ -89,6 +89,9 @@ export interface Part {
   dateSold?: Date;
   photos: string[];
   warehouse?: string;
+  fuelType?: string;
+  engineVolume?: string;
+  quality?: PartQuality;
   // Wheel-specific fields (optional)
   wheelDrive?: "AWD" | "RWD" | "FWD";
   wheelSide?: "Left" | "Right";

@@ -24,9 +24,9 @@ export function DashboardView() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
+        <h1 className="text-3xl font-bold mb-2">Skydelis</h1>
         <p className="text-muted-foreground">
-          Monitor your inventory and sales performance
+          Stebėkite savo inventorių ir pardavimų rezultatus
         </p>
       </div>
 
@@ -43,7 +43,7 @@ export function DashboardView() {
 
       <TopPerformersSection />
 
-      <Table type="parts" data={filteredParts} title="Parts Inventory" />
+      <Table type="parts" data={filteredParts} title="Sandėlys" />
     </div>
   );
 }

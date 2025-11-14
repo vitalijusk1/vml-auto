@@ -40,7 +40,7 @@ export function CategorySection({
           )}
         >
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Categories</h3>
+            <h3 className="text-sm font-semibold text-foreground">Kategorijos</h3>
             {hasSelection && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
                 {selectedCategories.length}

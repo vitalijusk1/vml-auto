@@ -8,7 +8,8 @@ const extractNames = (items: any[]): string[] => {
   return items.map((item) => {
     if (typeof item === "string") return item;
     if (item && typeof item === "object") {
-      // Check if it's a FilterOption with languages
+      // Check if it's a FilterOption with languages - prioritize Lithuanian, fallback to English
+      if (item.languages?.lt) return item.languages.lt;
       if (item.languages?.en) return item.languages.en;
       if (item.languages?.name) return item.languages.name;
       if (item.name) return item.name;

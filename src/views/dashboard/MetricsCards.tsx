@@ -9,42 +9,42 @@ interface MetricsCardsProps {
 export function MetricsCards({ metrics }: MetricsCardsProps) {
   const cards = [
     {
-      title: 'Total Parts in Stock',
+      title: 'Iš viso dalių sandėlyje',
       value: metrics.totalPartsInStock.toLocaleString(),
       icon: Package,
       color: 'text-metrics-primary-text',
       bgColor: 'bg-metrics-primary-bg/10',
     },
     {
-      title: 'Total Parts Sold',
+      title: 'Iš viso parduota dalių',
       value: metrics.totalPartsSold.toLocaleString(),
       icon: TrendingUp,
       color: 'text-metrics-secondary-text',
       bgColor: 'bg-metrics-secondary-bg/10',
     },
     {
-      title: 'Total Parts (All Time)',
+      title: 'Iš viso dalių (visas laikas)',
       value: metrics.totalPartsAllTime.toLocaleString(),
       icon: Package,
       color: 'text-metrics-tertiary-text',
       bgColor: 'bg-metrics-tertiary-bg/10',
     },
     {
-      title: 'Revenue (Current Month)',
+      title: 'Pajamos (šis mėnuo)',
       value: `€${metrics.revenueCurrentMonth.toLocaleString()}`,
       icon: DollarSign,
       color: 'text-metrics-revenue-text',
       bgColor: 'bg-metrics-revenue-bg/10',
     },
     {
-      title: 'Top Selling Category',
+      title: 'Populiariausia kategorija',
       value: metrics.topSellingCategory,
       icon: Award,
       color: 'text-metrics-warning-text',
       bgColor: 'bg-metrics-warning-bg/10',
     },
     {
-      title: 'Parts Older Than 6 Months',
+      title: 'Dalių, senesnių nei 6 mėn.',
       value: metrics.partsOlderThan6Months.toLocaleString(),
       icon: AlertCircle,
       color: 'text-metrics-danger-text',

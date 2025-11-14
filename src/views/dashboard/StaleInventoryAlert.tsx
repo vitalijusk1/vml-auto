@@ -55,16 +55,16 @@ export function StaleInventoryAlert() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-600" />
             <CardTitle className="text-red-900">
-              Stale Inventory Alert
+              Seno inventoriaus perspėjimas
             </CardTitle>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleShowStale}>
-              View All Stale
+              Rodyti visus senus
             </Button>
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              Eksportuoti
             </Button>
           </div>
         </div>
@@ -72,19 +72,19 @@ export function StaleInventoryAlert() {
       <CardContent>
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white p-4 rounded-lg border">
-            <div className="text-sm text-muted-foreground">3-6 Months</div>
+            <div className="text-sm text-muted-foreground">3-6 mėn.</div>
             <div className="text-2xl font-bold text-orange-600">
               {staleInventory.threeMonths.length}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border">
-            <div className="text-sm text-muted-foreground">6-12 Months</div>
+            <div className="text-sm text-muted-foreground">6-12 mėn.</div>
             <div className="text-2xl font-bold text-red-600">
               {staleInventory.sixMonths.length}
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border">
-            <div className="text-sm text-muted-foreground">12+ Months</div>
+            <div className="text-sm text-muted-foreground">12+ mėn.</div>
             <div className="text-2xl font-bold text-red-800">
               {staleInventory.twelveMonths.length}
             </div>
@@ -93,17 +93,17 @@ export function StaleInventoryAlert() {
 
         {staleInventory.all.length > 0 && (
           <div>
-            <h3 className="font-semibold mb-3">Oldest Unsold Parts</h3>
+            <h3 className="font-semibold mb-3">Seniausios neparduotos dalys</h3>
             <div className="border rounded-lg overflow-hidden bg-white">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Part Name</TableHead>
-                    <TableHead>Car</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Days in Inventory</TableHead>
-                    <TableHead>Date Added</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Dalies pavadinimas</TableHead>
+                    <TableHead>Automobilis</TableHead>
+                    <TableHead>Kaina</TableHead>
+                    <TableHead>Dienos sandėlyje</TableHead>
+                    <TableHead>Pridėta data</TableHead>
+                    <TableHead>Veiksmai</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -124,7 +124,7 @@ export function StaleInventoryAlert() {
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="sm">
                             <Tag className="h-4 w-4 mr-1" />
-                            Mark for Sale
+                            Pažymėti pardavimui
                           </Button>
                         </div>
                       </TableCell>
@@ -139,7 +139,7 @@ export function StaleInventoryAlert() {
         {staleInventory.all.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-green-600" />
-            <p>No stale inventory found. Great job!</p>
+            <p>Senų atsargų nerasta. Puikus darbas!</p>
           </div>
         )}
       </CardContent>

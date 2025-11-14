@@ -1,7 +1,8 @@
 import authInstance from "./axios";
-import { Part, PartStatus, PartPosition, FilterState } from "@/types";
+import { Part, PartStatus, PartPosition, PartQuality, FilterState } from "@/types";
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
 import { CarFilters, Category } from "@/utils/filterCars";
+import { getLocalizedText } from "@/utils/i18n";
 
 // API Response types
 interface ApiPartResponse {
@@ -124,6 +125,15 @@ function mapStatus(status: number): PartStatus {
     default:
       return "In Stock";
   }
+}
+
+// Map quality number to PartQuality (this is a placeholder - adjust based on actual API mapping)
+function mapQuality(quality: number): PartQuality | undefined {
+  // TODO: Map quality number to PartQuality based on actual API response
+  // For now, return undefined if quality is 0 or invalid
+  if (!quality || quality === 0) return undefined;
+  // This is a placeholder - adjust based on actual quality mapping from backend
+  return "Used"; // Default fallback
 }
 
 // Helper function to extract ID from FilterOption or return undefined
@@ -279,13 +289,7 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
   let categoryName = "";
   if (apiPart.car?.category) {
     const category = apiPart.car.category;
-    if (typeof category.languages === "string") {
-      categoryName = category.languages;
-    } else if (category.languages?.en) {
-      categoryName = category.languages.en;
-    } else {
-      categoryName = category.name;
-    }
+    categoryName = getLocalizedText(category.languages, category.name);
   }
 
   return {
@@ -312,6 +316,9 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
         : undefined,
     photos,
     warehouse: undefined, // TODO: Get warehouse from API if available
+    fuelType: apiPart.car?.car_engine_type || undefined,
+    engineVolume: apiPart.car?.car_engine_cubic_capacity || undefined,
+    quality: mapQuality(apiPart.quality),
     // Wheel-specific fields
     wheelDrive: undefined, // TODO: Map from car data if available
     wheelSide: undefined, // TODO: Map from API if available

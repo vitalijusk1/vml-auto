@@ -17,11 +17,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Dashboard", icon: LayoutDashboard, view: "dashboard" as const },
-  { name: "Parts", icon: Package, view: "parts" as const },
-  { name: "Orders", icon: ShoppingCart, view: "orders" as const },
-  { name: "Returns", icon: RotateCcw, view: "returns" as const },
-  { name: "Analytics", icon: BarChart3, view: "analytics" as const },
+  { name: "Skydelis", icon: LayoutDashboard, view: "dashboard" as const },
+  { name: "Sandėlys", icon: Package, view: "parts" as const },
+  { name: "Užsakymai", icon: ShoppingCart, view: "orders" as const },
+  { name: "Grąžinimai", icon: RotateCcw, view: "returns" as const },
+  { name: "Analitika", icon: BarChart3, view: "analytics" as const },
 ];
 
 export function Sidebar() {

@@ -2,6 +2,7 @@ import authInstance from "./axios";
 import { Car } from "@/types";
 import { apiEndpoints, CarQueryParams } from "./routes/routes";
 import { CarFilters } from "@/utils/filterCars";
+import { getLocalizedText } from "@/utils/i18n";
 
 // API Response types
 interface ApiCarResponse {
@@ -118,37 +119,37 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     fuel: apiCar.car_fuel
       ? {
           id: apiCar.car_fuel.id,
-          name: apiCar.car_fuel.name,
+          name: getLocalizedText(apiCar.car_fuel.languages, apiCar.car_fuel.name),
         }
       : null,
     body_type: apiCar.car_body_type
       ? {
           id: apiCar.car_body_type.id,
-          name: apiCar.car_body_type.name,
+          name: getLocalizedText(apiCar.car_body_type.languages, apiCar.car_body_type.name),
         }
       : null,
     wheel_drive: apiCar.wheel_drive
       ? {
           id: apiCar.wheel_drive.id,
-          name: apiCar.wheel_drive.name,
+          name: getLocalizedText(apiCar.wheel_drive.languages, apiCar.wheel_drive.name),
         }
       : null,
     wheel_type: apiCar.wheel_type
       ? {
           id: apiCar.wheel_type.id,
-          name: apiCar.wheel_type.name,
+          name: getLocalizedText(apiCar.wheel_type.languages, apiCar.wheel_type.name),
         }
       : null,
     gearbox_type: apiCar.gearbox_type
       ? {
           id: apiCar.gearbox_type.id,
-          name: apiCar.gearbox_type.name,
+          name: getLocalizedText(apiCar.gearbox_type.languages, apiCar.gearbox_type.name),
         }
       : null,
     color: apiCar.car_color
       ? {
           id: apiCar.car_color.id,
-          name: apiCar.car_color.name,
+          name: getLocalizedText(apiCar.car_color.languages, apiCar.car_color.name),
         }
       : null,
     color_code: apiCar.car_color_code,
@@ -156,10 +157,7 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     category: apiCar.category
       ? {
           id: apiCar.category.id,
-          name:
-            typeof apiCar.category.languages === "string"
-              ? apiCar.category.languages
-              : apiCar.category.languages?.en || apiCar.category.name,
+          name: getLocalizedText(apiCar.category.languages, apiCar.category.name),
         }
       : null,
     mileage: apiCar.car_mileage ? parseInt(apiCar.car_mileage) : null,
