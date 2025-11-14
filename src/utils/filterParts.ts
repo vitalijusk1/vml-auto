@@ -34,8 +34,8 @@ export const defaultFilters: FilterState = {
 
 export function filterParts(
   parts: Part[],
-  filters: FilterState,
-  cars: Car[]
+  _filters: FilterState,
+  _cars: Car[]
 ): Part[] {
   // All filtering is now handled by the backend
   // This function is kept for compatibility but returns parts unchanged

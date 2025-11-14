@@ -76,9 +76,6 @@ export function PartsView() {
           backendFilters
         );
 
-        console.log("Fetching parts with query params:", queryParams);
-        console.log("Current filters:", filters);
-
         // Fetch parts with filters
         const response = await getParts(queryParams);
         setParts(response.parts);

@@ -13,8 +13,6 @@ export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
 export const selectSidebarCollapsed = (state: RootState) =>
   state.ui.sidebarCollapsed;
-export const selectCarsPagination = (state: RootState) =>
-  state.ui.carsPagination;
 export const selectPartsPagination = (state: RootState) =>
   state.ui.partsPagination;
 

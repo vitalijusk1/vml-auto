@@ -80,7 +80,7 @@ interface ApiPartResponse {
       name: string;
       languages?: Record<string, string> | string;
     } | null;
-  };
+  } | null;
   rims_fixing_points: number | null;
   rims_spacing: number | null;
   rims_central_diameter: number | null;
@@ -248,7 +248,7 @@ function mapCategoryNameToId(
 // Map position number to PartPosition
 // Note: Position values from API (0, 80, 90) don't directly map to Left/Right/Front/Rear/Set
 // This might need adjustment based on actual API documentation
-function mapPosition(position: number): PartPosition | undefined {
+function mapPosition(_position: number): PartPosition | undefined {
   // Position values in API seem to be numeric codes, not direct mappings
   // For now, return undefined unless we have clear mapping
   // TODO: Verify position mapping with API documentation
@@ -277,7 +277,7 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
 
   // Extract category from car object
   let categoryName = "";
-  if (apiPart.car.category) {
+  if (apiPart.car?.category) {
     const category = apiPart.car.category;
     if (typeof category.languages === "string") {
       categoryName = category.languages;
@@ -294,10 +294,10 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
     name: apiPart.name,
     category: categoryName,
     partType: "", // TODO: Get part type from API if available
-    carId: apiPart.car.id.toString(),
-    carBrand: apiPart.car.car_model.brand.name,
-    carModel: apiPart.car.car_model.name,
-    carYear: parseInt(apiPart.car.car_years) || 0,
+    carId: apiPart.car?.id?.toString() || "",
+    carBrand: apiPart.car?.car_model?.brand?.name || "",
+    carModel: apiPart.car?.car_model?.name || "",
+    carYear: apiPart.car?.car_years ? parseInt(apiPart.car.car_years) || 0 : 0,
     manufacturerCode: apiPart.manufacturer_code || undefined,
     status: mapStatus(apiPart.status),
     priceEUR,
@@ -446,49 +446,68 @@ export const filterStateToQueryParams = (
       params.wheel_side = wheelSideIds;
     }
   }
+  // Helper to safely get array from wheels filter
+  const getWheelsArray = (prop1: any, prop2: any): any[] | undefined => {
+    if (Array.isArray(prop1)) return prop1;
+    if (Array.isArray(prop2)) return prop2;
+    return undefined;
+  };
+
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.central_diameter, wheels?.wheels_central_diameter);
     const centralDiameterIds = filters.wheelCentralDiameter
-      .map((diameterName) => mapNameToId(diameterName, backendFilters?.wheels?.central_diameter || backendFilters?.wheels?.wheels_central_diameter))
+      .map((diameterName) => mapNameToId(String(diameterName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (centralDiameterIds.length > 0) {
       params.wheel_central_diameter = centralDiameterIds;
     }
   }
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.fixing_points, wheels?.wheels_fixing_points);
     const fixingPointsIds = filters.wheelFixingPoints
-      .map((pointsName) => mapNameToId(pointsName, backendFilters?.wheels?.fixing_points || backendFilters?.wheels?.wheels_fixing_points))
+      .map((pointsName) => mapNameToId(String(pointsName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (fixingPointsIds.length > 0) {
       params.wheel_fixing_points = fixingPointsIds;
     }
   }
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.height, wheels?.wheels_height);
     const heightIds = filters.wheelHeight
-      .map((heightName) => mapNameToId(heightName, backendFilters?.wheels?.height || backendFilters?.wheels?.wheels_height))
+      .map((heightName) => mapNameToId(String(heightName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (heightIds.length > 0) {
       params.wheel_height = heightIds;
     }
   }
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.spacing, wheels?.wheels_spacing);
     const spacingIds = filters.wheelSpacing
-      .map((spacingName) => mapNameToId(spacingName, backendFilters?.wheels?.spacing || backendFilters?.wheels?.wheels_spacing))
+      .map((spacingName) => mapNameToId(String(spacingName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (spacingIds.length > 0) {
       params.wheel_spacing = spacingIds;
     }
   }
   if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.tread_depth, wheels?.wheels_tread_depth);
     const treadDepthIds = filters.wheelTreadDepth
-      .map((depthName) => mapNameToId(depthName, backendFilters?.wheels?.tread_depth || backendFilters?.wheels?.wheels_tread_depth))
+      .map((depthName) => mapNameToId(String(depthName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (treadDepthIds.length > 0) {
       params.wheel_tread_depth = treadDepthIds;
     }
   }
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
+    const wheels = backendFilters?.wheels;
+    const filterArray = getWheelsArray(wheels?.width, wheels?.wheels_width);
     const widthIds = filters.wheelWidth
-      .map((widthName) => mapNameToId(widthName, backendFilters?.wheels?.width || backendFilters?.wheels?.wheels_width))
+      .map((widthName) => mapNameToId(String(widthName), filterArray))
       .filter((id): id is number => id !== undefined);
     if (widthIds.length > 0) {
       params.wheel_width = widthIds;
@@ -515,12 +534,10 @@ export const getParts = async (
   const response = await authInstance.get<ApiPartsResponse>(
     apiEndpoints.getParts(queryParams)
   );
-  console.log("Parts API Response:", response.data);
   const result = {
     parts: response.data.data.map(transformApiPart),
     pagination: response.data.pagination,
   };
-  console.log("Transformed Parts:", result);
   return result;
 };
 
@@ -555,23 +572,6 @@ export const getFilters = async (): Promise<CarFilters> => {
   const response = await authInstance.get<CarFilters>(
     apiEndpoints.getFilters()
   );
-  console.log("=== Filters API Response ===");
-  console.log("Full response:", response.data);
-  console.log("Response keys:", Object.keys(response.data || {}));
-  if (response.data.categories) {
-    console.log("Categories:", response.data.categories);
-    console.log("Categories count:", response.data.categories.length);
-  }
-  // Log all filter categories
-  Object.entries(response.data || {}).forEach(([key, value]) => {
-    if (key !== "categories" && key !== "wheels") {
-      console.log(`Filter category "${key}":`, value);
-    }
-  });
-  if (response.data.wheels) {
-    console.log("Wheels filters:", response.data.wheels);
-  }
-  console.log("============================");
   return response.data;
 };
 
