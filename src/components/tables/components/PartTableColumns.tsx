@@ -2,6 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Part, PartStatus } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
+import { getLocalizedText } from "@/utils/i18n";
 
 const getPartStatusClass = (status: PartStatus) => {
   const statusMap: Record<PartStatus, string> = {
@@ -13,12 +14,82 @@ const getPartStatusClass = (status: PartStatus) => {
   return statusMap[status] || getStatusBadgeClass("part", "Returned");
 };
 
+// Helper to find status from backend filters by matching English name
+const findStatusFromBackend = (
+  status: PartStatus,
+  backendFilters: any
+): string | null => {
+  const statuses = backendFilters?.parts?.statuses;
+  if (!Array.isArray(statuses)) return null;
+
+  // Map English status to find matching FilterOption
+  const statusNameMap: Record<PartStatus, string> = {
+    "In Stock": "In Stock",
+    Reserved: "Reserved",
+    Sold: "Sold",
+    Returned: "Returned",
+  };
+  const englishName = statusNameMap[status];
+
+  // Map to Lithuanian names for matching
+  const lithuanianNameMap: Record<PartStatus, string> = {
+    "In Stock": "Sandėlyje",
+    Reserved: "Rezervuota",
+    Sold: "Parduota",
+    Returned: "Grąžinta",
+  };
+  const lithuanianName = lithuanianNameMap[status];
+
+  for (const statusOption of statuses) {
+    if (typeof statusOption === "string") {
+      // Try matching both English and Lithuanian
+      if (statusOption === englishName || statusOption === lithuanianName) {
+        return statusOption;
+      }
+    } else if (statusOption && typeof statusOption === "object") {
+      // Check if this FilterOption matches by Lithuanian or English name
+      const ltName = statusOption.languages?.lt;
+      const enName = statusOption.languages?.en;
+      const optionName = statusOption.languages?.name || statusOption.name;
+
+      // Match by Lithuanian first, then English, then fallback name
+      if (
+        ltName === lithuanianName ||
+        ltName === englishName ||
+        enName === englishName ||
+        optionName === englishName
+      ) {
+        // Return localized version (prioritizes Lithuanian)
+        return getLocalizedText(statusOption.languages, statusOption.name);
+      }
+    }
+  }
+  return null;
+};
+
+const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
+  // Try to get from backend filters first (with language support)
+  const backendStatus = findStatusFromBackend(status, backendFilters);
+  if (backendStatus) return backendStatus;
+
+  // Fallback to hardcoded translations
+  const statusLabels: Record<PartStatus, string> = {
+    "In Stock": "Sandėlyje",
+    Reserved: "Rezervuota",
+    Sold: "Parduota",
+    Returned: "Grąžinta",
+  };
+  return statusLabels[status] || status;
+};
+
 interface PartTableColumnsProps {
   onItemClick: (part: Part) => void;
+  backendFilters?: any;
 }
 
 export function PartTableColumns({
   onItemClick,
+  backendFilters,
 }: PartTableColumnsProps): ColumnDef<Part>[] {
   return [
     {
@@ -50,9 +121,7 @@ export function PartTableColumns({
     {
       accessorKey: "name",
       header: "Pavadinimas",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.original.name}</div>
-      ),
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
     },
     {
       accessorKey: "carBrand",
@@ -92,7 +161,7 @@ export function PartTableColumns({
             row.original.status
           )}`}
         >
-          {row.original.status}
+          {getStatusLabel(row.original.status, backendFilters)}
         </span>
       ),
     },

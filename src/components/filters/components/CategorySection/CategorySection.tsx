@@ -64,7 +64,7 @@ export function CategorySection({
             <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search categories..."
+              placeholder="Ieškoti kategorijų..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8 pr-8"
@@ -80,7 +80,7 @@ export function CategorySection({
           </div>
 
           {/* Category Tree */}
-          <div className="border rounded-md p-3 max-h-96 overflow-y-auto">
+          <div className="border rounded-md bg-white max-h-96 overflow-y-auto">
             <CategoryTree
               categories={categories}
               selectedCategories={selectedCategories}

@@ -12,6 +12,8 @@ import {
 } from "@tanstack/react-table";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Car, Part } from "@/types";
+import { useAppSelector } from "@/store/hooks";
+import { selectBackendFilters } from "@/store/selectors";
 import {
   Table as BaseTable,
   TableBody,
@@ -90,6 +92,8 @@ export function Table<T extends Car | Part>({
     setSelectedItem(null);
   };
 
+  const backendFilters = useAppSelector(selectBackendFilters);
+
   const getColumns = (): ColumnDef<T>[] => {
     switch (type) {
       case LayoutType.CAR:
@@ -99,13 +103,14 @@ export function Table<T extends Car | Part>({
       case LayoutType.PARTS:
         return PartTableColumns({
           onItemClick: handleItemClick as (part: Part) => void,
+          backendFilters,
         }) as ColumnDef<T>[];
       default:
         return [];
     }
   };
 
-  const columns = useMemo(() => getColumns(), [type, handleItemClick]);
+  const columns = useMemo(() => getColumns(), [type, handleItemClick, backendFilters]);
 
   const table = useReactTable({
     data,
@@ -186,7 +191,7 @@ export function Table<T extends Car | Part>({
                 .getColumn(type === LayoutType.CAR ? "brand" : "name")
                 ?.setFilterValue(value)
             }
-            filterPlaceholder="Filter table..."
+            filterPlaceholder="Filtruoti lentele"
           />
         </div>
 

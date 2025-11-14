@@ -10,7 +10,7 @@ interface TableFilterProps {
 export function TableFilter({
   value,
   onChange,
-  placeholder = "Filter table...",
+  placeholder = "Filtruoti lentele",
   className,
 }: TableFilterProps) {
   return (

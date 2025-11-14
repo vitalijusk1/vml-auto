@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { FilterState, Car } from "@/types";
 import { CarFilters } from "@/utils/filterCars";
 import { AnalyticsFilters } from "@/views/analytics/AnalyticsFilters";
-import { X, Filter, ChevronDown, RotateCcw } from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
+import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo } from "react";
 import { defaultFilters } from "@/utils/filterParts";
 import { LayoutType } from "./type";
@@ -115,6 +116,7 @@ export function FilterPanel<
   const title = type === "analytics" ? "Analitikos filtrai" : "Filtrai";
   const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
     useState(true);
+  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
 
   // For parts filters, get categories and wheels data
   const backendFilters = useAppSelector(selectBackendFilters);
@@ -163,6 +165,25 @@ export function FilterPanel<
     return ids;
   }, [partsFilters?.partCategory, categories]);
 
+  // Helper function to get all child category names recursively
+  const getAllChildCategoryNames = (category: Category): string[] => {
+    const names: string[] = [];
+    const addCategoryAndChildren = (cat: Category) => {
+      names.push(getCategoryName(cat));
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        cat.subcategories.forEach((subcat) => {
+          addCategoryAndChildren(subcat);
+        });
+      }
+    };
+    if (category.subcategories && category.subcategories.length > 0) {
+      category.subcategories.forEach((subcat) => {
+        addCategoryAndChildren(subcat);
+      });
+    }
+    return names;
+  };
+
   // Handle category toggle
   const handleCategoryToggle = (categoryId: number) => {
     if (!partsFilters) return;
@@ -174,12 +195,27 @@ export function FilterPanel<
     const isSelected = currentCategories.includes(categoryName);
 
     if (isSelected) {
+      // Unselect parent and all children
+      const childNames = getAllChildCategoryNames(category);
+      const namesToRemove = [categoryName, ...childNames];
       updateFilters({
-        partCategory: currentCategories.filter((name) => name !== categoryName),
+        partCategory: currentCategories.filter(
+          (name) => !namesToRemove.includes(name)
+        ),
       } as Partial<FilterState>);
     } else {
+      // Select parent and all children
+      const childNames = getAllChildCategoryNames(category);
+      const namesToAdd = [categoryName, ...childNames];
+      // Add only names that aren't already selected
+      const newCategories = [...currentCategories];
+      namesToAdd.forEach((name) => {
+        if (!newCategories.includes(name)) {
+          newCategories.push(name);
+        }
+      });
       updateFilters({
-        partCategory: [...currentCategories, categoryName],
+        partCategory: newCategories,
       } as Partial<FilterState>);
     }
   };
@@ -308,10 +344,21 @@ export function FilterPanel<
             {title}
           </CardTitle>
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8">
-              <ChevronDown className="h-4 w-4 mr-1" />
-              Top detalės
-            </Button>
+            <div className="w-full xs:w-auto">
+              <SingleSelectDropdown
+                options={[
+                  { value: "top-detales", label: "Top detalės" },
+                  {
+                    value: "reciausiai-parduodamos",
+                    label: "Nepopuliarios",
+                  },
+                  { value: "be-filtro", label: "Be filtro" },
+                ]}
+                value={topDetailsFilter}
+                onChange={setTopDetailsFilter}
+                className="w-full xs:w-[200px]"
+              />
+            </div>
             <Button
               variant="outline"
               size="sm"
