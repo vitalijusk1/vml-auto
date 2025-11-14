@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Car, Part } from "@/types";
 import { CarDetailContent } from "./components/CarDetailContent";
-import { PartDetailContent } from "./components/PartDetailContent";
+import { PhotoGallery } from "./components/PhotoGallery";
 import { LayoutType } from "../filters/type";
 
 type DetailModalType = Exclude<LayoutType, "analytics">;
@@ -37,7 +37,16 @@ export function DetailModal({ type, item, isOpen, onClose }: DetailModalProps) {
       case LayoutType.CAR:
         return <CarDetailContent car={item as Car} onClose={onClose} />;
       case LayoutType.PARTS:
-        return <PartDetailContent part={item as Part} onClose={onClose} />;
+        // For parts, only show the photo gallery
+        return (
+          <div className="mt-4">
+            <PhotoGallery
+              photos={(item as Part).photos}
+              title="Nuotraukos"
+              altPrefix={`${(item as Part).name} - Nuotrauka`}
+            />
+          </div>
+        );
       default:
         return null;
     }
