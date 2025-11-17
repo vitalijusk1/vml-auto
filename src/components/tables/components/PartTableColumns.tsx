@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Part, PartStatus } from "@/types";
+import { Part, PartStatus, Order } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
@@ -85,12 +85,155 @@ const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
 interface PartTableColumnsProps {
   onItemClick: (part: Part) => void;
   backendFilters?: any;
+  topDetailsFilter?: string;
+  orders?: Order[];
 }
 
 export function PartTableColumns({
   onItemClick,
   backendFilters,
+  topDetailsFilter,
+  orders = [],
 }: PartTableColumnsProps): ColumnDef<Part>[] {
+  const isTopSellingMode = topDetailsFilter === "top-detales";
+
+  // Calculate sold count and average price for a part
+  const getPartSalesData = (part: Part) => {
+    let soldCount = 0;
+    let totalPrice = 0;
+    let priceCount = 0;
+
+    orders
+      .filter((o) => o.status === "Delivered")
+      .forEach((order) => {
+        order.items.forEach((item) => {
+          if (item.partId === part.id) {
+            soldCount += item.quantity;
+            totalPrice += item.priceEUR * item.quantity;
+            priceCount += item.quantity;
+          }
+        });
+      });
+
+    const avgPrice = priceCount > 0 ? totalPrice / priceCount : part.priceEUR;
+    const inStock = part.status === "In Stock" ? 1 : 0;
+
+    return { soldCount, avgPrice, inStock };
+  };
+
+  // If top selling mode, return different columns
+  if (isTopSellingMode) {
+    return [
+      {
+        accessorKey: "manufacturerCode",
+        header: "Gamintojo kodas",
+        cell: ({ row }) => row.original.manufacturerCode || "-",
+      },
+      {
+        accessorKey: "photos",
+        header: "Nuotrauka",
+        cell: ({ row }) => (
+          <PhotoTableCell
+            src={row.original.photos}
+            alt={row.original.name}
+            onClick={() => onItemClick(row.original)}
+            size="md"
+          />
+        ),
+      },
+      {
+        accessorKey: "name",
+        header: "Pavadinimas",
+        cell: ({ row }) => (
+          <div className="font-medium">{row.original.name}</div>
+        ),
+      },
+      {
+        accessorKey: "carBrand",
+        header: "Automobilis",
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">
+              {row.original.carBrand} {row.original.carModel}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {row.original.carYear}
+            </div>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "fuelType",
+        header: "Kuro tipas",
+        cell: ({ row }) => row.original.fuelType || "-",
+      },
+      {
+        accessorKey: "bodyType",
+        header: "Kebulo tipas",
+        cell: () => {
+          // Body type is not directly in Part, would need to fetch from car
+          // For now, show "-" or we could add it to Part type later
+          return "-";
+        },
+      },
+      {
+        accessorKey: "engineVolume",
+        header: "Variklio turis",
+        cell: ({ row }) => row.original.engineVolume || "-",
+      },
+      {
+        accessorKey: "turetaParduota",
+        header: "Tureta/Parduota",
+        cell: ({ row }) => {
+          const { soldCount } = getPartSalesData(row.original);
+          const part = row.original;
+          const hasInStock =
+            part.status === "In Stock" || part.status === "Reserved";
+          return (
+            <div>
+              {hasInStock && <div className="text-sm">Tureta: 1</div>}
+              {soldCount > 0 && (
+                <div
+                  className={`text-sm ${
+                    hasInStock ? "text-xs text-muted-foreground" : ""
+                  }`}
+                >
+                  Parduota: {soldCount}
+                </div>
+              )}
+              {!hasInStock && soldCount === 0 && (
+                <div className="text-sm">Parduota</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "warehouse",
+        header: "Sandėly",
+        cell: ({ row }) => row.original.warehouse || "-",
+      },
+      {
+        accessorKey: "avgPrice",
+        header: "Vid. kaina",
+        cell: ({ row }) => {
+          const { avgPrice } = getPartSalesData(row.original);
+          return (
+            <div>
+              <div className="font-medium">€{avgPrice.toFixed(2)}</div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "warehouses",
+        header: "Sandėlys",
+        cell: ({ row }) => row.original.warehouse || "-",
+      },
+    ];
+  }
+
+  // Default columns
   return [
     {
       accessorKey: "code",

@@ -13,6 +13,7 @@ export function DashboardView() {
   const metrics = useAppSelector(selectMetrics);
   const parts = useAppSelector(selectParts);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
   // Use empty array for cars since parts are mock data
   const cars: never[] = [];
 
@@ -39,11 +40,12 @@ export function DashboardView() {
         filters={filters}
         onFiltersChange={setFilters}
         cars={cars}
+        onTopDetailsFilterChange={setTopDetailsFilter}
       />
 
       <TopPerformersSection />
 
-      <Table type="parts" data={filteredParts} title="Sandėlys" />
+      <Table type="parts" data={filteredParts} title="Sandėlys" topDetailsFilter={topDetailsFilter} />
     </div>
   );
 }

@@ -37,6 +37,7 @@ interface FilterPanelProps<
   filters: T;
   onFiltersChange: (filters: T) => void;
   cars?: Car[];
+  onTopDetailsFilterChange?: (value: string) => void;
 }
 
 const getFilter = (
@@ -89,7 +90,7 @@ const getFilter = (
 
 export function FilterPanel<
   T extends FilterState | CarFilters | AnalyticsFilters
->({ type, filters, onFiltersChange, cars = [] }: FilterPanelProps<T>) {
+>({ type, filters, onFiltersChange, cars = [], onTopDetailsFilterChange }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
   const [isOpen, setIsOpen] = useState(true);
 
@@ -117,6 +118,13 @@ export function FilterPanel<
   const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
     useState(true);
   const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
+
+  const handleTopDetailsFilterChange = (value: string) => {
+    setTopDetailsFilter(value);
+    if (onTopDetailsFilterChange) {
+      onTopDetailsFilterChange(value);
+    }
+  };
 
   // For parts filters, get categories and wheels data
   const backendFilters = useAppSelector(selectBackendFilters);
@@ -347,7 +355,7 @@ export function FilterPanel<
             <div className="w-full xs:w-auto">
               <SingleSelectDropdown
                 options={[
-                  { value: "top-detales", label: "Top detalės" },
+                  { value: "top-detales", label: "Top parduodamas prekes" },
                   {
                     value: "reciausiai-parduodamos",
                     label: "Nepopuliarios",
@@ -355,7 +363,7 @@ export function FilterPanel<
                   { value: "be-filtro", label: "Be filtro" },
                 ]}
                 value={topDetailsFilter}
-                onChange={setTopDetailsFilter}
+                onChange={handleTopDetailsFilterChange}
                 className="w-full xs:w-[200px]"
               />
             </div>

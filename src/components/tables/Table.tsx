@@ -13,7 +13,7 @@ import {
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Car, Part } from "@/types";
 import { useAppSelector } from "@/store/hooks";
-import { selectBackendFilters } from "@/store/selectors";
+import { selectBackendFilters, selectOrders } from "@/store/selectors";
 import {
   Table as BaseTable,
   TableBody,
@@ -46,6 +46,7 @@ interface TableProps<T extends Car | Part> {
   serverPagination?: ServerPagination;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  topDetailsFilter?: string;
 }
 
 export function Table<T extends Car | Part>({
@@ -55,6 +56,7 @@ export function Table<T extends Car | Part>({
   serverPagination,
   onPageChange,
   onPageSizeChange,
+  topDetailsFilter,
 }: TableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -93,6 +95,7 @@ export function Table<T extends Car | Part>({
   };
 
   const backendFilters = useAppSelector(selectBackendFilters);
+  const orders = useAppSelector(selectOrders);
 
   const getColumns = (): ColumnDef<T>[] => {
     switch (type) {
@@ -104,13 +107,15 @@ export function Table<T extends Car | Part>({
         return PartTableColumns({
           onItemClick: handleItemClick as (part: Part) => void,
           backendFilters,
+          topDetailsFilter,
+          orders,
         }) as ColumnDef<T>[];
       default:
         return [];
     }
   };
 
-  const columns = useMemo(() => getColumns(), [type, handleItemClick, backendFilters]);
+  const columns = useMemo(() => getColumns(), [type, handleItemClick, backendFilters, topDetailsFilter, orders]);
 
   const table = useReactTable({
     data,
