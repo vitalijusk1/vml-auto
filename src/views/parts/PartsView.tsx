@@ -28,6 +28,7 @@ export function PartsView() {
       last_page: 1,
     }
   );
+  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
   // Use empty array for cars since parts are fetched separately
   const cars: never[] = [];
 
@@ -108,6 +109,7 @@ export function PartsView() {
           setPagination((prev) => ({ ...prev, current_page: 1 }));
         }}
         cars={cars}
+        onTopDetailsFilterChange={setTopDetailsFilter}
       />
 
       <Table
@@ -124,6 +126,7 @@ export function PartsView() {
             current_page: 1,
           }));
         }}
+        topDetailsFilter={topDetailsFilter}
       />
     </div>
   );
