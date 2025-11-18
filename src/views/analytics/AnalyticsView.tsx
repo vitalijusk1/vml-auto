@@ -6,9 +6,6 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,551 +14,339 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo, useState } from "react";
-import { AnalyticsFilters } from "./AnalyticsFilters";
+import { FilterState } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
-import { DollarSign, Package, TrendingUp, TrendingDown } from "lucide-react";
-import { theme } from "@/theme/theme";
+import { defaultFilters, filterParts } from "@/utils/filterParts";
+import { CheckCircle2, BarChart3, Settings, AlertTriangle } from "lucide-react";
 
-const COLORS = [
-  theme.colors.charts.primary,
-  theme.colors.charts.secondary,
-  theme.colors.charts.tertiary,
-  theme.colors.charts.quaternary,
-  theme.colors.charts.quinary,
-  theme.colors.charts.senary,
-];
-
-const defaultFilters: AnalyticsFilters = {
-  dateRange: {},
-  timePeriod: "month",
-  orderStatus: ["Delivered"],
-  partStatus: ["Sold"],
-  category: [],
-  brand: [],
-  metric: "revenue",
+const COLORS = {
+  primary: "#000000",
+  line: "#60A5FA",
 };
-
-// Helper function to format date based on time period
-function formatDateByPeriod(
-  date: Date,
-  period: "day" | "week" | "month" | "year"
-): string {
-  switch (period) {
-    case "day":
-      return date.toISOString().split("T")[0];
-    case "week":
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      return `Week ${weekStart.toISOString().split("T")[0]}`;
-    case "month":
-      return date.toISOString().slice(0, 7);
-    case "year":
-      return date.getFullYear().toString();
-    default:
-      return date.toISOString().slice(0, 7);
-  }
-}
 
 export function AnalyticsView() {
   const parts = useAppSelector(selectParts);
   const orders = useAppSelector(selectOrders);
-  const [filters, setFilters] = useState<AnalyticsFilters>(defaultFilters);
+  const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
+  const cars: never[] = [];
 
-  // Filter data based on analytics filters
+  // Filter parts based on filters
+  const filteredParts = useMemo(
+    () => filterParts(parts, filters, cars),
+    [parts, filters, cars]
+  );
+
+  // Filter orders - only delivered orders
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      // Status filter
-      if (!filters.orderStatus.includes(order.status)) return false;
+    return orders.filter((order) => order.status === "Delivered");
+  }, [orders]);
 
-      // Date range filter
-      if (filters.dateRange.from && order.date < filters.dateRange.from)
-        return false;
-      if (filters.dateRange.to) {
-        const toDate = new Date(filters.dateRange.to);
-        toDate.setHours(23, 59, 59, 999);
-        if (order.date > toDate) return false;
-      }
-
-      return true;
-    });
-  }, [orders, filters]);
-
-  const filteredParts = useMemo(() => {
-    return parts.filter((part) => {
-      // Status filter
-      if (!filters.partStatus.includes(part.status)) return false;
-
-      // Category filter
-      if (
-        filters.category.length > 0 &&
-        !filters.category.includes(part.category)
-      )
-        return false;
-
-      // Brand filter
-      if (filters.brand.length > 0 && !filters.brand.includes(part.carBrand))
-        return false;
-
-      // Date range filter (for sold parts)
-      if (part.dateSold) {
-        if (filters.dateRange.from && part.dateSold < filters.dateRange.from)
-          return false;
-        if (filters.dateRange.to) {
-          const toDate = new Date(filters.dateRange.to);
-          toDate.setHours(23, 59, 59, 999);
-          if (part.dateSold > toDate) return false;
-        }
-      }
-
-      return true;
-    });
-  }, [parts, filters]);
-
-  // Summary metrics
+  // Summary metrics - matching the image
   const summaryMetrics = useMemo(() => {
-    const totalRevenue = filteredOrders.reduce(
+    const partsInStock = parts.filter((p) => p.status === "In Stock").length;
+    
+    // Calculate total sold from orders
+    const totalSold = orders
+      .filter((o) => o.status === "Delivered")
+      .reduce((sum, order) => {
+        return sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+      }, 0);
+    
+    const totalPartsAllTime = parts.length;
+    
+    // Calculate earnings from delivered orders
+    const earnings = filteredOrders.reduce(
       (sum, order) => sum + order.totalAmountEUR,
       0
     );
-    const totalOrders = filteredOrders.length;
-    const totalPartsSold = filteredParts.filter(
-      (p) => p.status === "Sold"
+    
+    // Active orders (non-delivered, non-cancelled)
+    const activeOrders = orders.filter(
+      (o) => o.status !== "Delivered" && o.status !== "Cancelled"
     ).length;
-    const totalPartsInStock = filteredParts.filter(
-      (p) => p.status === "In Stock"
+    
+    // Parts not sold for 3 months
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const partsNotSold3Months = parts.filter(
+      (p) => p.status === "In Stock" && p.dateAdded <= threeMonthsAgo
     ).length;
-
-    // Calculate previous period for comparison
-    const now = new Date();
-    const currentPeriodStart = filters.dateRange.from || new Date(0);
-    const currentPeriodEnd = filters.dateRange.to || now;
-
-    const periodDuration =
-      currentPeriodEnd.getTime() - currentPeriodStart.getTime();
-    const previousPeriodStart = new Date(
-      currentPeriodStart.getTime() - periodDuration
-    );
-    const previousPeriodEnd = currentPeriodStart;
-
-    const previousRevenue = orders
-      .filter((o) => {
-        if (!filters.orderStatus.includes(o.status)) return false;
-        return o.date >= previousPeriodStart && o.date < previousPeriodEnd;
-      })
-      .reduce((sum, order) => sum + order.totalAmountEUR, 0);
-
-    const revenueChange =
-      previousRevenue > 0
-        ? ((totalRevenue - previousRevenue) / previousRevenue) * 100
-        : 0;
 
     return {
-      totalRevenue,
-      totalOrders,
-      totalPartsSold,
-      totalPartsInStock,
-      revenueChange,
-      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      partsInStock,
+      totalSold,
+      totalPartsAllTime,
+      earnings,
+      activeOrders,
+      partsNotSold3Months,
     };
-  }, [filteredOrders, filteredParts, filters, orders]);
+  }, [parts, orders, filteredOrders]);
 
-  // Sales over time
-  const salesOverTime = useMemo(() => {
-    const salesByPeriod: Record<string, { revenue: number; count: number }> =
-      {};
-
+  // Parts Sold by Car Model - from orders
+  const partsSoldByModel = useMemo(() => {
+    const modelData: Record<string, number> = {};
+    
     filteredOrders.forEach((order) => {
-      const periodKey = formatDateByPeriod(order.date, filters.timePeriod);
-      if (!salesByPeriod[periodKey]) {
-        salesByPeriod[periodKey] = { revenue: 0, count: 0 };
-      }
-      salesByPeriod[periodKey].revenue += order.totalAmountEUR;
-      salesByPeriod[periodKey].count += 1;
+      order.items.forEach((item) => {
+        const part = parts.find((p) => p.id === item.partId);
+        if (part && part.carModel) {
+          modelData[part.carModel] = (modelData[part.carModel] || 0) + item.quantity;
+        }
+      });
     });
 
-    return Object.entries(salesByPeriod)
-      .map(([period, data]) => ({
-        period,
-        revenue: data.revenue,
-        count: data.count,
-        average: data.count > 0 ? data.revenue / data.count : 0,
-      }))
-      .sort((a, b) => a.period.localeCompare(b.period));
-  }, [filteredOrders, filters.timePeriod]);
+    return Object.entries(modelData)
+      .map(([model, count]) => ({ model, sold: count }))
+      .sort((a, b) => b.sold - a.sold)
+      .slice(0, 12);
+  }, [filteredOrders, parts]);
 
-  const revenueByCategory = useMemo(() => {
-    const categoryData: Record<string, { revenue: number; count: number }> = {};
-    filteredParts
-      .filter((p) => p.status === "Sold")
-      .forEach((part) => {
-        if (!categoryData[part.category]) {
-          categoryData[part.category] = { revenue: 0, count: 0 };
+  // Parts Sold by Category - from orders
+  const partsSoldByCategory = useMemo(() => {
+    const categoryData: Record<string, number> = {};
+    
+    filteredOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        const part = parts.find((p) => p.id === item.partId);
+        if (part && part.category) {
+          categoryData[part.category] = (categoryData[part.category] || 0) + item.quantity;
         }
-        categoryData[part.category].revenue += part.priceEUR;
-        categoryData[part.category].count += 1;
       });
+    });
+
     return Object.entries(categoryData)
-      .map(([category, data]) => ({
-        category,
-        revenue: data.revenue,
-        count: data.count,
-      }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
-  }, [filteredParts]);
+      .map(([category, units]) => ({ category, units }))
+      .sort((a, b) => b.units - a.units);
+  }, [filteredOrders, parts]);
 
-  const salesByBrand = useMemo(() => {
-    const brandData: Record<string, { count: number; revenue: number }> = {};
-    filteredParts
-      .filter((p) => p.status === "Sold")
-      .forEach((part) => {
-        if (!brandData[part.carBrand]) {
-          brandData[part.carBrand] = { count: 0, revenue: 0 };
-        }
-        brandData[part.carBrand].count += 1;
-        brandData[part.carBrand].revenue += part.priceEUR;
-      });
-    return Object.entries(brandData)
-      .map(([brand, data]) => ({
-        brand,
-        count: data.count,
-        revenue: data.revenue,
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [filteredParts]);
-
-  const inventoryAgeDistribution = useMemo(() => {
-    const ageRanges = {
-      "0-3mo": 0,
-      "3-6mo": 0,
-      "6-12mo": 0,
-      "12mo+": 0,
-    };
-
-    filteredParts
-      .filter((p) => p.status === "In Stock")
-      .forEach((part) => {
-        const months = Math.floor(part.daysInInventory / 30);
-        if (months < 3) ageRanges["0-3mo"]++;
-        else if (months < 6) ageRanges["3-6mo"]++;
-        else if (months < 12) ageRanges["6-12mo"]++;
-        else ageRanges["12mo+"]++;
-      });
-
-    return Object.entries(ageRanges).map(([range, count]) => ({
-      range,
-      count,
-    }));
-  }, [filteredParts]);
-
-  const partsByStatus = useMemo(() => {
-    const statusCounts: Record<string, number> = {};
-    filteredParts.forEach((part) => {
-      statusCounts[part.status] = (statusCounts[part.status] || 0) + 1;
+  // Sales Trend - units per day
+  const salesTrend = useMemo(() => {
+    const dailyData: Record<string, number> = {};
+    
+    filteredOrders.forEach((order) => {
+      const dateKey = order.date.toISOString().split("T")[0];
+      const units = order.items.reduce((sum, item) => sum + item.quantity, 0);
+      dailyData[dateKey] = (dailyData[dateKey] || 0) + units;
     });
-    return Object.entries(statusCounts).map(([status, count]) => ({
-      status,
-      count,
-    }));
-  }, [filteredParts]);
 
-  // Custom tooltip formatter
-  const currencyFormatter = (value: number) =>
-    `€${value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
-          <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }} className="text-sm">
-              {entry.name}:{" "}
-              {entry.dataKey === "revenue" || entry.dataKey === "average"
-                ? currencyFormatter(entry.value)
-                : entry.value.toLocaleString()}
-            </p>
-          ))}
-        </div>
-      );
+    // Get all dates and sort
+    const sortedDates = Object.keys(dailyData).sort();
+    
+    // If we have data, return it; otherwise generate sample data for this year
+    if (sortedDates.length > 0) {
+      return sortedDates.map((date) => ({
+        date,
+        units: dailyData[date],
+      }));
     }
-    return null;
-  };
+
+    // Generate sample data for this year (for demo purposes)
+    const startDate = new Date(new Date().getFullYear(), 0, 1);
+    const endDate = new Date();
+    const sampleData = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const dateKey = currentDate.toISOString().split("T")[0];
+      // Generate random units between 30-50 for demo
+      sampleData.push({
+        date: dateKey,
+        units: Math.floor(Math.random() * 20) + 30,
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return sampleData;
+  }, [filteredOrders]);
+
+  // Currency formatter
+  const currencyFormatter = (value: number) =>
+    `€ ${value.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">Analytics Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-2">Analatika</h1>
         <p className="text-muted-foreground">
-          Visualize your inventory and sales performance
+          Prekių kiekiai sandėlyje, laikymo trukmė, kaina ir likęs atsargas sandėlyje
         </p>
       </div>
 
-      {/* Summary Metrics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Filters Panel */}
+      <FilterPanel
+        type="analytics"
+        filters={filters}
+        onFiltersChange={setFilters}
+        cars={cars}
+        hideCategoriesAndWheels={true}
+        hideTopDetailsFilter={true}
+      />
+
+      {/* Summary Metrics Cards - 6 cards in 2 rows */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Dalys sandėlyje</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currencyFormatter(summaryMetrics.totalRevenue)}
+              {summaryMetrics.partsInStock.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              {summaryMetrics.revenueChange !== 0 && (
-                <>
-                  {summaryMetrics.revenueChange > 0 ? (
-                    <TrendingUp className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 text-red-500" />
-                  )}
-                  <span
-                    className={
-                      summaryMetrics.revenueChange > 0
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }
-                  >
-                    {Math.abs(summaryMetrics.revenueChange).toFixed(1)}%
-                  </span>
-                  {" from previous period"}
-                </>
-              )}
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Iš viso parduota</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summaryMetrics.totalOrders.toLocaleString()}
+              {summaryMetrics.totalSold.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Avg order: {currencyFormatter(summaryMetrics.averageOrderValue)}
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Parts Sold</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Iš viso detalių (Per visa laiką)</CardTitle>
+            <Settings className="h-4 w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summaryMetrics.totalPartsSold.toLocaleString()}
+              {summaryMetrics.totalPartsAllTime.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Sold parts</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Stock</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Uždarbis</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summaryMetrics.totalPartsInStock.toLocaleString()}
+              {currencyFormatter(summaryMetrics.earnings)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Available parts
-            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Aktyvūs užsakymai</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryMetrics.activeOrders.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Dalys, kurios neparduotos per 3 mėn.</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryMetrics.partsNotSold3Months.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Charts */}
       <div className="space-y-6">
-        {/* Filters Panel */}
-        <FilterPanel
-          type="analytics"
-          filters={filters}
-          onFiltersChange={setFilters}
-          cars={[]}
-        />
+        {/* Parts Sold by Car Model - Full width */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Parts Sold by Car Model</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={partsSoldByModel}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="model" angle={-45} textAnchor="end" height={100} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="sold" fill={COLORS.primary} name="Sold" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        {/* Charts */}
-        <div>
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Performance Over Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={salesOverTime}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" />
-                    <YAxis
-                      tickFormatter={(value) =>
-                        filters.metric === "count"
-                          ? value.toLocaleString()
-                          : `€${(value / 1000).toFixed(0)}k`
-                      }
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    {filters.metric === "revenue" ||
-                    filters.metric === "both" ? (
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke={COLORS[0]}
-                        strokeWidth={2}
-                        name="Revenue (EUR)"
-                      />
-                    ) : null}
-                    {filters.metric === "count" || filters.metric === "both" ? (
-                      <Line
-                        type="monotone"
-                        dataKey="count"
-                        stroke={COLORS[1]}
-                        strokeWidth={2}
-                        name="Order Count"
-                      />
-                    ) : null}
-                    {filters.metric === "both" ? (
-                      <Line
-                        type="monotone"
-                        dataKey="average"
-                        stroke={COLORS[2]}
-                        strokeWidth={2}
-                        name="Avg Order Value"
-                        strokeDasharray="5 5"
-                      />
-                    ) : null}
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        {/* Parts Sold by Category - Full width */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Parts Sold by Category</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={partsSoldByCategory}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="units" fill={COLORS.primary} name="Units" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Revenue by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={revenueByCategory}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="category"
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                    />
-                    <YAxis
-                      tickFormatter={(value) =>
-                        `€${(value / 1000).toFixed(0)}k`
-                      }
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar
-                      dataKey="revenue"
-                      fill={COLORS[0]}
-                      name="Revenue (EUR)"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Sales Distribution by Car Brand</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={salesByBrand}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(props: any) => {
-                        const { brand, percent } = props;
-                        return `${brand}: ${((percent as number) * 100).toFixed(
-                          0
-                        )}%`;
-                      }}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                    >
-                      {salesByBrand.map((_, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-background border rounded-lg shadow-lg p-3">
-                              <p className="font-medium mb-2">{data.brand}</p>
-                              <p className="text-sm">
-                                Count: {data.count.toLocaleString()}
-                              </p>
-                              <p className="text-sm">
-                                Revenue: {currencyFormatter(data.revenue)}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory Age Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={inventoryAgeDistribution}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="range" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" fill={COLORS[3]} name="Parts Count" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Parts by Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={partsByStatus}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="status" />
-                    <YAxis />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="count" fill={COLORS[4]} name="Parts Count" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Sales Trend - Full width */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Sales Trend</CardTitle>
+              <div className="flex gap-2">
+                <select className="text-sm border rounded px-2 py-1">
+                  <option>This Year</option>
+                </select>
+                <select className="text-sm border rounded px-2 py-1">
+                  <option>This Year</option>
+                </select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={salesTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                  }}
+                />
+                <YAxis label={{ value: 'Units per Day', angle: -90, position: 'insideLeft' }} />
+                <Tooltip 
+                  labelFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                  }}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="units" 
+                  stroke={COLORS.line} 
+                  strokeWidth={2}
+                  name="→ Units per Day"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

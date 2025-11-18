@@ -2,7 +2,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FilterState, Car } from "@/types";
 import { CarFilters } from "@/utils/filterCars";
-import { AnalyticsFilters } from "@/views/analytics/AnalyticsFilters";
 import { Filter, RotateCcw } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo } from "react";
@@ -20,19 +19,7 @@ import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
 import { Category } from "@/utils/filterCars";
 
-const defaultAnalyticsFilters: AnalyticsFilters = {
-  dateRange: {},
-  timePeriod: "month",
-  orderStatus: ["Delivered"],
-  partStatus: ["Sold"],
-  category: [],
-  brand: [],
-  metric: "revenue",
-};
-
-interface FilterPanelProps<
-  T extends FilterState | CarFilters | AnalyticsFilters
-> {
+interface FilterPanelProps<T extends FilterState | CarFilters> {
   type: LayoutType;
   filters: T;
   onFiltersChange: (filters: T) => void;
@@ -47,10 +34,8 @@ interface FilterPanelProps<
 
 const getFilter = (
   type: LayoutType,
-  filters: FilterState | CarFilters | AnalyticsFilters,
-  onFiltersChange: (
-    updates: Partial<FilterState | CarFilters | AnalyticsFilters>
-  ) => void,
+  filters: FilterState | CarFilters,
+  onFiltersChange: (updates: Partial<FilterState | CarFilters>) => void,
   onReset: () => void,
   cars: Car[] = [],
   showOrderIdFilter: boolean = false
@@ -82,9 +67,9 @@ const getFilter = (
     case LayoutType.ANALYTICS:
       return (
         <AnalyticsFiltersComponent
-          filters={filters as AnalyticsFilters}
+          filters={filters as FilterState}
           onFiltersChange={
-            onFiltersChange as (updates: Partial<AnalyticsFilters>) => void
+            onFiltersChange as (updates: Partial<FilterState>) => void
           }
           onReset={onReset}
           cars={cars}
@@ -106,9 +91,7 @@ const getFilter = (
   }
 };
 
-export function FilterPanel<
-  T extends FilterState | CarFilters | AnalyticsFilters
->({
+export function FilterPanel<T extends FilterState | CarFilters>({
   type,
   filters,
   onFiltersChange,
@@ -122,9 +105,7 @@ export function FilterPanel<
 }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
 
-  const updateFilters = (
-    updates: Partial<FilterState | CarFilters | AnalyticsFilters>
-  ) => {
+  const updateFilters = (updates: Partial<FilterState | CarFilters>) => {
     onFiltersChange({ ...filters, ...updates });
   };
 
@@ -133,7 +114,7 @@ export function FilterPanel<
       // Reset to empty filters object (will be fetched from backend)
       onFiltersChange({} as unknown as T);
     } else if (type === LayoutType.ANALYTICS) {
-      onFiltersChange(defaultAnalyticsFilters as T);
+      onFiltersChange(defaultFilters as T);
     } else if (type === LayoutType.ORDER_MANAGEMENT) {
       // Order management filters are local to the page
       onFiltersChange(defaultFilters as T);
@@ -145,7 +126,7 @@ export function FilterPanel<
   };
 
   // Get title based on type
-  const title = type === "analytics" ? "Analitikos filtrai" : "Filtrai";
+  const title = "Filtrai";
   const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
     useState(true);
   const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
@@ -413,22 +394,27 @@ export function FilterPanel<
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Categories Section - only for parts */}
-        {type === LayoutType.PARTS && hasCategories && !hideCategoriesAndWheels && (
-          <CategorySection
-            categories={categories}
-            selectedCategories={selectedCategoryIds}
-            onCategoryToggle={handleCategoryToggle}
-          />
-        )}
+        {type === LayoutType.PARTS &&
+          hasCategories &&
+          !hideCategoriesAndWheels && (
+            <CategorySection
+              categories={categories}
+              selectedCategories={selectedCategoryIds}
+              onCategoryToggle={handleCategoryToggle}
+            />
+          )}
 
         {/* Wheels Section - only for parts */}
-        {type === LayoutType.PARTS && hasWheels && wheelsFilters && !hideCategoriesAndWheels && (
-          <WheelsSection
-            wheels={wheelsFilters}
-            selectedFilters={selectedWheelFilters}
-            onFilterChange={handleWheelFilterChange}
-          />
-        )}
+        {type === LayoutType.PARTS &&
+          hasWheels &&
+          wheelsFilters &&
+          !hideCategoriesAndWheels && (
+            <WheelsSection
+              wheels={wheelsFilters}
+              selectedFilters={selectedWheelFilters}
+              onFilterChange={handleWheelFilterChange}
+            />
+          )}
 
         {/* Default Filters Collapsible Section */}
         <FilterSection
@@ -440,11 +426,23 @@ export function FilterPanel<
           hasSelection={hasDefaultFiltersSelection}
           selectionCount={defaultFiltersCount}
         >
-          {getFilter(type, filters, updateFilters, resetFilters, cars, showOrderIdFilter)}
+          {getFilter(
+            type,
+            filters,
+            updateFilters,
+            resetFilters,
+            cars,
+            showOrderIdFilter
+          )}
         </FilterSection>
 
         {/* Filter Button */}
         {type === LayoutType.PARTS && (
+          <div className="flex justify-end pt-2">
+            <Button className="px-6">Filtruoti</Button>
+          </div>
+        )}
+        {type === LayoutType.ANALYTICS && (
           <div className="flex justify-end pt-2">
             <Button className="px-6">Filtruoti</Button>
           </div>

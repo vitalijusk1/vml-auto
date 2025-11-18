@@ -182,16 +182,43 @@ const transformOrder = (order: any): any => {
       vatNumber: order.company_vat_code || undefined,
       viesValidated: viesResult.viesValidated,
     },
-    items: (order.items || []).map((item: any) => ({
-      partId: item.item_id || String(item.id || ""),
-      partName: item.name || "",
-      quantity: item.quantity ?? 1, // Default to 1 if not provided
-      priceEUR: parseFloat(item.price || item.sell_price || "0") || 0,
-      pricePLN: 0, // Not provided in API response
-      carId: item.car_id || undefined,
-      manufacturerCode: item.manufacturer_code || undefined,
-      // Car details, body type, engine capacity, fuel type need to be fetched separately
-    })),
+    items: (order.items || []).map((item: any) => {
+      // Extract car data from part_details.car if available
+      const carData = item.part_details?.car;
+      const partDetails = item.part_details;
+      
+      // Extract photo and photo gallery
+      const photo = partDetails?.photo || item.photo;
+      const photoGallery = partDetails?.part_photo_gallery 
+        ? [
+            ...(partDetails.photo ? [partDetails.photo] : []),
+            ...partDetails.part_photo_gallery.filter((p): p is string => !!p)
+          ]
+        : partDetails?.photo 
+          ? [partDetails.photo] 
+          : undefined;
+      
+      return {
+        partId: item.item_id || String(item.id || ""),
+        partName: item.name || "",
+        quantity: item.quantity ?? 1, // Default to 1 if not provided
+        priceEUR: parseFloat(item.price || item.sell_price || "0") || 0,
+        pricePLN: 0, // Not provided in API response
+        photo: photo,
+        photoGallery: photoGallery,
+        carId: item.car_id || carData?.id || undefined,
+        manufacturerCode: item.manufacturer_code || partDetails?.manufacturer_code || undefined,
+        // Car details from part_details.car
+        ...(carData && {
+          carBrand: carData.brand || carData.car_model?.brand?.name || undefined,
+          carModel: carData.model || carData.car_model?.name || undefined,
+          carYear: carData.year || carData.car_years ? parseInt(carData.car_years) : undefined,
+          bodyType: carData.body_type || carData.car_body_type?.name || undefined,
+          engineCapacity: carData.engine_capacity || carData.car_engine_cubic_capacity ? parseInt(carData.car_engine_cubic_capacity) : undefined,
+          fuelType: carData.fuel || carData.car_fuel?.name || undefined,
+        }),
+      };
+    }),
     totalAmountEUR: parseFloat(order.total_price || "0") || 0,
     totalAmountPLN: 0, // Not provided in API response, would need conversion
     shippingCostEUR: parseFloat(order.shipping_price || "0") || 0,

@@ -143,7 +143,7 @@ export const apiEndpoints = {
   deleteOrder: (id: string) => `/orders/${id}`,
 
   // Returns
-  getReturns: () => `/returns`,
+  getReturns: () => `/order-returns`,
   getReturnById: (id: string) => `/returns/${id}`,
   createReturn: () => `/returns`,
   updateReturn: (id: string) => `/returns/${id}`,
