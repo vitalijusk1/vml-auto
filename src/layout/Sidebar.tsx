@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   Package,
   ShoppingCart,
   RotateCcw,
@@ -18,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Skydelis", icon: LayoutDashboard, view: "dashboard" as const },
   { name: "Sandėlys", icon: Package, view: "parts" as const },
   { name: "Užsakymai", icon: ShoppingCart, view: "orders" as const },
   { name: "Grąžinimai", icon: RotateCcw, view: "returns" as const },
@@ -55,7 +53,7 @@ export function Sidebar() {
         </Button>
         {!isCollapsed && (
           <h1 className="text-xl font-bold ml-2 truncate min-w-0 flex-1">
-            RRR Car Parts
+            VML AUTO
           </h1>
         )}
       </div>
