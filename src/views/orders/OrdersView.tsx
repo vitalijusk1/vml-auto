@@ -3,7 +3,6 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   selectOrders,
   selectBackendFilters,
-  selectCars,
   selectFilters,
 } from "@/store/selectors";
 import { OrderStatus, FilterState } from "@/types";
@@ -25,6 +24,13 @@ import { FilterPanel } from "@/components/filters/FilterPanel";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { Pagination } from "@/components/ui/Pagination";
 import { TableToolbar } from "@/components/ui/TableToolbar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PhotoGallery } from "@/components/modals/components/PhotoGallery";
 
 // Get status badge class for order statuses
 const getOrderStatusClass = (status: OrderStatus) => {
@@ -69,48 +75,20 @@ export function OrdersView() {
   const dispatch = useAppDispatch();
   const orders = useAppSelector(selectOrders);
   const backendFilters = useAppSelector(selectBackendFilters);
-  const cars = useAppSelector(selectCars);
   const filters = useAppSelector(selectFilters);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [tableFilter, setTableFilter] = useState("");
+  const [selectedPhotoGallery, setSelectedPhotoGallery] = useState<{
+    photos: string[];
+    title: string;
+  } | null>(null);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 15,
     total: 0,
     last_page: 1,
   });
-
-  // Enrich orders with car details from Redux
-  const enrichedOrders = useMemo(() => {
-    return orders.map((order) => ({
-      ...order,
-      items: order.items.map((item) => {
-        // Find car by ID (carId might be string or number)
-        const car = item.carId
-          ? cars.find(
-              (c) =>
-                c.id === Number(item.carId) ||
-                String(c.id) === String(item.carId)
-            )
-          : null;
-
-        return {
-          ...item,
-          // Car details from car lookup
-          ...(car && {
-            carBrand: car.brand,
-            carModel: car.model.name,
-            carYear: car.year,
-            bodyType: car.body_type?.name,
-            engineCapacity: car.engine.capacity,
-            fuelType: car.fuel?.name,
-          }),
-          // Manufacturer code comes directly from the API response (mapped in transformOrder)
-        };
-      }),
-    }));
-  }, [orders, cars]);
 
   // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
@@ -173,10 +151,10 @@ export function OrdersView() {
 
   // Always expand all orders by default when orders change
   useEffect(() => {
-    if (enrichedOrders.length > 0) {
-      setExpandedOrders(new Set(enrichedOrders.map((o) => o.id)));
+    if (orders.length > 0) {
+      setExpandedOrders(new Set(orders.map((o) => o.id)));
     }
-  }, [enrichedOrders]);
+  }, [orders]);
 
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders((prev) => {
@@ -193,10 +171,10 @@ export function OrdersView() {
   // Client-side table filtering
   const displayOrders = useMemo(() => {
     if (!tableFilter.trim()) {
-      return enrichedOrders;
+      return orders;
     }
     const filterLower = tableFilter.toLowerCase();
-    return enrichedOrders.filter((order) => {
+    return orders.filter((order) => {
       return (
         order.id.toLowerCase().includes(filterLower) ||
         order.customer?.name?.toLowerCase().includes(filterLower) ||
@@ -206,7 +184,7 @@ export function OrdersView() {
         )
       );
     });
-  }, [enrichedOrders, tableFilter]);
+  }, [orders, tableFilter]);
 
   return (
     <div className="space-y-6">
@@ -379,11 +357,27 @@ export function OrdersView() {
                                       className="flex items-start justify-between gap-4 p-3 bg-muted/30 rounded-lg border hover:bg-muted/30"
                                     >
                                       {item.photo && (
-                                        <img
-                                          src={item.photo}
-                                          alt={item.partName}
-                                          className="w-16 h-16 object-cover rounded flex-shrink-0"
-                                        />
+                                        <button
+                                          onClick={() => {
+                                            const photos =
+                                              item.photoGallery ||
+                                              (item.photo ? [item.photo] : []);
+                                            if (photos.length > 0) {
+                                              setSelectedPhotoGallery({
+                                                photos,
+                                                title:
+                                                  item.partName || "Nuotraukos",
+                                              });
+                                            }
+                                          }}
+                                          className="w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                        >
+                                          <img
+                                            src={item.photo}
+                                            alt={item.partName}
+                                            className="w-16 h-16 object-cover rounded"
+                                          />
+                                        </button>
                                       )}
                                       <div className="flex flex-col flex-1">
                                         <div className="text-xs text-muted-foreground mb-1">
@@ -508,6 +502,33 @@ export function OrdersView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Photo Gallery Modal */}
+      <Dialog
+        open={!!selectedPhotoGallery}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedPhotoGallery(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedPhotoGallery?.title || "Nuotraukos"}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPhotoGallery && (
+            <div className="mt-4">
+              <PhotoGallery
+                photos={selectedPhotoGallery.photos}
+                title="Nuotraukos"
+                altPrefix={`${selectedPhotoGallery.title} - Nuotrauka`}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

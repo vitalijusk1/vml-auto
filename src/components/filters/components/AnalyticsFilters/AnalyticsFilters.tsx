@@ -1,15 +1,22 @@
+import { useMemo } from "react";
 import { CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
-import { DynamicInputRow } from "@/components/ui/DynamicInputRow";
-import { AnalyticsFilters as AnalyticsFiltersType } from "@/views/analytics/AnalyticsFilters";
-import { OrderStatus, PartStatus, Car } from "@/types";
+import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
+import {
+  FilterState,
+  PartQuality,
+  PartPosition,
+  BodyType,
+  FuelType,
+  Car,
+} from "@/types";
+import { useBackendFilters } from "@/hooks/useBackendFilters";
+import { useAppSelector } from "@/store/hooks";
+import { selectBackendFilters } from "@/store/selectors";
 
 interface AnalyticsFiltersProps {
-  filters: AnalyticsFiltersType;
-  onFiltersChange: (updates: Partial<AnalyticsFiltersType>) => void;
+  filters: FilterState;
+  onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
   cars?: Car[];
 }
@@ -17,238 +24,340 @@ interface AnalyticsFiltersProps {
 export const AnalyticsFilters = ({
   filters,
   onFiltersChange,
-  onReset,
+  onReset: _onReset,
   cars: _cars = [],
 }: AnalyticsFiltersProps) => {
-  // TODO: Get filter options (brands, categories) from backendFilters
-  // For now, using empty arrays until backend provides these filter options
-  const uniqueBrands: string[] = [];
-  const uniqueCategories: string[] = [];
-  const hasActiveFilters =
-    filters.dateRange?.from ||
-    filters.dateRange?.to ||
-    !filters.orderStatus ||
-    filters.orderStatus.length !== 1 ||
-    filters.orderStatus[0] !== "Delivered" ||
-    !filters.partStatus ||
-    filters.partStatus.length !== 1 ||
-    filters.partStatus[0] !== "Sold" ||
-    (filters.category && filters.category.length > 0) ||
-    (filters.brand && filters.brand.length > 0) ||
-    filters.timePeriod !== "month" ||
-    filters.metric !== "revenue";
+  const backendFilters = useAppSelector(selectBackendFilters);
+
+  // Extract filter options from backend
+  const {
+    brands,
+    models: allModels,
+    bodyTypes,
+    qualities,
+    positions,
+  } = useBackendFilters();
+
+  // Filter models based on selected brands
+  const models = useMemo(() => {
+    const backendFiltersData = backendFilters as any;
+    if (
+      !backendFiltersData?.car?.brands ||
+      !Array.isArray(backendFiltersData.car.brands)
+    ) {
+      return allModels;
+    }
+
+    // If no brands selected, return all models from all brands
+    if (!filters.carBrand || filters.carBrand.length === 0) {
+      const allModelsFromBrands: string[] = [];
+      for (const brand of backendFiltersData.car.brands) {
+        if (brand.models && Array.isArray(brand.models)) {
+          const brandModels = brand.models.map((model: any) => {
+            return model.name || String(model);
+          });
+          allModelsFromBrands.push(...brandModels);
+        }
+      }
+      return [...new Set(allModelsFromBrands)];
+    }
+
+    // Get selected brand names and find matching brands
+    const selectedBrandNames = filters.carBrand;
+    const modelsByBrand: string[] = [];
+
+    for (const brand of backendFiltersData.car.brands) {
+      const brandName =
+        brand.languages?.en || brand.languages?.name || brand.name;
+      if (selectedBrandNames.includes(brandName)) {
+        if (brand.models && Array.isArray(brand.models)) {
+          const brandModels = brand.models.map((model: any) => {
+            return model.name || String(model);
+          });
+          modelsByBrand.push(...brandModels);
+        }
+      }
+    }
+
+    return [...new Set(modelsByBrand)];
+  }, [allModels, filters.carBrand, backendFilters]);
+
+  // Generate engine capacity options (common values in cc)
+  const engineCapacityOptions = useMemo(() => {
+    const capacities = [
+      "800",
+      "1000",
+      "1200",
+      "1400",
+      "1600",
+      "1800",
+      "2000",
+      "2200",
+      "2400",
+      "2600",
+      "2800",
+      "3000",
+      "3200",
+      "3500",
+      "4000",
+      "4500",
+      "5000",
+    ];
+    return capacities;
+  }, []);
+
+  // Fuel type options
+  const fuelTypeOptions: FuelType[] = [
+    "Petrol",
+    "Diesel",
+    "Electric",
+    "Hybrid",
+  ];
+
+  if (backendFilters === null) {
+    return (
+      <CardContent>
+        <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
+      </CardContent>
+    );
+  }
 
   return (
     <CardContent className="space-y-4">
-      {/* Time Period and Metric Type in a row */}
-      <DynamicInputRow gap={4} maxPerRow={2}>
+      {/* Two rows of filters */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Row 1 */}
+        {/* Brand (Manufacturer) */}
         <div>
-          <label className="text-sm font-medium mb-2 block">
-            Time Period Grouping
-          </label>
-          <Select
-            value={filters.timePeriod}
-            onChange={(e) =>
+          <label className="text-sm font-medium mb-2 block">Gamintojas</label>
+          <MultiSelectDropdown
+            options={brands}
+            selected={filters.carBrand || []}
+            onChange={(selected) => {
               onFiltersChange({
-                timePeriod: e.target.value as "day" | "week" | "month" | "year",
-              })
-            }
-          >
-            <option value="day">By Day</option>
-            <option value="week">By Week</option>
-            <option value="month">By Month</option>
-            <option value="year">By Year</option>
-          </Select>
+                carBrand: selected,
+                carModel: [],
+              });
+            }}
+            placeholder="Visi"
+            searchable={true}
+            searchPlaceholder="Ieškoti gamintojų..."
+          />
         </div>
 
+        {/* Model */}
         <div>
-          <label className="text-sm font-medium mb-2 block">Metric Type</label>
-          <Select
-            value={filters.metric}
-            onChange={(e) =>
-              onFiltersChange({
-                metric: e.target.value as "revenue" | "count" | "both",
-              })
-            }
-          >
-            <option value="revenue">Revenue (EUR)</option>
-            <option value="count">Count</option>
-            <option value="both">Both</option>
-          </Select>
+          <label className="text-sm font-medium mb-2 block">Modelis</label>
+          <MultiSelectDropdown
+            options={models}
+            selected={filters.carModel || []}
+            onChange={(selected) => onFiltersChange({ carModel: selected })}
+            placeholder="Visi"
+            searchable={true}
+            searchPlaceholder="Ieškoti modelių..."
+          />
         </div>
-      </DynamicInputRow>
 
-      {/* Date Range */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Date Range</label>
-        <DynamicInputRow gap={2} maxPerRow={2}>
-          <Input
-            type="date"
-            value={
-              filters.dateRange?.from
-                ? filters.dateRange.from!.toISOString().split("T")[0]
-                : ""
-            }
-            onChange={(e) =>
-              onFiltersChange({
-                dateRange: {
-                  ...filters.dateRange,
-                  from: e.target.value ? new Date(e.target.value) : undefined,
-                },
-              } as Partial<AnalyticsFiltersType>)
-            }
+        {/* Body Type */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Kėbulo tipas</label>
+          <MultiSelectDropdown
+            options={bodyTypes as BodyType[]}
+            selected={filters.bodyType || []}
+            onChange={(selected) => onFiltersChange({ bodyType: selected })}
+            placeholder="Visi"
+            searchable={true}
+            searchPlaceholder="Ieškoti kėbulo tipų..."
           />
-          <Input
-            type="date"
-            value={
-              filters.dateRange?.to
-                ? filters.dateRange.to!.toISOString().split("T")[0]
-                : ""
+        </div>
+
+        {/* Quality */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Kokybė</label>
+          <MultiSelectDropdown
+            options={qualities}
+            selected={filters.quality || []}
+            onChange={(selected) =>
+              onFiltersChange({ quality: selected as PartQuality[] })
             }
-            onChange={(e) =>
-              onFiltersChange({
-                dateRange: {
-                  ...filters.dateRange,
-                  to: e.target.value ? new Date(e.target.value) : undefined,
-                },
-              } as Partial<AnalyticsFiltersType>)
-            }
+            placeholder="Visos"
+            searchable={true}
+            searchPlaceholder="Ieškoti kokybių..."
           />
-        </DynamicInputRow>
+        </div>
+
+        {/* Position */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Pozicija</label>
+          <MultiSelectDropdown
+            options={positions}
+            selected={filters.position || []}
+            onChange={(selected) =>
+              onFiltersChange({ position: selected as PartPosition[] })
+            }
+            placeholder="Visos"
+            searchable={true}
+            searchPlaceholder="Ieškoti pozicijų..."
+          />
+        </div>
       </div>
 
-      {/* Quick Date Presets */}
-      <div>
-        <label className="text-sm font-medium mb-2 block">Quick Presets</label>
-        <DynamicInputRow gap={2} maxPerRow={4}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              const now = new Date();
-              const thirtyDaysAgo = new Date();
-              thirtyDaysAgo.setDate(now.getDate() - 30);
-              onFiltersChange({
-                dateRange: { from: thirtyDaysAgo, to: now },
-              });
-            }}
-          >
-            Last 30 Days
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              const now = new Date();
-              const threeMonthsAgo = new Date();
-              threeMonthsAgo.setMonth(now.getMonth() - 3);
-              onFiltersChange({
-                dateRange: { from: threeMonthsAgo, to: now },
-              });
-            }}
-          >
-            Last 3 Months
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              const now = new Date();
-              const sixMonthsAgo = new Date();
-              sixMonthsAgo.setMonth(now.getMonth() - 6);
-              onFiltersChange({
-                dateRange: { from: sixMonthsAgo, to: now },
-              });
-            }}
-          >
-            Last 6 Months
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => {
-              const now = new Date();
-              const oneYearAgo = new Date();
-              oneYearAgo.setFullYear(now.getFullYear() - 1);
-              onFiltersChange({
-                dateRange: { from: oneYearAgo, to: now },
-              });
-            }}
-          >
-            Last Year
-          </Button>
-        </DynamicInputRow>
-      </div>
-
-      {/* Multi-select filters in a grid */}
-      <DynamicInputRow gap={4}>
-        {/* Order Status */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Order Status</label>
-          <MultiSelectDropdown
-            options={
-              [
-                "Pending",
-                "Processing",
-                "Shipped",
-                "Delivered",
-                "Cancelled",
-              ] as OrderStatus[]
-            }
-            selected={filters.orderStatus || []}
-            onChange={(selected) => onFiltersChange({ orderStatus: selected })}
-            placeholder="Select order status"
-          />
-        </div>
-
-        {/* Part Status */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">Part Status</label>
-          <MultiSelectDropdown
-            options={
-              ["In Stock", "Reserved", "Sold", "Returned"] as PartStatus[]
-            }
-            selected={filters.partStatus || []}
-            onChange={(selected) => onFiltersChange({ partStatus: selected })}
-            placeholder="Select part status"
-          />
-        </div>
-
-        {/* Category */}
+      {/* Row 2 */}
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
+        {/* Engine Volume */}
         <div>
           <label className="text-sm font-medium mb-2 block">
-            Part Category
+            Variklio tūris
           </label>
           <MultiSelectDropdown
-            options={uniqueCategories}
-            selected={filters.category || []}
-            onChange={(selected) => onFiltersChange({ category: selected })}
-            placeholder="Select categories"
+            options={engineCapacityOptions}
+            selected={filters.engineCapacity || []}
+            onChange={(selected) =>
+              onFiltersChange({ engineCapacity: selected })
+            }
+            placeholder="Visi"
+            searchable={true}
+            searchPlaceholder="Ieškoti variklio tūrių..."
           />
         </div>
 
-        {/* Brand */}
+        {/* Fuel Type */}
         <div>
-          <label className="text-sm font-medium mb-2 block">Car Brand</label>
+          <label className="text-sm font-medium mb-2 block">Kuro tipas</label>
           <MultiSelectDropdown
-            options={uniqueBrands}
-            selected={filters.brand || []}
-            onChange={(selected) => onFiltersChange({ brand: selected })}
-            placeholder="Select brands"
+            options={fuelTypeOptions}
+            selected={filters.fuelType || []}
+            onChange={(selected) =>
+              onFiltersChange({ fuelType: selected as FuelType[] })
+            }
+            placeholder="Visi"
+            searchable={true}
+            searchPlaceholder="Ieškoti kuro tipų..."
           />
         </div>
-      </DynamicInputRow>
 
-      {/* Reset Filters */}
-      {hasActiveFilters && (
-        <Button variant="outline" className="w-full" onClick={onReset}>
-          Reset Filters
-        </Button>
-      )}
+        {/* Year Range */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Metų pasirinkimas
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Nuo" },
+                ...Array.from(
+                  { length: new Date().getFullYear() - 1959 },
+                  (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return { value: year.toString(), label: year.toString() };
+                  }
+                ),
+              ]}
+              value={filters.yearRange?.min?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  yearRange: {
+                    ...(filters.yearRange || {}),
+                    min: value ? parseInt(value) : undefined,
+                  },
+                })
+              }
+              placeholder="Nuo"
+              className="[&>button]:h-10"
+            />
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Iki" },
+                ...Array.from(
+                  { length: new Date().getFullYear() - 1959 },
+                  (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return { value: year.toString(), label: year.toString() };
+                  }
+                ),
+              ]}
+              value={filters.yearRange?.max?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  yearRange: {
+                    ...(filters.yearRange || {}),
+                    max: value ? parseInt(value) : undefined,
+                  },
+                })
+              }
+              placeholder="Iki"
+              className="[&>button]:h-10"
+            />
+          </div>
+        </div>
+
+        {/* Price Range */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Kainų pasirinkimas
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Nuo" },
+                { value: "0", label: "0" },
+                { value: "10", label: "10" },
+                { value: "25", label: "25" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" },
+                { value: "250", label: "250" },
+                { value: "500", label: "500" },
+                { value: "1000", label: "1000" },
+                { value: "2500", label: "2500" },
+                { value: "5000", label: "5000" },
+                { value: "10000", label: "10000" },
+                { value: "25000", label: "25000" },
+                { value: "50000", label: "50000" },
+              ]}
+              value={filters.priceRange?.min?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  priceRange: {
+                    ...(filters.priceRange || {}),
+                    min: value ? parseFloat(value) : undefined,
+                  },
+                })
+              }
+              placeholder="Nuo"
+              className="[&>button]:h-10"
+            />
+            <SingleSelectDropdown
+              options={[
+                { value: "", label: "Iki" },
+                { value: "10", label: "10" },
+                { value: "25", label: "25" },
+                { value: "50", label: "50" },
+                { value: "100", label: "100" },
+                { value: "250", label: "250" },
+                { value: "500", label: "500" },
+                { value: "1000", label: "1000" },
+                { value: "2500", label: "2500" },
+                { value: "5000", label: "5000" },
+                { value: "10000", label: "10000" },
+                { value: "25000", label: "25000" },
+                { value: "50000", label: "50000" },
+                { value: "100000", label: "100000+" },
+              ]}
+              value={filters.priceRange?.max?.toString() || ""}
+              onChange={(value: string) =>
+                onFiltersChange({
+                  priceRange: {
+                    ...(filters.priceRange || {}),
+                    max: value ? parseFloat(value) : undefined,
+                  },
+                })
+              }
+              placeholder="Iki"
+              className="[&>button]:h-10"
+            />
+          </div>
+        </div>
+      </div>
     </CardContent>
   );
 };

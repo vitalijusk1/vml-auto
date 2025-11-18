@@ -16,13 +16,21 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { setReturns } from "@/store/slices/dataSlice";
 import { setFilters } from "@/store/slices/filtersSlice";
 import { getReturns } from "@/api/returns";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { Pagination } from "@/components/ui/Pagination";
 import { TableToolbar } from "@/components/ui/TableToolbar";
+import { getStatusBadgeClass } from "@/theme/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { PhotoGallery } from "@/components/modals/components/PhotoGallery";
 
 // Helper function to safely format dates
 const formatReturnDate = (date: Date | string | null | undefined): string => {
@@ -49,6 +57,10 @@ export function ReturnsView() {
   );
   const [isLoadingReturns, setIsLoadingReturns] = useState(false);
   const [tableFilter, setTableFilter] = useState("");
+  const [selectedPhotoGallery, setSelectedPhotoGallery] = useState<{
+    photos: string[];
+    title: string;
+  } | null>(null);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 15,
@@ -232,15 +244,18 @@ export function ReturnsView() {
                   <TableHead>Užsakovas</TableHead>
                   <TableHead>Šalis</TableHead>
                   <TableHead>Kiekis</TableHead>
-                  <TableHead>Sumokėta</TableHead>
+                  <TableHead>Grąžintina suma</TableHead>
+                  <TableHead>Grąžinimo statusas</TableHead>
+                  <TableHead>Grąžinimo būsena</TableHead>
                   <TableHead>Sandėlys</TableHead>
+                  <TableHead>Veiksmas</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayReturns.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={11}
                       className="text-center py-8 text-muted-foreground"
                     >
                       Nėra grąžinimų
@@ -253,10 +268,12 @@ export function ReturnsView() {
                       <Fragment key={returnItem.id}>
                         <TableRow className="border-b-0">
                           <TableCell className="font-semibold">
-                            {returnItem.orderId}
+                            {returnItem.itemOrderId ||
+                              returnItem.orderId ||
+                              "N/A"}
                           </TableCell>
                           <TableCell className="font-semibold">
-                            {returnItem.id}
+                            {returnItem.itemId || returnItem.id || "N/A"}
                           </TableCell>
                           <TableCell className="font-semibold">
                             {formatReturnDate(returnItem.dateCreated)}
@@ -293,22 +310,56 @@ export function ReturnsView() {
                           </TableCell>
                           <TableCell>
                             <div className="font-semibold">
-                              €
-                              {(
-                                returnItem.refundableAmountEUR || 0
-                              ).toLocaleString()}
+                              €{(returnItem.returnAmount || 0).toLocaleString()}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              PLN{" "}
-                              {(
-                                returnItem.refundableAmountPLN || 0
-                              ).toLocaleString()}
-                            </div>
+                            {returnItem.refundableAmountPLN > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                PLN{" "}
+                                {(
+                                  returnItem.refundableAmountPLN || 0
+                                ).toLocaleString()}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                                "return",
+                                returnItem.status || ""
+                              )}`}
+                            >
+                              {returnItem.returnStatus || "N/A"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              {returnItem.refundStatus || "N/A"}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
                               N/A
                             </span>
+                          </TableCell>
+                          <TableCell>
+                            {returnItem.creditNoteUrl ? (
+                              <button
+                                onClick={() => {
+                                  window.open(
+                                    returnItem.creditNoteUrl,
+                                    "_blank"
+                                  );
+                                }}
+                                className="flex items-center justify-center w-8 h-8 rounded hover:bg-muted transition-colors"
+                                title="Peržiūrėti sąskaitą faktūrą"
+                              >
+                                <Eye className="h-4 w-4 text-primary" />
+                              </button>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                -
+                              </span>
+                            )}
                           </TableCell>
                         </TableRow>
                         {isExpanded && (
@@ -316,7 +367,7 @@ export function ReturnsView() {
                             key={`${returnItem.id}-expanded`}
                             className="hover:bg-transparent"
                           >
-                            <TableCell colSpan={8} className="p-0">
+                            <TableCell colSpan={11} className="p-0">
                               <div className="py-4">
                                 <h4 className="font-semibold text-xs mb-3">
                                   Grąžinamos prekės ({returnItem.items.length})
@@ -327,11 +378,34 @@ export function ReturnsView() {
                                       key={idx}
                                       className="flex items-start justify-between gap-4 p-3 bg-muted/30 rounded-lg border hover:bg-muted/30"
                                     >
+                                      {item.photo && (
+                                        <button
+                                          onClick={() => {
+                                            const photos =
+                                              item.photoGallery ||
+                                              (item.photo ? [item.photo] : []);
+                                            if (photos.length > 0) {
+                                              setSelectedPhotoGallery({
+                                                photos,
+                                                title:
+                                                  item.partName || "Nuotraukos",
+                                              });
+                                            }
+                                          }}
+                                          className="w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                        >
+                                          <img
+                                            src={item.photo}
+                                            alt={item.partName}
+                                            className="w-16 h-16 object-cover rounded"
+                                          />
+                                        </button>
+                                      )}
                                       <div className="flex flex-col flex-1">
                                         <div className="text-xs text-muted-foreground mb-1">
-                                          Pavadinimas
+                                          Prekė
                                         </div>
-                                        <div className="text-sm">
+                                        <div className="text-sm font-semibold">
                                           {item.partName || "N/A"}
                                         </div>
                                       </div>
@@ -341,6 +415,63 @@ export function ReturnsView() {
                                         </div>
                                         <div className="text-sm">
                                           {item.partId || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Gamintojo kodas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.manufacturerCode ||
+                                            item.partCode ||
+                                            "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Automobilis
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.carBrand && item.carModel ? (
+                                            <>
+                                              <div>
+                                                {item.carBrand} {item.carModel}
+                                              </div>
+                                              {item.carYear && (
+                                                <div className="text-xs text-muted-foreground">
+                                                  {item.carYear}
+                                                </div>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <div>N/A</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Kėbulo tipas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.carBodyType || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Kuro tipas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.carFuelType || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Variklio tūris
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.carEngineCapacity
+                                            ? `${item.carEngineCapacity}L`
+                                            : "N/A"}
                                         </div>
                                       </div>
                                       <div className="flex flex-col flex-1">
@@ -356,27 +487,8 @@ export function ReturnsView() {
                                           Kaina
                                         </div>
                                         <div className="text-sm">
-                                          €
-                                          {(
-                                            item.priceEUR || 0
-                                          ).toLocaleString()}
+                                          €{(item.price || 0).toLocaleString()}
                                         </div>
-                                        <div className="text-xs text-muted-foreground mt-1">
-                                          PLN{" "}
-                                          {(
-                                            item.pricePLN || 0
-                                          ).toLocaleString()}
-                                        </div>
-                                        {item.quantity > 1 && (
-                                          <>
-                                            <div className="text-xs text-muted-foreground mt-1">
-                                              Kiekis
-                                            </div>
-                                            <div className="text-sm">
-                                              {item.quantity}
-                                            </div>
-                                          </>
-                                        )}
                                       </div>
                                     </div>
                                   ))}
@@ -409,6 +521,33 @@ export function ReturnsView() {
           )}
         </CardContent>
       </Card>
+
+      {/* Photo Gallery Modal */}
+      <Dialog
+        open={!!selectedPhotoGallery}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedPhotoGallery(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedPhotoGallery?.title || "Nuotraukos"}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedPhotoGallery && (
+            <div className="mt-4">
+              <PhotoGallery
+                photos={selectedPhotoGallery.photos}
+                title="Nuotraukos"
+                altPrefix={`${selectedPhotoGallery.title} - Nuotrauka`}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -115,6 +115,7 @@ export interface OrderItem {
   priceEUR: number;
   pricePLN: number;
   photo?: string;
+  photoGallery?: string[];
   carId?: string | number;
   carBrand?: string;
   carModel?: string;
@@ -159,6 +160,8 @@ export interface Order {
 export interface Return {
   id: string;
   orderId: string;
+  itemOrderId?: string; // order_id from items
+  itemId?: string; // id from items
   dateCreated: Date;
   customerId: string;
   customer: Customer;
@@ -167,12 +170,31 @@ export interface Return {
     partName: string;
     quantity: number;
     reason: string;
+    price: number;
     priceEUR: number;
     pricePLN: number;
+    // Part details from API
+    partCode?: string;
+    partCategory?: string;
+    partStatus?: string;
+    partWarehouse?: string;
+    partPriceEUR?: number;
+    photo?: string;
+    photoGallery?: string[];
+    manufacturerCode?: string;
+    carBrand?: string;
+    carModel?: string;
+    carYear?: number;
+    carBodyType?: string;
+    carFuelType?: string;
+    carEngineCapacity?: number;
   }>;
   refundableAmountEUR: number;
   refundableAmountPLN: number;
+  returnAmount: number;
   status: ReturnStatus;
+  returnStatus: string;
+  refundStatus?: string;
   creditNoteUrl?: string;
 }
 
