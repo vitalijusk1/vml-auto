@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { CardContent } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
+import { Input } from "@/components/ui/input";
 import {
   FilterState,
   PartStatus,
@@ -19,6 +20,7 @@ interface PartFiltersProps {
   onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
   cars?: Car[];
+  showOrderIdFilter?: boolean;
 }
 
 export const PartFilters = ({
@@ -26,6 +28,7 @@ export const PartFilters = ({
   onFiltersChange,
   onReset,
   cars: _cars = [],
+  showOrderIdFilter = false,
 }: PartFiltersProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
 
@@ -103,6 +106,20 @@ export const PartFilters = ({
 
   return (
     <div className="space-y-4">
+      {/* Search / Order ID Filter - only for orders */}
+      {showOrderIdFilter && (
+        <div>
+          <label className="text-sm font-medium mb-2 block">
+            Užsakymo Nr.
+          </label>
+          <Input
+            placeholder="Ieškoti pagal užsakymo numerį..."
+            value={filters.search || ""}
+            onChange={(e) => onFiltersChange({ search: e.target.value })}
+            className="max-w-md"
+          />
+        </div>
+      )}
       {/* Single grid layout: 1 col 0-440px, 2 cols 440-635px, 3 cols 635px+, 5 cols 1280px+ */}
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Brand (Manufacturer) */}

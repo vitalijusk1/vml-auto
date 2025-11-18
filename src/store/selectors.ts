@@ -17,6 +17,10 @@ export const selectReturns = (state: RootState) => {
   return Array.isArray(returns) ? returns : [];
 };
 export const selectBackendFilters = (state: RootState) => state.data.backendFilters;
+export const selectCars = (state: RootState) => {
+  const cars = state.data.cars;
+  return Array.isArray(cars) ? cars : [];
+};
 export const selectFilters = (state: RootState) => state.filters;
 export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;

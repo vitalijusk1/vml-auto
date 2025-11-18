@@ -6,9 +6,8 @@ import {
   selectFilters,
 } from "@/store/selectors";
 import { setPartsPagination } from "@/store/slices/uiSlice";
-import { setBackendFilters } from "@/store/slices/dataSlice";
 import { setFilters } from "@/store/slices/filtersSlice";
-import { getParts, getFilters, filterStateToQueryParams } from "@/api/parts";
+import { getParts, filterStateToQueryParams } from "@/api/parts";
 import { Part } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
 import { Table } from "../../components/tables/Table";
@@ -42,21 +41,7 @@ export function PartsView() {
     return filterParts(parts, filters, cars);
   }, [parts, filters, cars]);
 
-  // Fetch filters on mount if not already in Redux
-  useEffect(() => {
-    const fetchFilters = async () => {
-      if (backendFilters === null) {
-        try {
-          const filtersData = await getFilters();
-          dispatch(setBackendFilters(filtersData));
-        } catch (error) {
-          console.error("Error fetching filters:", error);
-        }
-      }
-    };
-
-    fetchFilters();
-  }, [dispatch, backendFilters]);
+  // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
   // Serialize filters to detect changes properly (React does shallow comparison)
   const filtersKey = useMemo(() => {

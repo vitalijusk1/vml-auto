@@ -40,6 +40,9 @@ interface FilterPanelProps<
   onTopDetailsFilterChange?: (value: string) => void;
   onFilter?: () => void;
   isLoading?: boolean;
+  hideCategoriesAndWheels?: boolean;
+  hideTopDetailsFilter?: boolean;
+  showOrderIdFilter?: boolean;
 }
 
 const getFilter = (
@@ -49,7 +52,8 @@ const getFilter = (
     updates: Partial<FilterState | CarFilters | AnalyticsFilters>
   ) => void,
   onReset: () => void,
-  cars: Car[] = []
+  cars: Car[] = [],
+  showOrderIdFilter: boolean = false
 ) => {
   switch (type) {
     case LayoutType.CAR:
@@ -72,6 +76,7 @@ const getFilter = (
           }
           onReset={onReset}
           cars={cars}
+          showOrderIdFilter={showOrderIdFilter}
         />
       );
     case LayoutType.ANALYTICS:
@@ -111,6 +116,9 @@ export function FilterPanel<
   onTopDetailsFilterChange,
   onFilter,
   isLoading = false,
+  hideCategoriesAndWheels = false,
+  hideTopDetailsFilter = false,
+  showOrderIdFilter = false,
 }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
 
@@ -374,7 +382,7 @@ export function FilterPanel<
             {title}
           </CardTitle>
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
-            {type !== LayoutType.ORDER_MANAGEMENT && (
+            {type !== LayoutType.ORDER_MANAGEMENT && !hideTopDetailsFilter && (
               <div className="w-full xs:w-auto">
                 <SingleSelectDropdown
                   options={[
@@ -405,7 +413,7 @@ export function FilterPanel<
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Categories Section - only for parts */}
-        {type === LayoutType.PARTS && hasCategories && (
+        {type === LayoutType.PARTS && hasCategories && !hideCategoriesAndWheels && (
           <CategorySection
             categories={categories}
             selectedCategories={selectedCategoryIds}
@@ -414,7 +422,7 @@ export function FilterPanel<
         )}
 
         {/* Wheels Section - only for parts */}
-        {type === LayoutType.PARTS && hasWheels && wheelsFilters && (
+        {type === LayoutType.PARTS && hasWheels && wheelsFilters && !hideCategoriesAndWheels && (
           <WheelsSection
             wheels={wheelsFilters}
             selectedFilters={selectedWheelFilters}
@@ -432,7 +440,7 @@ export function FilterPanel<
           hasSelection={hasDefaultFiltersSelection}
           selectionCount={defaultFiltersCount}
         >
-          {getFilter(type, filters, updateFilters, resetFilters, cars)}
+          {getFilter(type, filters, updateFilters, resetFilters, cars, showOrderIdFilter)}
         </FilterSection>
 
         {/* Filter Button */}

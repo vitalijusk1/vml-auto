@@ -4,12 +4,10 @@ import {
   selectOrders,
   selectOrderControlSelectedCarId,
 } from "@/store/selectors";
-import { setBackendFilters } from "@/store/slices/dataSlice";
 import {
   setOrderControlSelectedCarId,
   clearOrderControlSelectedCarId,
 } from "@/store/slices/uiSlice";
-import { getFilters } from "@/api/parts";
 import { getCars } from "@/api/cars";
 import { getOrders } from "@/api/orders";
 import { setOrders } from "@/store/slices/dataSlice";
@@ -186,21 +184,7 @@ export function OrderControlView() {
     isRestoring,
   ]);
 
-  // Fetch filters on mount if not already in Redux
-  useEffect(() => {
-    const fetchFilters = async () => {
-      if (backendFilters === null) {
-        try {
-          const filtersData = await getFilters();
-          dispatch(setBackendFilters(filtersData));
-        } catch (error) {
-          console.error("Error fetching filters:", error);
-        }
-      }
-    };
-
-    fetchFilters();
-  }, [dispatch, backendFilters]);
+  // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
   // Fetch orders if not already in Redux
   useEffect(() => {

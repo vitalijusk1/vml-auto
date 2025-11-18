@@ -1,28 +1,258 @@
 import authInstance from "./axios";
-import { Order, Part, PartStatus } from "@/types";
-import { apiEndpoints } from "./routes/routes";
-import { Category } from "@/utils/filterCars";
+import { Order, FilterState, OrderStatus } from "@/types";
+import { apiEndpoints, OrdersQueryParams } from "./routes/routes";
+
+// Helper functions to map filter names to IDs (similar to parts.ts)
+const mapBrandNameToId = (
+  brandName: string,
+  backendFilters: any
+): number | undefined => {
+  if (!backendFilters?.car?.brands) return undefined;
+  const brand = backendFilters.car.brands.find(
+    (b: any) =>
+      (b.languages?.en || b.languages?.name || b.name || String(b)) ===
+      brandName
+  );
+  return brand?.id;
+};
+
+const mapModelNameToId = (
+  modelName: string,
+  backendFilters: any,
+  brandNames?: string[]
+): number | undefined => {
+  if (!backendFilters?.car?.brands) return undefined;
+  const brands = brandNames
+    ? backendFilters.car.brands.filter((b: any) => {
+        const brandName =
+          b.languages?.en || b.languages?.name || b.name || String(b);
+        return brandNames.includes(brandName);
+      })
+    : backendFilters.car.brands;
+
+  for (const brand of brands) {
+    if (brand.models && Array.isArray(brand.models)) {
+      const model = brand.models.find(
+        (m: any) =>
+          (m.languages?.en || m.languages?.name || m.name || String(m)) ===
+          modelName
+      );
+      if (model?.id) return model.id;
+    }
+  }
+  return undefined;
+};
+
+const mapFuelTypeNameToId = (
+  fuelTypeName: string,
+  backendFilters: any
+): number | undefined => {
+  if (!backendFilters?.car?.fuel_types) return undefined;
+  const fuelType = backendFilters.car.fuel_types.find(
+    (f: any) =>
+      (f.languages?.en || f.languages?.name || f.name || String(f)) ===
+      fuelTypeName
+  );
+  return fuelType?.id;
+};
+
+/**
+ * Convert FilterState to OrdersQueryParams for API requests
+ */
+export const filterStateToOrdersQueryParams = (
+  filters: FilterState,
+  backendFilters?: any
+): OrdersQueryParams => {
+  const params: OrdersQueryParams = {};
+
+  // Search
+  if (filters.search && filters.search.trim()) {
+    params.search = filters.search.trim();
+  }
+
+  // Car filters - convert names to IDs
+  if (filters.carBrand && filters.carBrand.length > 0) {
+    const brandIds = filters.carBrand
+      .map((brandName) => mapBrandNameToId(brandName, backendFilters))
+      .filter((id): id is number => id !== undefined);
+    if (brandIds.length > 0) {
+      params.car_brand = brandIds.length === 1 ? brandIds[0] : brandIds;
+    }
+  }
+
+  if (filters.carModel && filters.carModel.length > 0) {
+    const modelIds = filters.carModel
+      .map((modelName) =>
+        mapModelNameToId(modelName, backendFilters, filters.carBrand)
+      )
+      .filter((id): id is number => id !== undefined);
+    if (modelIds.length > 0) {
+      params.car_model = modelIds.length === 1 ? modelIds[0] : modelIds;
+    }
+  }
+
+  // Year range
+  if (filters.yearRange?.min !== undefined) {
+    params.year_min = filters.yearRange.min;
+  }
+  if (filters.yearRange?.max !== undefined) {
+    params.year_max = filters.yearRange.max;
+  }
+
+  // Fuel type
+  if (filters.fuelType && filters.fuelType.length > 0) {
+    const fuelIds = filters.fuelType
+      .map((fuelTypeName) => mapFuelTypeNameToId(fuelTypeName, backendFilters))
+      .filter((id): id is number => id !== undefined);
+    if (fuelIds.length > 0) {
+      params.fuel_id = fuelIds.length === 1 ? fuelIds[0] : fuelIds;
+    }
+  }
+
+  // Engine capacity
+  if (filters.engineCapacity && filters.engineCapacity.length > 0) {
+    params.engine_volume =
+      filters.engineCapacity.length === 1
+        ? filters.engineCapacity[0]
+        : filters.engineCapacity;
+  }
+
+  // Date range
+  if (filters.dateRange?.from) {
+    params.date_from = filters.dateRange.from.toISOString().split("T")[0];
+  }
+  if (filters.dateRange?.to) {
+    params.date_to = filters.dateRange.to.toISOString().split("T")[0];
+  }
+
+  return params;
+};
+
+// Map API order_status to OrderStatus enum
+const mapOrderStatus = (status: string): OrderStatus => {
+  const statusMap: Record<string, OrderStatus> = {
+    NEW: "Pending",
+    PREPARED: "Processing",
+    SENT: "Shipped",
+    DELIVERED: "Delivered",
+    CANCELLED: "Cancelled",
+  };
+  return statusMap[status] || "Pending";
+};
+
+// Parse VIES VAT check result if available
+const parseViesResult = (
+  viesResult: string | null
+): {
+  isCompany: boolean;
+  viesValidated?: boolean;
+} => {
+  if (!viesResult) return { isCompany: false };
+  try {
+    const parsed = JSON.parse(viesResult);
+    return {
+      isCompany: parsed.status === "valid",
+      viesValidated: parsed.status === "valid",
+    };
+  } catch {
+    return { isCompany: false };
+  }
+};
+
+// Transform API order data - map API response structure to Order type
+// Keep dates as strings for Redux serialization
+const transformOrder = (order: any): any => {
+  const viesResult = parseViesResult(order.vies_vat_check_result);
+  const isCompany = !!order.company_code || viesResult.isCompany;
+
+  return {
+    id: order.order_id || String(order.id),
+    date: order.order_date || new Date().toISOString(),
+    customerId: String(order.id || ""),
+    customer: {
+      id: String(order.id || ""),
+      name: order.client_name || "Unknown",
+      email: order.client_email || "",
+      phone: order.client_phone || "",
+      country: order.client_address_country || "",
+      city: order.client_address_city || "",
+      address: order.client_address || "",
+      isCompany: isCompany,
+      companyName: order.company_code || undefined,
+      vatNumber: order.company_vat_code || undefined,
+      viesValidated: viesResult.viesValidated,
+    },
+    items: (order.items || []).map((item: any) => ({
+      partId: item.item_id || String(item.id || ""),
+      partName: item.name || "",
+      quantity: item.quantity ?? 1, // Default to 1 if not provided
+      priceEUR: parseFloat(item.price || item.sell_price || "0") || 0,
+      pricePLN: 0, // Not provided in API response
+      carId: item.car_id || undefined,
+      manufacturerCode: item.manufacturer_code || undefined,
+      // Car details, body type, engine capacity, fuel type need to be fetched separately
+    })),
+    totalAmountEUR: parseFloat(order.total_price || "0") || 0,
+    totalAmountPLN: 0, // Not provided in API response, would need conversion
+    shippingCostEUR: parseFloat(order.shipping_price || "0") || 0,
+    shippingCostPLN: 0, // Not provided in API response, would need conversion
+    status: mapOrderStatus(order.order_status || "NEW"),
+    paymentMethod: order.payment_method || "",
+    shippingStatus: mapOrderStatus(order.order_status || "NEW"), // Map to same status enum
+    invoiceUrl: order.invoice_download_url || undefined,
+  };
+};
+
+export interface OrdersResponse {
+  orders: Order[];
+  pagination: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+  };
+}
 
 // Get all orders
-export const getOrders = async (): Promise<Order[]> => {
-  const response = await authInstance.get(apiEndpoints.getOrders());
+export const getOrders = async (
+  queryParams?: OrdersQueryParams
+): Promise<OrdersResponse> => {
+  const url = apiEndpoints.getOrders(queryParams);
+  console.log("Orders API URL:", url);
+  const response = await authInstance.get(url);
   // Handle different response structures
   const data = response.data;
-  // If data is an array, return it directly
+  let orders: any[] = [];
+  let pagination = {
+    total: 0,
+    per_page: 15,
+    current_page: 1,
+    last_page: 1,
+  };
+
+  // Extract orders array and pagination from response
   if (Array.isArray(data)) {
-    return data;
+    orders = data;
+  } else if (data && Array.isArray(data.data)) {
+    orders = data.data;
+    if (data.pagination) {
+      pagination = data.pagination;
+    }
+  } else if (data && data.success && Array.isArray(data.data)) {
+    orders = data.data;
+    if (data.pagination) {
+      pagination = data.pagination;
+    }
+  } else {
+    console.warn("Unexpected orders API response structure:", data);
+    return { orders: [], pagination };
   }
-  // If data has a data property that's an array, return that
-  if (data && Array.isArray(data.data)) {
-    return data.data;
-  }
-  // If data has a success property and data array
-  if (data && data.success && Array.isArray(data.data)) {
-    return data.data;
-  }
-  // Fallback to empty array
-  console.warn("Unexpected orders API response structure:", data);
-  return [];
+
+  // Transform orders (keep dates as strings for Redux)
+  return {
+    orders: orders.map(transformOrder) as Order[],
+    pagination,
+  };
 };
 
 // Get a single order by ID
@@ -50,4 +280,3 @@ export const updateOrder = async (
 export const deleteOrder = async (id: string): Promise<void> => {
   await authInstance.delete(apiEndpoints.deleteOrder(id));
 };
-

@@ -115,6 +115,14 @@ export interface OrderItem {
   priceEUR: number;
   pricePLN: number;
   photo?: string;
+  carId?: string | number;
+  carBrand?: string;
+  carModel?: string;
+  carYear?: number;
+  bodyType?: string;
+  engineCapacity?: number;
+  fuelType?: string;
+  manufacturerCode?: string;
 }
 
 export interface Customer {
