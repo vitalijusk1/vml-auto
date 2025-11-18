@@ -47,6 +47,26 @@ export interface PartsQueryParams {
   warehouse?: string | string[];
 }
 
+// Orders query parameters interface
+export interface OrdersQueryParams {
+  per_page?: number;
+  page?: number;
+  // Search
+  search?: string;
+  // Status filters
+  status?: string | string[];
+  // Date range
+  date_from?: string;
+  date_to?: string;
+  // Car filters
+  car_brand?: number | number[];
+  car_model?: number | number[];
+  year_min?: number;
+  year_max?: number;
+  fuel_id?: number | number[];
+  engine_volume?: string | string[];
+}
+
 // Helper function to build query string from parameters
 // Builds query string manually to avoid URL encoding commas in comma-separated values
 const buildQueryString = (params: Record<string, unknown>): string => {
@@ -111,7 +131,12 @@ export const apiEndpoints = {
   deletePart: (id: string) => `/parts/${id}`,
 
   // Orders
-  getOrders: () => `/orders`,
+  getOrders: (queryParams?: OrdersQueryParams) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/orders${queryString}`;
+  },
   getOrderById: (id: string) => `/orders/${id}`,
   createOrder: () => `/orders`,
   updateOrder: (id: string) => `/orders/${id}`,

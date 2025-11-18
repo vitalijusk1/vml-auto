@@ -1,7 +1,12 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useMemo } from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { selectOrders } from "@/store/selectors";
-import { OrderStatus, Order, OrderItem, Customer } from "@/types";
+import {
+  selectOrders,
+  selectBackendFilters,
+  selectCars,
+  selectFilters,
+} from "@/store/selectors";
+import { OrderStatus, FilterState } from "@/types";
 import {
   Table,
   TableBody,
@@ -11,13 +16,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Eye, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { setOrders } from "@/store/slices/dataSlice";
-
+import { setFilters } from "@/store/slices/filtersSlice";
+import { getOrders, filterStateToOrdersQueryParams } from "@/api/orders";
+import { FilterPanel } from "@/components/filters/FilterPanel";
 import { getStatusBadgeClass } from "@/theme/utils";
+import { Pagination } from "@/components/ui/Pagination";
+import { TableToolbar } from "@/components/ui/TableToolbar";
 
+// Get status badge class for order statuses
 const getOrderStatusClass = (status: OrderStatus) => {
   const statusMap: Record<OrderStatus, string> = {
     Pending: getStatusBadgeClass("order", "Pending"),
@@ -29,181 +38,145 @@ const getOrderStatusClass = (status: OrderStatus) => {
   return statusMap[status] || getStatusBadgeClass("order", "Pending");
 };
 
-// Generate fake orders data
-const generateFakeOrders = (): Order[] => {
-  const customers: Customer[] = [
-    {
-      id: "1",
-      name: "John Smith",
-      email: "john.smith@example.com",
-      phone: "+1234567890",
-      country: "USA",
-      city: "New York",
-      address: "123 Main St",
-      isCompany: false,
-    },
-    {
-      id: "2",
-      name: "Auto Parts Ltd",
-      email: "contact@autoparts.com",
-      phone: "+9876543210",
-      country: "Germany",
-      city: "Berlin",
-      address: "456 Business Ave",
-      isCompany: true,
-      companyName: "Auto Parts Ltd",
-      vatNumber: "DE123456789",
-    },
-    {
-      id: "3",
-      name: "Maria Garcia",
-      email: "maria.garcia@example.com",
-      phone: "+1122334455",
-      country: "Spain",
-      city: "Madrid",
-      address: "789 Calle Principal",
-      isCompany: false,
-    },
-    {
-      id: "4",
-      name: "Mechanical Solutions Inc",
-      email: "info@mechsolutions.com",
-      phone: "+9988776655",
-      country: "Poland",
-      city: "Warsaw",
-      address: "321 Industrial Blvd",
-      isCompany: true,
-      companyName: "Mechanical Solutions Inc",
-      vatNumber: "PL987654321",
-    },
-    {
-      id: "5",
-      name: "Robert Johnson",
-      email: "robert.j@example.com",
-      phone: "+5544332211",
-      country: "UK",
-      city: "London",
-      address: "555 High Street",
-      isCompany: false,
-    },
-  ];
+// Translate order status to Lithuanian
+const getOrderStatusLabel = (status: OrderStatus): string => {
+  const statusLabels: Record<OrderStatus, string> = {
+    Pending: "Laukiama",
+    Processing: "Ruošiama",
+    Shipped: "Išsiųsta",
+    Delivered: "Pristatyta",
+    Cancelled: "Atšaukta",
+  };
+  return statusLabels[status] || status;
+};
 
-  const partNames = [
-    "Brake Pad Set",
-    "Front Bumper",
-    "Headlight Assembly",
-    "Radiator",
-    "Alternator",
-    "Starter Motor",
-    "Fuel Pump",
-    "Timing Belt",
-    "Water Pump",
-    "Shock Absorber",
-    "Wheel Bearing",
-    "Catalytic Converter",
-    "Oxygen Sensor",
-    "Spark Plug Set",
-    "Air Filter",
-  ];
-
-  const statuses: OrderStatus[] = [
-    "Pending",
-    "Processing",
-    "Shipped",
-    "Delivered",
-    "Cancelled",
-  ];
-
-  const paymentMethods = ["Credit Card", "PayPal", "Bank Transfer", "Invoice"];
-  const shippingStatuses = [
-    "Not Shipped",
-    "Preparing",
-    "In Transit",
-    "Out for Delivery",
-    "Delivered",
-  ];
-
-  const orders: Order[] = [];
-  const now = new Date();
-
-  for (let i = 1; i <= 20; i++) {
-    const customer = customers[Math.floor(Math.random() * customers.length)];
-    const itemCount = Math.floor(Math.random() * 5) + 1;
-    const items: OrderItem[] = [];
-
-    for (let j = 0; j < itemCount; j++) {
-      const partName = partNames[Math.floor(Math.random() * partNames.length)];
-      const quantity = Math.floor(Math.random() * 3) + 1;
-      const priceEUR = Math.floor(Math.random() * 500) + 50;
-      const pricePLN = priceEUR * 4.5;
-
-      items.push({
-        partId: `PART-${i}-${j}`,
-        partName,
-        quantity,
-        priceEUR,
-        pricePLN,
-        photo: `https://via.placeholder.com/100?text=${encodeURIComponent(partName)}`,
-      });
+// Helper function to safely format dates
+const formatOrderDate = (date: Date | string | null | undefined): string => {
+  if (!date) return "N/A";
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return "N/A";
     }
-
-    const totalAmountEUR = items.reduce(
-      (sum, item) => sum + item.priceEUR * item.quantity,
-      0
-    );
-    const totalAmountPLN = items.reduce(
-      (sum, item) => sum + item.pricePLN * item.quantity,
-      0
-    );
-    const shippingCostEUR = Math.floor(Math.random() * 50) + 10;
-    const shippingCostPLN = shippingCostEUR * 4.5;
-
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const daysAgo = Math.floor(Math.random() * 60);
-    const orderDate = new Date(now);
-    orderDate.setDate(orderDate.getDate() - daysAgo);
-
-    orders.push({
-      id: `ORD-${String(i).padStart(4, "0")}`,
-      date: orderDate,
-      customerId: customer.id,
-      customer,
-      items,
-      totalAmountEUR: totalAmountEUR + shippingCostEUR,
-      totalAmountPLN: totalAmountPLN + shippingCostPLN,
-      shippingCostEUR,
-      shippingCostPLN,
-      status,
-      paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
-      shippingStatus: shippingStatuses[Math.floor(Math.random() * shippingStatuses.length)],
-    });
+    return format(dateObj, "MMM dd, yyyy");
+  } catch (error) {
+    console.error("Error formatting date:", error, date);
+    return "N/A";
   }
-
-  return orders;
 };
 
 export function OrdersView() {
   const dispatch = useAppDispatch();
   const orders = useAppSelector(selectOrders);
-  const [activeTab, setActiveTab] = useState<
-    "active" | "completed" | "returns"
-  >("active");
+  const backendFilters = useAppSelector(selectBackendFilters);
+  const cars = useAppSelector(selectCars);
+  const filters = useAppSelector(selectFilters);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [tableFilter, setTableFilter] = useState("");
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    per_page: 15,
+    total: 0,
+    last_page: 1,
+  });
 
-  // Initialize fake orders if empty
-  useEffect(() => {
-    if (orders.length === 0) {
-      const fakeOrders = generateFakeOrders();
-      dispatch(setOrders(fakeOrders));
-    }
-  }, [orders.length, dispatch]);
+  // Enrich orders with car details from Redux
+  const enrichedOrders = useMemo(() => {
+    return orders.map((order) => ({
+      ...order,
+      items: order.items.map((item) => {
+        // Find car by ID (carId might be string or number)
+        const car = item.carId
+          ? cars.find(
+              (c) =>
+                c.id === Number(item.carId) ||
+                String(c.id) === String(item.carId)
+            )
+          : null;
 
-  // Expand all orders by default when orders are loaded
+        return {
+          ...item,
+          // Car details from car lookup
+          ...(car && {
+            carBrand: car.brand,
+            carModel: car.model.name,
+            carYear: car.year,
+            bodyType: car.body_type?.name,
+            engineCapacity: car.engine.capacity,
+            fuelType: car.fuel?.name,
+          }),
+          // Manufacturer code comes directly from the API response (mapped in transformOrder)
+        };
+      }),
+    }));
+  }, [orders, cars]);
+
+  // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
+
+  // Serialize filters to detect changes properly (React does shallow comparison)
+  const filtersKey = useMemo(() => {
+    return JSON.stringify(filters);
+  }, [filters]);
+
+  // Reset pagination to page 1 when filters change
   useEffect(() => {
-    if (orders.length > 0 && expandedOrders.size === 0) {
-      setExpandedOrders(new Set(orders.map((o) => o.id)));
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
+  }, [filtersKey]);
+
+  // Fetch orders when filters or pagination change
+  useEffect(() => {
+    const fetchData = async () => {
+      // Wait for backendFilters to load before fetching with filters
+      // This prevents calling the API with invalid parameters
+      if (!backendFilters) {
+        return;
+      }
+
+      setIsLoadingOrders(true);
+      try {
+        // Convert filters to query parameters
+        const queryParams = filterStateToOrdersQueryParams(
+          filters,
+          backendFilters
+        );
+
+        // Always add pagination parameters
+        queryParams.page = pagination.current_page || 1;
+        queryParams.per_page = pagination.per_page || 15;
+
+        console.log("Fetching orders with params:", queryParams);
+
+        // Fetch orders with filters and pagination
+        const response = await getOrders(queryParams);
+
+        console.log("Orders response:", response);
+        dispatch(setOrders(response.orders));
+        setPagination(response.pagination);
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        // Set empty array on error so table still shows
+        dispatch(setOrders([]));
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    };
+
+    fetchData();
+  }, [
+    dispatch,
+    filtersKey,
+    backendFilters,
+    pagination.current_page,
+    pagination.per_page,
+  ]);
+
+  // Always expand all orders by default when orders change
+  useEffect(() => {
+    if (enrichedOrders.length > 0) {
+      setExpandedOrders(new Set(enrichedOrders.map((o) => o.id)));
     }
-  }, [orders.length]);
+  }, [enrichedOrders]);
 
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders((prev) => {
@@ -217,202 +190,322 @@ export function OrdersView() {
     });
   };
 
-  const activeOrders = orders.filter(
-    (o) => o.status !== "Delivered" && o.status !== "Cancelled"
-  );
-  const completedOrders = orders.filter((o) => o.status === "Delivered");
-  const cancelledOrders = orders.filter((o) => o.status === "Cancelled");
-
-  const displayOrders =
-    activeTab === "active"
-      ? activeOrders
-      : activeTab === "completed"
-      ? completedOrders
-      : cancelledOrders;
+  // Client-side table filtering
+  const displayOrders = useMemo(() => {
+    if (!tableFilter.trim()) {
+      return enrichedOrders;
+    }
+    const filterLower = tableFilter.toLowerCase();
+    return enrichedOrders.filter((order) => {
+      return (
+        order.id.toLowerCase().includes(filterLower) ||
+        order.customer?.name?.toLowerCase().includes(filterLower) ||
+        order.customer?.country?.toLowerCase().includes(filterLower) ||
+        order.items.some((item) =>
+          item.partName.toLowerCase().includes(filterLower)
+        )
+      );
+    });
+  }, [enrichedOrders, tableFilter]);
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Orders Management</h1>
+        <h1 className="text-3xl font-bold mb-2">Užsakymai</h1>
         <p className="text-muted-foreground">
-          Manage customer orders and shipments
+          Valdykite ir filtruokite užsakymus
         </p>
       </div>
 
+      {backendFilters && (
+        <FilterPanel
+          type="parts"
+          filters={filters}
+          onFiltersChange={(newFilters) => {
+            dispatch(setFilters(newFilters as FilterState));
+          }}
+          cars={[]}
+          onFilter={() => {
+            // Filter button is handled by the useEffect that watches filtersKey
+          }}
+          isLoading={isLoadingOrders}
+          hideCategoriesAndWheels={true}
+          hideTopDetailsFilter={true}
+          showOrderIdFilter={true}
+        />
+      )}
+      {!backendFilters && (
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-muted-foreground">
+              Kraunami filtrai...
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={activeTab === "active" ? "default" : "outline"}
-              onClick={() => setActiveTab("active")}
-            >
-              Active Orders ({activeOrders.length})
-            </Button>
-            <Button
-              variant={activeTab === "completed" ? "default" : "outline"}
-              onClick={() => setActiveTab("completed")}
-            >
-              Completed ({completedOrders.length})
-            </Button>
-            <Button
-              variant={activeTab === "returns" ? "default" : "outline"}
-              onClick={() => setActiveTab("returns")}
-            >
-              Cancelled ({cancelledOrders.length})
-            </Button>
-          </div>
+          <TableToolbar
+            showing={displayOrders.length}
+            total={pagination.total}
+            itemName="užsakymų"
+            pagination={{
+              pageIndex: pagination.current_page - 1,
+              pageSize: pagination.per_page,
+            }}
+            onPageSizeChange={(pageSize) => {
+              setPagination((prev) => ({
+                ...prev,
+                per_page: pageSize,
+                current_page: 1,
+              }));
+            }}
+            pageSizeOptions={[10, 15, 25, 50, 100]}
+            filterValue={tableFilter}
+            onFilterChange={setTableFilter}
+            filterPlaceholder="Filtruoti užsakymus..."
+          />
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Shipping Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayOrders.map((order) => {
-                const isExpanded = expandedOrders.has(order.id);
-                return (
-                  <Fragment key={order.id}>
-                    <TableRow>
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{format(order.date, "MMM dd, yyyy")}</TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{order.customer.name}</div>
-                          {order.customer.isCompany && (
-                            <div className="text-xs text-muted-foreground">
-                              {order.customer.companyName}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{order.customer.country}</TableCell>
-                      <TableCell>
-                        <button
-                          onClick={() => toggleOrderExpansion(order.id)}
-                          className="flex items-center gap-2 hover:text-primary transition-colors"
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
-                          <span>{order.items.length} items</span>
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            €{order.totalAmountEUR.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            PLN {order.totalAmountPLN.toLocaleString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(
-                            order.status
-                          )}`}
-                        >
-                          {order.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{order.paymentMethod}</TableCell>
-                      <TableCell>{order.shippingStatus}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {isExpanded && (
-                      <TableRow key={`${order.id}-expanded`}>
-                        <TableCell colSpan={10} className="bg-muted/30 p-2">
-                          <div className="space-y-1.5">
-                            <h4 className="font-semibold text-xs mb-1.5">
-                              Order Items ({order.items.length})
-                            </h4>
-                            <div className="grid gap-1.5">
-                              {order.items.map((item, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-2 p-1.5 bg-background rounded border text-sm"
-                                >
-                                  {item.photo && (
-                                    <img
-                                      src={item.photo}
-                                      alt={item.partName}
-                                      className="w-10 h-10 object-cover rounded flex-shrink-0"
-                                    />
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm truncate">{item.partName}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {item.partId}
-                                    </div>
-                                  </div>
-                                  <div className="text-right text-xs">
-                                    <div className="font-medium">
-                                      Qty: {item.quantity}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                      €{item.priceEUR.toLocaleString()}/ea
-                                    </div>
-                                  </div>
-                                  <div className="text-right min-w-[80px] text-xs">
-                                    <div className="font-semibold">
-                                      €
-                                      {(item.priceEUR * item.quantity).toLocaleString()}
-                                    </div>
-                                    <div className="text-muted-foreground">
-                                      PLN{" "}
-                                      {(item.pricePLN * item.quantity).toLocaleString()}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="flex justify-between items-center pt-1.5 border-t text-xs">
-                              <div className="text-muted-foreground">
-                                Shipping: €{order.shippingCostEUR.toLocaleString()} (PLN{" "}
-                                {order.shippingCostPLN.toLocaleString()})
+          {isLoadingOrders ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Kraunami užsakymai...
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b-0">
+                  <TableHead>Užsakymo Nr.</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Užsakovas</TableHead>
+                  <TableHead>Šalis</TableHead>
+                  <TableHead>Kiekis</TableHead>
+                  <TableHead>Sumokėta</TableHead>
+                  <TableHead>Pristatymas</TableHead>
+                  <TableHead>Statusas</TableHead>
+                  <TableHead>Sandėlys</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {displayOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className="text-center py-8 text-muted-foreground"
+                    >
+                      Nėra užsakymų
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  displayOrders.map((order) => {
+                    const isExpanded = expandedOrders.has(order.id);
+                    return (
+                      <Fragment key={order.id}>
+                        <TableRow className="border-b-0">
+                          <TableCell className="font-semibold">
+                            {order.id}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {formatOrderDate(order.date)}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-semibold">
+                                {order.customer?.name || "Unknown"}
                               </div>
-                              <div className="text-right">
-                                <div className="text-muted-foreground">Total</div>
-                                <div className="font-bold text-sm">
-                                  €{order.totalAmountEUR.toLocaleString()}
+                              {order.customer?.isCompany && (
+                                <div className="text-xs text-muted-foreground">
+                                  {order.customer.companyName}
                                 </div>
-                                <div className="text-muted-foreground text-xs">
-                                  PLN {order.totalAmountPLN.toLocaleString()}
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {order.customer?.country || "N/A"}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => toggleOrderExpansion(order.id)}
+                              className="flex items-center gap-2 hover:text-primary transition-colors font-semibold"
+                            >
+                              <span>{order.items.length}</span>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-semibold">
+                              €{(order.totalAmountEUR || 0).toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-semibold">
+                              €{(order.shippingCostEUR || 0).toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(
+                                order.status
+                              )}`}
+                            >
+                              {getOrderStatusLabel(order.status)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              N/A
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && (
+                          <TableRow
+                            key={`${order.id}-expanded`}
+                            className="hover:bg-transparent"
+                          >
+                            <TableCell colSpan={9} className="p-0">
+                              <div className="py-4">
+                                <h4 className="font-semibold text-xs mb-3">
+                                  Užsakytos prekės ({order.items.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {order.items.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-start justify-between gap-4 p-3 bg-muted/30 rounded-lg border hover:bg-muted/30"
+                                    >
+                                      {item.photo && (
+                                        <img
+                                          src={item.photo}
+                                          alt={item.partName}
+                                          className="w-16 h-16 object-cover rounded flex-shrink-0"
+                                        />
+                                      )}
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Pavadinimas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.partName || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Detalės id
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.partId || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Automobilis
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.carBrand && item.carModel ? (
+                                            <>
+                                              <div>
+                                                {item.carBrand} {item.carModel}
+                                              </div>
+                                              {item.carYear && (
+                                                <div className="text-xs text-muted-foreground">
+                                                  {item.carYear}
+                                                </div>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <div>N/A</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Kėbulo tipas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.bodyType || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Variklio tūris
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.engineCapacity
+                                            ? `${item.engineCapacity}cc`
+                                            : "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Kuro tipas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.fuelType || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-1">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Gamintojo kodas
+                                        </div>
+                                        <div className="text-sm">
+                                          {item.manufacturerCode || "N/A"}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col flex-shrink-0 flex-1 text-right">
+                                        <div className="text-xs text-muted-foreground mb-1">
+                                          Kaina
+                                        </div>
+                                        <div className="text-sm">
+                                          €
+                                          {(
+                                            item.priceEUR || 0
+                                          ).toLocaleString()}
+                                        </div>
+                                        {item.quantity > 1 && (
+                                          <>
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                              Kiekis
+                                            </div>
+                                            <div className="text-sm">
+                                              {item.quantity}
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          )}
+          {/* Pagination Controls */}
+          {!isLoadingOrders && pagination.total > 0 && (
+            <div className="flex items-center justify-end pt-4 border-t">
+              <Pagination
+                currentPage={pagination.current_page}
+                totalPages={pagination.last_page}
+                onPageChange={(page) => {
+                  setPagination((prev) => ({
+                    ...prev,
+                    current_page: page,
+                  }));
+                }}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
