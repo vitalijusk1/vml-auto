@@ -1,6 +1,8 @@
 import { PaginationState } from "@tanstack/react-table";
 import { PageSizeSelector } from "./PageSizeSelector";
 import { TableFilter } from "./TableFilter";
+import { Button } from "./button";
+import { Download } from "lucide-react";
 
 interface TableToolbarProps {
   // Results info
@@ -18,6 +20,10 @@ interface TableToolbarProps {
   onFilterChange: (value: string) => void;
   filterPlaceholder?: string;
 
+  // Download
+  onDownloadPDF?: () => void;
+  onDownloadCSV?: () => void;
+
   // Optional custom content
   children?: React.ReactNode;
 }
@@ -32,6 +38,8 @@ export function TableToolbar({
   filterValue,
   onFilterChange,
   filterPlaceholder,
+  onDownloadPDF,
+  onDownloadCSV,
   children,
 }: TableToolbarProps) {
   return (
@@ -50,6 +58,22 @@ export function TableToolbar({
           onChange={onFilterChange}
           placeholder={filterPlaceholder}
         />
+        {(onDownloadPDF || onDownloadCSV) && (
+          <div className="flex items-center gap-2">
+            {onDownloadPDF && (
+              <Button variant="outline" size="sm" onClick={onDownloadPDF}>
+                <Download className="h-4 w-4 mr-2" />
+                Atsisiųsti .pdf
+              </Button>
+            )}
+            {onDownloadCSV && (
+              <Button variant="outline" size="sm" onClick={onDownloadCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Atsisiųsti .csv
+              </Button>
+            )}
+          </div>
+        )}
         {children}
       </div>
     </div>

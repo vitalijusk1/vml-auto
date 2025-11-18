@@ -18,7 +18,7 @@ export function PageSizeSelector({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <label className="text-sm text-muted-foreground whitespace-nowrap">
-        Rodyti:
+        Rodoma:
       </label>
       <div className="relative">
         <select

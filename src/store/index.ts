@@ -1,15 +1,24 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
-import { combineReducers } from '@reduxjs/toolkit';
-import dataSlice from './slices/dataSlice';
-import filtersSlice from './slices/filtersSlice';
-import uiSlice from './slices/uiSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import { combineReducers } from "@reduxjs/toolkit";
+import dataSlice from "./slices/dataSlice";
+import filtersSlice from "./slices/filtersSlice";
+import uiSlice from "./slices/uiSlice";
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage,
-  whitelist: ['filters', 'ui'], // Only persist filters and UI state
+  whitelist: ["filters", "ui"], // Only persist filters and UI state
 };
 
 const rootReducer = combineReducers({
@@ -27,7 +36,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         // Ignore Date objects in state (they will be serialized by redux-persist if needed)
-        ignoredPaths: ['data.parts', 'data.orders', 'data.returns'],
+        ignoredPaths: ["data.parts", "data.orders", "data.returns"],
       },
     }),
 });
@@ -36,4 +45,3 @@ export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-

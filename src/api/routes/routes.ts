@@ -126,4 +126,18 @@ export const apiEndpoints = {
 
   // Filters
   getFilters: () => `/filters`,
+
+  // Preorder Analysis
+  getPreorderAnalysis: (params: {
+    brand_id?: number;
+    model_id?: number;
+    year?: number;
+    fuel_id?: number;
+    engine_volume?: string;
+    date_from?: string;
+    date_to?: string;
+  }) => {
+    const queryString = buildQueryString(params as Record<string, unknown>);
+    return `/preorder/analysis${queryString}`;
+  },
 };

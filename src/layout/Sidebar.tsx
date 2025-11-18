@@ -5,6 +5,7 @@ import {
   RotateCcw,
   BarChart3,
   Menu,
+  ClipboardList,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Sandėlys", icon: Package, view: "parts" as const },
   { name: "Užsakymai", icon: ShoppingCart, view: "orders" as const },
   { name: "Grąžinimai", icon: RotateCcw, view: "returns" as const },
+  { name: "Užsakymų valdymas", icon: ClipboardList, view: "order-control" as const },
   { name: "Analitika", icon: BarChart3, view: "analytics" as const },
 ];
 

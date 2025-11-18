@@ -1,11 +1,28 @@
 import authInstance from "./axios";
-import { Order } from "@/types";
+import { Order, Part, PartStatus } from "@/types";
 import { apiEndpoints } from "./routes/routes";
+import { Category } from "@/utils/filterCars";
 
 // Get all orders
 export const getOrders = async (): Promise<Order[]> => {
   const response = await authInstance.get(apiEndpoints.getOrders());
-  return response.data;
+  // Handle different response structures
+  const data = response.data;
+  // If data is an array, return it directly
+  if (Array.isArray(data)) {
+    return data;
+  }
+  // If data has a data property that's an array, return that
+  if (data && Array.isArray(data.data)) {
+    return data.data;
+  }
+  // If data has a success property and data array
+  if (data && data.success && Array.isArray(data.data)) {
+    return data.data;
+  }
+  // Fallback to empty array
+  console.warn("Unexpected orders API response structure:", data);
+  return [];
 };
 
 // Get a single order by ID

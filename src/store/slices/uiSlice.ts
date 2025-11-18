@@ -5,7 +5,8 @@ type ViewType =
   | "parts"
   | "orders"
   | "returns"
-  | "analytics";
+  | "analytics"
+  | "order-control";
 
 export interface PartsPagination {
   current_page: number;
@@ -19,6 +20,7 @@ interface UIState {
   currentView: ViewType;
   sidebarCollapsed: boolean;
   partsPagination: PartsPagination | null;
+  orderControlSelectedCarId: string;
 }
 
 const initialState: UIState = {
@@ -26,6 +28,7 @@ const initialState: UIState = {
   currentView: "dashboard",
   sidebarCollapsed: false,
   partsPagination: null,
+  orderControlSelectedCarId: "",
 };
 
 const uiSlice = createSlice({
@@ -55,6 +58,12 @@ const uiSlice = createSlice({
     setPartsPagination: (state, action: PayloadAction<PartsPagination>) => {
       state.partsPagination = action.payload;
     },
+    setOrderControlSelectedCarId: (state, action: PayloadAction<string>) => {
+      state.orderControlSelectedCarId = action.payload;
+    },
+    clearOrderControlSelectedCarId: (state) => {
+      state.orderControlSelectedCarId = "";
+    },
   },
 });
 
@@ -65,5 +74,7 @@ export const {
   setCurrentView,
   toggleSidebar,
   setPartsPagination,
+  setOrderControlSelectedCarId,
+  clearOrderControlSelectedCarId,
 } = uiSlice.actions;
 export default uiSlice.reducer;
