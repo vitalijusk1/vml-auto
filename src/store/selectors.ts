@@ -1,7 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "./index";
 import { Part, DashboardMetrics } from "../types";
-import { filterParts } from "../utils/filterParts";
 
 // Base selectors
 export const selectParts = (state: RootState) => {
@@ -32,11 +31,12 @@ export const selectOrderControlSelectedCarId = (state: RootState) =>
   state.ui.orderControlSelectedCarId;
 
 // Computed selectors
-// Note: selectFilteredParts now requires cars to be passed as parameter
-// since cars are no longer in Redux store
+// Note: All filtering is now handled by the backend
+// This selector is kept for compatibility but returns parts unchanged
 export const makeSelectFilteredParts = (cars: any[]) =>
   createSelector([selectParts, selectFilters], (parts, filters) => {
-    return filterParts(parts, filters, cars);
+    // All filtering is handled by backend, return parts as-is
+    return parts;
   });
 
 export const selectMetrics = createSelector(

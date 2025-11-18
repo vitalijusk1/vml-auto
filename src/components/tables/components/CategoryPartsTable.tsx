@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { Part, Order, PartStatus } from "@/types";
-import { Category } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";

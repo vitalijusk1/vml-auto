@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
-import { Category } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getLocalizedText } from "@/utils/i18n";

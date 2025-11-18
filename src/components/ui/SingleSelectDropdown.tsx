@@ -65,7 +65,7 @@ export function SingleSelectDropdown({
       </Button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-background shadow-lg">
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg">
           <div className="max-h-60 overflow-auto p-1">
             {options.length === 0 ? (
               <div className="px-2 py-1.5 text-sm text-muted-foreground">
@@ -98,13 +98,3 @@ export function SingleSelectDropdown({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-

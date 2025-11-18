@@ -1,11 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-type ViewType =
-  | "parts"
-  | "orders"
-  | "returns"
-  | "analytics"
-  | "order-control";
+type ViewType = "parts" | "orders" | "returns" | "analytics" | "order-control";
 
 export interface PartsPagination {
   current_page: number;

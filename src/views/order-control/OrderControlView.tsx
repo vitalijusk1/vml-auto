@@ -19,12 +19,18 @@ import { Button } from "@/components/ui/button";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { Filter, RotateCcw, Download } from "lucide-react";
 import { Car, Part, FilterState } from "@/types";
-import { CategoryPartsTable } from "../../components/tables/components/CategoryPartsTable/CategoryPartsTable";
-import { Category } from "@/utils/filterCars";
-import { defaultFilters } from "@/utils/filterParts";
+import { CategoryPartsTable } from "../../components/tables/components/CategoryPartsTable";
+import { Category } from "@/utils/backendFilters";
+import { defaultFilters } from "@/store/slices/filtersSlice";
+import {
+  mapBrandNameToId,
+  mapModelNameToId,
+  mapFuelTypeNameToId,
+} from "@/utils/filterMappers";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingState } from "@/components/ui/LoadingState";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
-import { getLocalizedText } from "@/utils/i18n";
 
 // Initialize pdfMake with fonts
 if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
@@ -53,6 +59,7 @@ export function OrderControlView() {
   const selectedCarId = useAppSelector(selectOrderControlSelectedCarId);
   const [cars, setCars] = useState<Car[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
+  // Categories are fetched but not displayed in the table (kept for potential future use)
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingCars, setIsLoadingCars] = useState(false);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
@@ -202,102 +209,6 @@ export function OrderControlView() {
     fetchOrdersData();
   }, [dispatch, orders.length]);
 
-  // Helper function to map brand name to ID
-  const mapBrandNameToId = (brandName: string): number | undefined => {
-    const backendFiltersData = backendFilters as any;
-    if (
-      !backendFiltersData?.car?.brands ||
-      !Array.isArray(backendFiltersData.car.brands)
-    ) {
-      return undefined;
-    }
-    for (const brand of backendFiltersData.car.brands) {
-      const name =
-        typeof brand === "string"
-          ? brand
-          : brand.languages?.en || brand.languages?.name || brand.name || brand;
-      if (name === brandName) {
-        const id =
-          typeof brand === "string" ? undefined : brand.id || brand.rrr_id;
-        return id;
-      }
-    }
-    return undefined;
-  };
-
-  // Helper function to map model name to ID
-  // Models are nested under brands, so we need to search through selected brands
-  const mapModelNameToId = (
-    modelName: string,
-    selectedBrandNames?: string[]
-  ): number | undefined => {
-    const backendFiltersData = backendFilters as any;
-    if (
-      !backendFiltersData?.car?.brands ||
-      !Array.isArray(backendFiltersData.car.brands)
-    ) {
-      return undefined;
-    }
-
-    // If brand names are provided, only search in those brands
-    const brandsToSearch = selectedBrandNames
-      ? backendFiltersData.car.brands.filter((brand: any) => {
-          const brandName =
-            typeof brand === "string"
-              ? brand
-              : brand.languages?.en || brand.languages?.name || brand.name;
-          return selectedBrandNames.includes(brandName);
-        })
-      : backendFiltersData.car.brands;
-
-    // Search through all brands (or selected brands) to find the model
-    for (const brand of brandsToSearch) {
-      if (brand.models && Array.isArray(brand.models)) {
-        for (const model of brand.models) {
-          const name =
-            typeof model === "string"
-              ? model
-              : model.languages?.en ||
-                model.languages?.name ||
-                model.name ||
-                String(model);
-          if (name === modelName) {
-            const id =
-              typeof model === "string" ? undefined : model.id || model.rrr_id;
-            return id;
-          }
-        }
-      }
-    }
-    return undefined;
-  };
-
-  // Helper function to map fuel type name to ID
-  const mapFuelTypeNameToId = (fuelTypeName: string): number | undefined => {
-    const backendFiltersData = backendFilters as any;
-    if (
-      !backendFiltersData?.car?.fuels ||
-      !Array.isArray(backendFiltersData.car.fuels)
-    ) {
-      return undefined;
-    }
-    for (const fuel of backendFiltersData.car.fuels) {
-      const name =
-        typeof fuel === "string"
-          ? fuel
-          : fuel.languages?.en ||
-            fuel.languages?.name ||
-            fuel.name ||
-            String(fuel);
-      if (name === fuelTypeName) {
-        const id =
-          typeof fuel === "string" ? undefined : fuel.id || fuel.rrr_id;
-        return id;
-      }
-    }
-    return undefined;
-  };
-
   // Function to fetch cars based on brand_id, car_model_id, and fuel_type (as IDs)
   // This gets ALL cars matching the selected filters
   // Returns the fetched cars array
@@ -344,7 +255,7 @@ export function OrderControlView() {
       const brandIds: number[] = [];
       if (orderFilters.carBrand && orderFilters.carBrand.length > 0) {
         for (const brandName of orderFilters.carBrand) {
-          const brandId = mapBrandNameToId(brandName);
+          const brandId = mapBrandNameToId(brandName, backendFilters);
           if (brandId !== undefined) {
             brandIds.push(brandId);
           }
@@ -358,6 +269,7 @@ export function OrderControlView() {
         for (const modelName of orderFilters.carModel) {
           const modelId = mapModelNameToId(
             modelName,
+            backendFilters,
             orderFilters.carBrand || undefined
           );
           if (modelId !== undefined) {
@@ -370,7 +282,7 @@ export function OrderControlView() {
       const fuelIds: number[] = [];
       if (orderFilters.fuelType && orderFilters.fuelType.length > 0) {
         for (const fuelTypeName of orderFilters.fuelType) {
-          const fuelId = mapFuelTypeNameToId(fuelTypeName);
+          const fuelId = mapFuelTypeNameToId(fuelTypeName, backendFilters);
           if (fuelId !== undefined) {
             fuelIds.push(fuelId);
           }
@@ -770,7 +682,7 @@ export function OrderControlView() {
       }
 
       // Map brand name to ID
-      const brandId = mapBrandNameToId(selectedCar.brand);
+      const brandId = mapBrandNameToId(selectedCar.brand, backendFilters);
       if (!brandId) {
         console.error("Could not find brand ID for:", selectedCar.brand);
         setParts([]);
@@ -948,162 +860,23 @@ export function OrderControlView() {
     fetchCars(""); // Empty string means clear selection
   };
 
-  // Helper to get all child category IDs recursively
-  const getAllChildCategoryIds = (category: Category): number[] => {
-    const ids: number[] = [];
-    if (category.subcategories && category.subcategories.length > 0) {
-      category.subcategories.forEach((subcat) => {
-        ids.push(subcat.id);
-        ids.push(...getAllChildCategoryIds(subcat));
-      });
-    }
-    return ids;
-  };
-
-  // Helper to find category by ID
-  const findCategoryById = (
-    categories: Category[],
-    id: number
-  ): Category | undefined => {
-    for (const category of categories) {
-      if (category.id === id) return category;
-      if (category.subcategories && category.subcategories.length > 0) {
-        const found = findCategoryById(category.subcategories, id);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
-
-  // Collect all categories to export (selected + their children)
-  const getCategoriesToExport = (): Category[] => {
-    const categoriesToExport: Category[] = [];
-    const processedIds = new Set<number>();
-
-    selectedCategories.forEach((categoryId) => {
-      if (processedIds.has(categoryId)) return;
-
-      const category = findCategoryById(categories, categoryId);
-      if (category) {
-        categoriesToExport.push(category);
-        processedIds.add(categoryId);
-
-        // Add all children
-        const childIds = getAllChildCategoryIds(category);
-        childIds.forEach((childId) => {
-          if (!processedIds.has(childId)) {
-            const childCategory = findCategoryById(categories, childId);
-            if (childCategory) {
-              categoriesToExport.push(childCategory);
-              processedIds.add(childId);
-            }
-          }
-        });
-      }
-    });
-
-    return categoriesToExport;
-  };
-
-  // Collect all parts to export (from selected categories + directly selected parts)
+  // Collect all parts to export (selected parts, or all parts if none selected)
   const getPartsToExport = (): Part[] => {
-    const partsToExport = new Map<string, Part>();
-    const categoriesToExport = getCategoriesToExport();
-    const categoryNames = new Set<string>();
-
-    // Get all category names (including children)
-    categoriesToExport.forEach((category) => {
-      const categoryName = getLocalizedText(category.languages, category.name);
-      categoryNames.add(categoryName);
-
-      // Add subcategory names recursively
-      const addSubcategoryNames = (cat: Category) => {
-        if (cat.subcategories && cat.subcategories.length > 0) {
-          cat.subcategories.forEach((subcat) => {
-            const subcatName = getLocalizedText(subcat.languages, subcat.name);
-            categoryNames.add(subcatName);
-            addSubcategoryNames(subcat);
-          });
-        }
-      };
-      addSubcategoryNames(category);
-    });
-
-    // Add parts from selected categories
-    parts.forEach((part) => {
-      if (categoryNames.has(part.category)) {
-        partsToExport.set(part.id, part);
-      }
-    });
-
-    // Add directly selected parts
-    selectedParts.forEach((partId) => {
-      const part = parts.find((p) => p.id === partId);
-      if (part) {
-        partsToExport.set(part.id, part);
-      }
-    });
-
-    return Array.from(partsToExport.values());
+    if (selectedParts.size > 0) {
+      // Return only selected parts
+      return parts.filter((part) => selectedParts.has(part.id));
+    }
+    // If no parts selected, export all parts
+    return parts;
   };
 
   const handleDownloadPDF = () => {
-    if (selectedCategories.size === 0 && selectedParts.size === 0) {
-      alert("Pasirinkite kategorijas arba detales eksportui");
-      return;
-    }
-
-    const categoriesToExport = getCategoriesToExport();
     const partsToExport = getPartsToExport();
 
-    // Helper to build category list recursively
-    const buildCategoryList = (
-      category: Category,
-      level: number = 0
-    ): any[] => {
-      const categoryName = getLocalizedText(category.languages, category.name);
-      const indent = level * 12;
-      const bullet = "• ";
-      const items: any[] = [
-        {
-          text: bullet + categoryName,
-          fontSize: 10,
-          margin: [indent, 2, 0, 2],
-        },
-      ];
-
-      if (category.subcategories && category.subcategories.length > 0) {
-        category.subcategories.forEach((subcat) => {
-          if (categoriesToExport.some((c) => c.id === subcat.id)) {
-            items.push(...buildCategoryList(subcat, level + 1));
-          }
-        });
-      }
-
-      return items;
-    };
-
-    // Build categories content
-    const categoriesContent: any[] = [];
-    categoriesToExport.forEach((category) => {
-      // Only render top-level categories, children will be rendered recursively
-      const isTopLevel = !categories.some((c) => {
-        const hasInSubcategories = (cat: Category): boolean => {
-          if (cat.subcategories) {
-            return (
-              cat.subcategories.some((sub) => sub.id === category.id) ||
-              cat.subcategories.some((sub) => hasInSubcategories(sub))
-            );
-          }
-          return false;
-        };
-        return hasInSubcategories(c);
-      });
-
-      if (isTopLevel) {
-        categoriesContent.push(...buildCategoryList(category, 0));
-      }
-    });
+    if (partsToExport.length === 0) {
+      alert("Nėra dalių eksportui");
+      return;
+    }
 
     // Build parts table data
     const tableBody = partsToExport.map((part) => {
@@ -1148,7 +921,7 @@ export function OrderControlView() {
     const docDefinition: any = {
       content: [
         {
-          text: "Kategorijų ir detalių ataskaita",
+          text: "Detalių ataskaita",
           style: "header",
           margin: [0, 0, 0, 10],
         },
@@ -1237,15 +1010,13 @@ export function OrderControlView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Užsakymų valdymas</h1>
-        <p className="text-muted-foreground">
-          Valdykite ir filtruokite užsakymus
-        </p>
-      </div>
+      <PageHeader
+        title="Užsakymų valdymas"
+        description="Valdykite ir filtruokite užsakymus"
+      />
 
       <FilterPanel
-        type="order-management"
+        type="order-control"
         filters={orderFilters}
         onFiltersChange={(newFilters) => {
           setOrderFilters(newFilters as FilterState);
@@ -1320,27 +1091,26 @@ export function OrderControlView() {
             <CardContent>
               {/* Table Controls Toolbar */}
               <div className="mb-4 pb-4 border-b">
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-end gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDownloadPDF}
+                    disabled={selectedParts.size === 0}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Atsisiųsti .pdf
+                    Atsisiųsti .pdf ({selectedParts.size})
                   </Button>
                 </div>
               </div>
               {isLoadingParts ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Kraunami duomenys...
-                </div>
+                <LoadingState message="Kraunami duomenys..." />
               ) : parts.length > 0 && categories.length > 0 ? (
                 <CategoryPartsTable
                   parts={parts}
                   categories={categories}
                   orders={orders}
-                  selectedCarId={selectedCarId}
+                  selectedCarId={selectedCarId || ""}
                   backendFilters={backendFilters}
                   onSelectionChange={(selectedCats, selectedPts) => {
                     setSelectedCategories(selectedCats);

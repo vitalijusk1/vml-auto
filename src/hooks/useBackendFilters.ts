@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
-import { Category, FilterOption } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
 
 // Helper function to extract names from FilterOption arrays or string arrays
 const extractNames = (items: any[]): string[] => {
@@ -17,38 +17,6 @@ const extractNames = (items: any[]): string[] => {
     return String(item);
   });
 };
-
-interface BackendFilters {
-  car?: {
-    brands?: (string | FilterOption)[];
-    models?: (string | FilterOption)[];
-    car_models?: (string | FilterOption)[];
-    body_types?: (string | FilterOption)[];
-  };
-  parts?: {
-    statuses?: (string | FilterOption)[];
-    qualities?: (string | FilterOption)[];
-    positions?: (string | FilterOption)[];
-  };
-  wheels?: {
-    wheels?: (string | FilterOption)[];
-    drives?: (string | FilterOption)[];
-    wheel_drives?: (string | FilterOption)[];
-    fixing_points?: (string | FilterOption)[];
-    wheels_fixing_points?: (string | FilterOption)[];
-    spacing?: (string | FilterOption)[];
-    wheels_spacing?: (string | FilterOption)[];
-    central_diameter?: (string | FilterOption)[];
-    wheels_central_diameter?: (string | FilterOption)[];
-    width?: (string | FilterOption)[];
-    wheels_width?: (string | FilterOption)[];
-    height?: (string | FilterOption)[];
-    wheels_height?: (string | FilterOption)[];
-    tread_depth?: (string | FilterOption)[];
-    wheels_tread_depth?: (string | FilterOption)[];
-  };
-  categories?: Category[];
-}
 
 interface WheelsFilters {
   wheels?: string[];
@@ -66,6 +34,7 @@ export interface UseBackendFiltersReturn {
   brands: string[];
   models: string[];
   bodyTypes: string[];
+  fuelTypes: string[];
 
   // Parts filters
   statuses: string[];
@@ -82,9 +51,7 @@ export interface UseBackendFiltersReturn {
  * Handles both string arrays and FilterOption objects, extracting unique string values.
  */
 export const useBackendFilters = (): UseBackendFiltersReturn => {
-  const backendFilters = useAppSelector(
-    selectBackendFilters
-  ) as BackendFilters | null;
+  const backendFilters = useAppSelector(selectBackendFilters);
 
   // Extract car filters
   const brands = useMemo(() => {
@@ -101,6 +68,12 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
   const bodyTypes = useMemo(() => {
     const bodyTypesData = backendFilters?.car?.body_types;
     return Array.isArray(bodyTypesData) ? extractNames(bodyTypesData) : [];
+  }, [backendFilters]);
+
+  const fuelTypes = useMemo(() => {
+    const fuelTypesData =
+      backendFilters?.car?.fuel_types || backendFilters?.car?.fuels;
+    return Array.isArray(fuelTypesData) ? extractNames(fuelTypesData) : [];
   }, [backendFilters]);
 
   // Extract parts filters
@@ -214,6 +187,7 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
     brands,
     models,
     bodyTypes,
+    fuelTypes,
     statuses,
     qualities,
     positions,

@@ -1,13 +1,13 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Part, Order, Return, Car } from "../../types";
-import { CarFilters } from "../../utils/filterCars";
+import { BackendFilters } from "../../utils/backendFilters";
 
 interface DataState {
   parts: Part[];
   orders: Order[];
   returns: Return[];
   cars: Car[];
-  backendFilters: CarFilters | null;
+  backendFilters: BackendFilters | null;
 }
 
 const initialState: DataState = {
@@ -34,11 +34,12 @@ const dataSlice = createSlice({
     setCars: (state, action: PayloadAction<Car[]>) => {
       state.cars = action.payload;
     },
-    setBackendFilters: (state, action: PayloadAction<CarFilters>) => {
+    setBackendFilters: (state, action: PayloadAction<BackendFilters>) => {
       state.backendFilters = action.payload;
     },
   },
 });
 
-export const { setParts, setOrders, setReturns, setCars, setBackendFilters } = dataSlice.actions;
+export const { setParts, setOrders, setReturns, setCars, setBackendFilters } =
+  dataSlice.actions;
 export default dataSlice.reducer;

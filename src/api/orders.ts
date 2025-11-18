@@ -1,60 +1,11 @@
 import authInstance from "./axios";
 import { Order, FilterState, OrderStatus } from "@/types";
 import { apiEndpoints, OrdersQueryParams } from "./routes/routes";
-
-// Helper functions to map filter names to IDs (similar to parts.ts)
-const mapBrandNameToId = (
-  brandName: string,
-  backendFilters: any
-): number | undefined => {
-  if (!backendFilters?.car?.brands) return undefined;
-  const brand = backendFilters.car.brands.find(
-    (b: any) =>
-      (b.languages?.en || b.languages?.name || b.name || String(b)) ===
-      brandName
-  );
-  return brand?.id;
-};
-
-const mapModelNameToId = (
-  modelName: string,
-  backendFilters: any,
-  brandNames?: string[]
-): number | undefined => {
-  if (!backendFilters?.car?.brands) return undefined;
-  const brands = brandNames
-    ? backendFilters.car.brands.filter((b: any) => {
-        const brandName =
-          b.languages?.en || b.languages?.name || b.name || String(b);
-        return brandNames.includes(brandName);
-      })
-    : backendFilters.car.brands;
-
-  for (const brand of brands) {
-    if (brand.models && Array.isArray(brand.models)) {
-      const model = brand.models.find(
-        (m: any) =>
-          (m.languages?.en || m.languages?.name || m.name || String(m)) ===
-          modelName
-      );
-      if (model?.id) return model.id;
-    }
-  }
-  return undefined;
-};
-
-const mapFuelTypeNameToId = (
-  fuelTypeName: string,
-  backendFilters: any
-): number | undefined => {
-  if (!backendFilters?.car?.fuel_types) return undefined;
-  const fuelType = backendFilters.car.fuel_types.find(
-    (f: any) =>
-      (f.languages?.en || f.languages?.name || f.name || String(f)) ===
-      fuelTypeName
-  );
-  return fuelType?.id;
-};
+import {
+  mapBrandNameToId,
+  mapModelNameToId,
+  mapFuelTypeNameToId,
+} from "@/utils/filterMappers";
 
 /**
  * Convert FilterState to OrdersQueryParams for API requests

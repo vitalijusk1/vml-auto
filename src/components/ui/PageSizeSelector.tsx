@@ -26,7 +26,7 @@ export function PageSizeSelector({
           onChange={(e) => {
             onPageSizeChange(Number(e.target.value));
           }}
-          className="appearance-none flex h-10 w-20 rounded-md border border-input bg-background pl-3 pr-8 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="appearance-none flex h-10 w-20 rounded-md border border-border bg-background pl-3 pr-8 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {options.map((option) => (
             <option key={option} value={option.toString()}>
