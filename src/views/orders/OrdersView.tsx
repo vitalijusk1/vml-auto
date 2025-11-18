@@ -1,75 +1,23 @@
-import { useState, useEffect, Fragment, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   selectOrders,
   selectBackendFilters,
   selectFilters,
 } from "@/store/selectors";
-import { OrderStatus, FilterState } from "@/types";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { format } from "date-fns";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { FilterState, Order } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
 import { setOrders } from "@/store/slices/dataSlice";
 import { setFilters } from "@/store/slices/filtersSlice";
 import { getOrders, filterStateToOrdersQueryParams } from "@/api/orders";
 import { FilterPanel } from "@/components/filters/FilterPanel";
-import { getStatusBadgeClass } from "@/theme/utils";
-import { Pagination } from "@/components/ui/Pagination";
-import { TableToolbar } from "@/components/ui/TableToolbar";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { PhotoGallery } from "@/components/modals/components/PhotoGallery";
-
-// Get status badge class for order statuses
-const getOrderStatusClass = (status: OrderStatus) => {
-  const statusMap: Record<OrderStatus, string> = {
-    Pending: getStatusBadgeClass("order", "Pending"),
-    Processing: getStatusBadgeClass("order", "Processing"),
-    Shipped: getStatusBadgeClass("order", "Shipped"),
-    Delivered: getStatusBadgeClass("order", "Delivered"),
-    Cancelled: getStatusBadgeClass("order", "Cancelled"),
-  };
-  return statusMap[status] || getStatusBadgeClass("order", "Pending");
-};
-
-// Translate order status to Lithuanian
-const getOrderStatusLabel = (status: OrderStatus): string => {
-  const statusLabels: Record<OrderStatus, string> = {
-    Pending: "Laukiama",
-    Processing: "Ruošiama",
-    Shipped: "Išsiųsta",
-    Delivered: "Pristatyta",
-    Cancelled: "Atšaukta",
-  };
-  return statusLabels[status] || status;
-};
-
-// Helper function to safely format dates
-const formatOrderDate = (date: Date | string | null | undefined): string => {
-  if (!date) return "N/A";
-  try {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      return "N/A";
-    }
-    return format(dateObj, "MMM dd, yyyy");
-  } catch (error) {
-    console.error("Error formatting date:", error, date);
-    return "N/A";
-  }
-};
+import { LayoutType } from "@/components/filters/type";
+import { Table } from "@/components/tables/Table";
+import { PhotoGalleryModal } from "@/components/modals/PhotoGalleryModal";
+import { renderOrderExpandedContent } from "@/components/tables/components/OrderTableColumns";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 
 export function OrdersView() {
   const dispatch = useAppDispatch();
@@ -78,7 +26,6 @@ export function OrdersView() {
   const filters = useAppSelector(selectFilters);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [tableFilter, setTableFilter] = useState("");
   const [selectedPhotoGallery, setSelectedPhotoGallery] = useState<{
     photos: string[];
     title: string;
@@ -168,32 +115,37 @@ export function OrdersView() {
     });
   };
 
-  // Client-side table filtering
-  const displayOrders = useMemo(() => {
-    if (!tableFilter.trim()) {
-      return orders;
-    }
-    const filterLower = tableFilter.toLowerCase();
-    return orders.filter((order) => {
-      return (
-        order.id.toLowerCase().includes(filterLower) ||
-        order.customer?.name?.toLowerCase().includes(filterLower) ||
-        order.customer?.country?.toLowerCase().includes(filterLower) ||
-        order.items.some((item) =>
-          item.partName.toLowerCase().includes(filterLower)
-        )
-      );
-    });
-  }, [orders, tableFilter]);
+  const handlePhotoClick = (photos: string[], title: string) => {
+    setSelectedPhotoGallery({ photos, title });
+  };
+
+  // Custom filter function for orders (filters across multiple fields)
+  const orderFilterFn = useCallback(
+    (orders: Order[], filterValue: string): Order[] => {
+      if (!filterValue.trim()) {
+        return orders;
+      }
+      const filterLower = filterValue.toLowerCase();
+      return orders.filter((order) => {
+        return (
+          order.id.toLowerCase().includes(filterLower) ||
+          order.customer?.name?.toLowerCase().includes(filterLower) ||
+          order.customer?.country?.toLowerCase().includes(filterLower) ||
+          order.items.some((item) =>
+            item.partName.toLowerCase().includes(filterLower)
+          )
+        );
+      });
+    },
+    []
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Užsakymai</h1>
-        <p className="text-muted-foreground">
-          Valdykite ir filtruokite užsakymus
-        </p>
-      </div>
+      <PageHeader
+        title="Užsakymai"
+        description="Valdykite ir filtruokite užsakymus"
+      />
 
       {backendFilters && (
         <FilterPanel
@@ -212,323 +164,52 @@ export function OrdersView() {
           showOrderIdFilter={false}
         />
       )}
-      {!backendFilters && (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">
-              Kraunami filtrai...
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!backendFilters && <FilterLoadingCard />}
 
-      <Card>
-        <CardHeader>
-          <TableToolbar
-            showing={displayOrders.length}
-            total={pagination.total}
-            itemName="užsakymų"
-            pagination={{
-              pageIndex: pagination.current_page - 1,
-              pageSize: pagination.per_page,
-            }}
-            onPageSizeChange={(pageSize) => {
-              setPagination((prev) => ({
-                ...prev,
-                per_page: pageSize,
-                current_page: 1,
-              }));
-            }}
-            pageSizeOptions={[10, 15, 25, 50, 100]}
-            filterValue={tableFilter}
-            onFilterChange={setTableFilter}
-            filterPlaceholder="Filtruoti užsakymus..."
-          />
-        </CardHeader>
-        <CardContent>
+      <Card className="border-0 shadow-none">
+        <CardContent className="p-0">
           {isLoadingOrders ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Kraunami užsakymai...
-            </div>
+            <LoadingState message="Kraunami užsakymai..." />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b-0">
-                  <TableHead>Užsakymo Nr.</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Užsakovas</TableHead>
-                  <TableHead>Šalis</TableHead>
-                  <TableHead>Kiekis</TableHead>
-                  <TableHead>Sumokėta</TableHead>
-                  <TableHead>Pristatymas</TableHead>
-                  <TableHead>Statusas</TableHead>
-                  <TableHead>Sandėlys</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {displayOrders.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={9}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      Nėra užsakymų
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  displayOrders.map((order) => {
-                    const isExpanded = expandedOrders.has(order.id);
-                    return (
-                      <Fragment key={order.id}>
-                        <TableRow className="border-b-0">
-                          <TableCell className="font-semibold">
-                            {order.id}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {formatOrderDate(order.date)}
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-semibold">
-                                {order.customer?.name || "Unknown"}
-                              </div>
-                              {order.customer?.isCompany && (
-                                <div className="text-xs text-muted-foreground">
-                                  {order.customer.companyName}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {order.customer?.country || "N/A"}
-                          </TableCell>
-                          <TableCell>
-                            <button
-                              onClick={() => toggleOrderExpansion(order.id)}
-                              className="flex items-center gap-2 hover:text-primary transition-colors font-semibold"
-                            >
-                              <span>{order.items.length}</span>
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold">
-                              €{(order.totalAmountEUR || 0).toLocaleString()}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold">
-                              €{(order.shippingCostEUR || 0).toLocaleString()}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(
-                                order.status
-                              )}`}
-                            >
-                              {getOrderStatusLabel(order.status)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              N/A
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                        {isExpanded && (
-                          <TableRow
-                            key={`${order.id}-expanded`}
-                            className="hover:bg-transparent"
-                          >
-                            <TableCell colSpan={9} className="p-0">
-                              <div className="py-4">
-                                <h4 className="font-semibold text-xs mb-3">
-                                  Užsakytos prekės ({order.items.length})
-                                </h4>
-                                <div className="space-y-2">
-                                  {order.items.map((item, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex items-start justify-between gap-4 p-3 bg-muted/30 rounded-lg border hover:bg-muted/30"
-                                    >
-                                      {item.photo && (
-                                        <button
-                                          onClick={() => {
-                                            const photos =
-                                              item.photoGallery ||
-                                              (item.photo ? [item.photo] : []);
-                                            if (photos.length > 0) {
-                                              setSelectedPhotoGallery({
-                                                photos,
-                                                title:
-                                                  item.partName || "Nuotraukos",
-                                              });
-                                            }
-                                          }}
-                                          className="w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                                        >
-                                          <img
-                                            src={item.photo}
-                                            alt={item.partName}
-                                            className="w-16 h-16 object-cover rounded"
-                                          />
-                                        </button>
-                                      )}
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Pavadinimas
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.partName || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Detalės id
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.partId || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Automobilis
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.carBrand && item.carModel ? (
-                                            <>
-                                              <div>
-                                                {item.carBrand} {item.carModel}
-                                              </div>
-                                              {item.carYear && (
-                                                <div className="text-xs text-muted-foreground">
-                                                  {item.carYear}
-                                                </div>
-                                              )}
-                                            </>
-                                          ) : (
-                                            <div>N/A</div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Kėbulo tipas
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.bodyType || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Variklio tūris
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.engineCapacity
-                                            ? `${item.engineCapacity}cc`
-                                            : "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Kuro tipas
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.fuelType || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-1">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Gamintojo kodas
-                                        </div>
-                                        <div className="text-sm">
-                                          {item.manufacturerCode || "N/A"}
-                                        </div>
-                                      </div>
-                                      <div className="flex flex-col flex-shrink-0 flex-1 text-right">
-                                        <div className="text-xs text-muted-foreground mb-1">
-                                          Kaina
-                                        </div>
-                                        <div className="text-sm">
-                                          €
-                                          {(
-                                            item.priceEUR || 0
-                                          ).toLocaleString()}
-                                        </div>
-                                        {item.quantity > 1 && (
-                                          <>
-                                            <div className="text-xs text-muted-foreground mt-1">
-                                              Kiekis
-                                            </div>
-                                            <div className="text-sm">
-                                              {item.quantity}
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </Fragment>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          )}
-          {/* Pagination Controls */}
-          {!isLoadingOrders && pagination.total > 0 && (
-            <div className="flex items-center justify-end pt-4 border-t">
-              <Pagination
-                currentPage={pagination.current_page}
-                totalPages={pagination.last_page}
-                onPageChange={(page) => {
-                  setPagination((prev) => ({
-                    ...prev,
-                    current_page: page,
-                  }));
-                }}
-              />
-            </div>
+            <Table<Order>
+              type={LayoutType.ORDERS}
+              data={orders}
+              serverPagination={pagination}
+              onPageChange={(page) => {
+                setPagination((prev) => ({
+                  ...prev,
+                  current_page: page,
+                }));
+              }}
+              onPageSizeChange={(pageSize) => {
+                setPagination((prev) => ({
+                  ...prev,
+                  per_page: pageSize,
+                  current_page: 1,
+                }));
+              }}
+              expandedRows={expandedOrders}
+              onToggleExpand={toggleOrderExpansion}
+              renderExpandedRow={(order) =>
+                renderOrderExpandedContent(order, handlePhotoClick)
+              }
+              filterColumnKey="id"
+              filterPlaceholder="Filtruoti užsakymus..."
+              customFilterFn={orderFilterFn}
+            />
           )}
         </CardContent>
       </Card>
 
       {/* Photo Gallery Modal */}
-      <Dialog
-        open={!!selectedPhotoGallery}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedPhotoGallery(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedPhotoGallery?.title || "Nuotraukos"}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedPhotoGallery && (
-            <div className="mt-4">
-              <PhotoGallery
-                photos={selectedPhotoGallery.photos}
-                title="Nuotraukos"
-                altPrefix={`${selectedPhotoGallery.title} - Nuotrauka`}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {selectedPhotoGallery && (
+        <PhotoGalleryModal
+          photos={selectedPhotoGallery.photos}
+          title={selectedPhotoGallery.title}
+          isOpen={!!selectedPhotoGallery}
+          onClose={() => setSelectedPhotoGallery(null)}
+        />
+      )}
     </div>
   );
 }

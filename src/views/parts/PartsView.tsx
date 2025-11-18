@@ -11,7 +11,7 @@ import { getParts, filterStateToQueryParams } from "@/api/parts";
 import { Part } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
 import { Table } from "../../components/tables/Table";
-import { filterParts } from "@/utils/filterParts";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export function PartsView() {
   const dispatch = useAppDispatch();
@@ -31,15 +31,11 @@ export function PartsView() {
   // Use empty array for cars since parts are fetched separately
   const cars: never[] = [];
 
-  // Note: Since we're now doing server-side filtering, we don't need client-side filtering
-  // The parts returned from the API are already filtered
-  // Keeping this for now in case backend doesn't support all filters yet
+  // Note: All filtering is handled by the backend
+  // The parts returned from the API are already filtered based on the current filters
   const filteredParts = useMemo(() => {
-    // If backend filtering is working, we can just return parts directly
-    // return parts;
-    // Otherwise, apply client-side filtering as fallback
-    return filterParts(parts, filters, cars);
-  }, [parts, filters, cars]);
+    return parts;
+  }, [parts]);
 
   // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
@@ -78,12 +74,10 @@ export function PartsView() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Sandėlys</h1>
-        <p className="text-muted-foreground">
-          Valdykite ir filtruokite sandėlio inventorių
-        </p>
-      </div>
+      <PageHeader
+        title="Sandėlys"
+        description="Valdykite ir filtruokite sandėlio inventorių"
+      />
 
       <FilterPanel
         type="parts"

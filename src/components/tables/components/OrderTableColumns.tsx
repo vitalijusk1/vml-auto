@@ -1,0 +1,172 @@
+import { ColumnDef } from "@tanstack/react-table";
+import { Order, OrderStatus } from "@/types";
+import { getStatusBadgeClass } from "@/theme/utils";
+import { format } from "date-fns";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { OrderItemExpandedContent } from "./OrderItemExpandedContent";
+
+// Get status badge class for order statuses
+const getOrderStatusClass = (status: OrderStatus) => {
+  const statusMap: Record<OrderStatus, string> = {
+    Pending: getStatusBadgeClass("order", "Pending"),
+    Processing: getStatusBadgeClass("order", "Processing"),
+    Shipped: getStatusBadgeClass("order", "Shipped"),
+    Delivered: getStatusBadgeClass("order", "Delivered"),
+    Cancelled: getStatusBadgeClass("order", "Cancelled"),
+  };
+  return statusMap[status] || getStatusBadgeClass("order", "Pending");
+};
+
+// Translate order status to Lithuanian
+const getOrderStatusLabel = (status: OrderStatus): string => {
+  const statusLabels: Record<OrderStatus, string> = {
+    Pending: "Laukiama",
+    Processing: "Ruošiama",
+    Shipped: "Išsiųsta",
+    Delivered: "Pristatyta",
+    Cancelled: "Atšaukta",
+  };
+  return statusLabels[status] || status;
+};
+
+// Helper function to safely format dates
+const formatOrderDate = (date: Date | string | null | undefined): string => {
+  if (!date) return "N/A";
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return "N/A";
+    }
+    return format(dateObj, "MMM dd, yyyy");
+  } catch (error) {
+    console.error("Error formatting date:", error, date);
+    return "N/A";
+  }
+};
+
+interface OrderTableColumnsProps {
+  onToggleExpand: (orderId: string) => void;
+  isExpanded: (orderId: string) => boolean;
+}
+
+export function OrderTableColumns({
+  onToggleExpand,
+  isExpanded,
+}: OrderTableColumnsProps): ColumnDef<Order>[] {
+  return [
+    {
+      accessorKey: "id",
+      header: "Užsakymo Nr.",
+      cell: ({ row }) => (
+        <span className="font-semibold">{row.original.id}</span>
+      ),
+    },
+    {
+      accessorKey: "date",
+      header: "Data",
+      cell: ({ row }) => (
+        <span className="font-semibold">
+          {formatOrderDate(row.original.date)}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "customer",
+      header: "Užsakovas",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-semibold">
+            {row.original.customer?.name || "Unknown"}
+          </div>
+          {row.original.customer?.isCompany && (
+            <div className="text-xs text-muted-foreground">
+              {row.original.customer.companyName}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "country",
+      header: "Šalis",
+      cell: ({ row }) => (
+        <span className="font-semibold">
+          {row.original.customer?.country || "N/A"}
+        </span>
+      ),
+    },
+    {
+      id: "itemsCount",
+      header: "Kiekis",
+      cell: ({ row }) => {
+        const order = row.original;
+        const expanded = isExpanded(order.id);
+        return (
+          <button
+            onClick={() => onToggleExpand(order.id)}
+            className="flex items-center gap-2 hover:text-primary transition-colors font-semibold"
+          >
+            <span>{order.items.length}</span>
+            {expanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+        );
+      },
+    },
+    {
+      accessorKey: "totalAmountEUR",
+      header: "Sumokėta",
+      cell: ({ row }) => (
+        <div className="font-semibold">
+          €{(row.original.totalAmountEUR || 0).toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "shippingCostEUR",
+      header: "Pristatymas",
+      cell: ({ row }) => (
+        <div className="font-semibold">
+          €{(row.original.shippingCostEUR || 0).toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Statusas",
+      cell: ({ row }) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderStatusClass(
+            row.original.status
+          )}`}
+        >
+          {getOrderStatusLabel(row.original.status)}
+        </span>
+      ),
+    },
+    {
+      id: "warehouse",
+      header: "Sandėlys",
+      cell: () => <span className="text-sm text-muted-foreground">N/A</span>,
+    },
+  ];
+}
+
+// Helper component to render expanded order items
+export function renderOrderExpandedContent(
+  order: Order,
+  onPhotoClick: (photos: string[], title: string) => void
+) {
+  return (
+    <OrderItemExpandedContent
+      items={order.items}
+      title={`Užsakytos prekės (${order.items.length})`}
+      onPhotoClick={onPhotoClick}
+      showReason={false}
+      showQuantity={true}
+    />
+  );
+}

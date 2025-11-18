@@ -1,7 +1,7 @@
 import authInstance from "./axios";
 import { Car } from "@/types";
 import { apiEndpoints, CarQueryParams } from "./routes/routes";
-import { CarFilters } from "@/utils/filterCars";
+import { BackendFilters } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
 
 // API Response types
@@ -199,9 +199,9 @@ export const getCar = async (id: number): Promise<Car> => {
   return transformApiCar(response.data.data);
 };
 
-// Get filters for cars
-export const getFilters = async (): Promise<CarFilters> => {
-  const response = await authInstance.get<CarFilters>(
+// Get filters for cars (same endpoint returns all filters: car, parts, wheels, categories)
+export const getFilters = async (): Promise<BackendFilters> => {
+  const response = await authInstance.get<BackendFilters>(
     apiEndpoints.getFilters()
   );
   return response.data;

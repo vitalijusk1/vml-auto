@@ -1,13 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FilterState, Car } from "@/types";
-import { CarFilters } from "@/utils/filterCars";
 import { Filter, RotateCcw } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo } from "react";
-import { defaultFilters } from "@/utils/filterParts";
+import { defaultFilters } from "@/store/slices/filtersSlice";
 import { LayoutType } from "./type";
-import { CarFilters as CarFiltersComponent } from "./components/CarFilters/CarFilters";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
 import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
@@ -17,9 +15,10 @@ import { useBackendFilters } from "@/hooks/useBackendFilters";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
-import { Category } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
+import { getLocalizedText } from "@/utils/i18n";
 
-interface FilterPanelProps<T extends FilterState | CarFilters> {
+interface FilterPanelProps<T extends FilterState> {
   type: LayoutType;
   filters: T;
   onFiltersChange: (filters: T) => void;
@@ -34,24 +33,13 @@ interface FilterPanelProps<T extends FilterState | CarFilters> {
 
 const getFilter = (
   type: LayoutType,
-  filters: FilterState | CarFilters,
-  onFiltersChange: (updates: Partial<FilterState | CarFilters>) => void,
+  filters: FilterState,
+  onFiltersChange: (updates: Partial<FilterState>) => void,
   onReset: () => void,
   cars: Car[] = [],
   showOrderIdFilter: boolean = false
 ) => {
   switch (type) {
-    case LayoutType.CAR:
-      return (
-        <CarFiltersComponent
-          filters={filters as CarFilters}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<CarFilters>) => void
-          }
-          onReset={onReset}
-          cars={cars}
-        />
-      );
     case LayoutType.PARTS:
       return (
         <PartFilters
@@ -75,7 +63,7 @@ const getFilter = (
           cars={cars}
         />
       );
-    case LayoutType.ORDER_MANAGEMENT:
+    case LayoutType.ORDER_CONTROL:
       return (
         <OrderManagementFilters
           filters={filters as FilterState}
@@ -91,7 +79,7 @@ const getFilter = (
   }
 };
 
-export function FilterPanel<T extends FilterState | CarFilters>({
+export function FilterPanel<T extends FilterState>({
   type,
   filters,
   onFiltersChange,
@@ -105,17 +93,14 @@ export function FilterPanel<T extends FilterState | CarFilters>({
 }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
 
-  const updateFilters = (updates: Partial<FilterState | CarFilters>) => {
+  const updateFilters = (updates: Partial<FilterState>) => {
     onFiltersChange({ ...filters, ...updates });
   };
 
   const resetFilters = () => {
-    if (type === LayoutType.CAR) {
-      // Reset to empty filters object (will be fetched from backend)
-      onFiltersChange({} as unknown as T);
-    } else if (type === LayoutType.ANALYTICS) {
+    if (type === LayoutType.ANALYTICS) {
       onFiltersChange(defaultFilters as T);
-    } else if (type === LayoutType.ORDER_MANAGEMENT) {
+    } else if (type === LayoutType.ORDER_CONTROL) {
       // Order management filters are local to the page
       onFiltersChange(defaultFilters as T);
     } else {
@@ -145,7 +130,7 @@ export function FilterPanel<T extends FilterState | CarFilters>({
 
   // Helper to get category name from Category object
   const getCategoryName = (category: Category): string => {
-    return category.languages?.en || category.languages?.name || category.name;
+    return getLocalizedText(category.languages, category.name);
   };
 
   // Helper to recursively find category by ID
@@ -363,7 +348,7 @@ export function FilterPanel<T extends FilterState | CarFilters>({
             {title}
           </CardTitle>
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
-            {type !== LayoutType.ORDER_MANAGEMENT && !hideTopDetailsFilter && (
+            {type !== LayoutType.ORDER_CONTROL && !hideTopDetailsFilter && (
               <div className="w-full xs:w-auto">
                 <SingleSelectDropdown
                   options={[
@@ -447,7 +432,7 @@ export function FilterPanel<T extends FilterState | CarFilters>({
             <Button className="px-6">Filtruoti</Button>
           </div>
         )}
-        {type === LayoutType.ORDER_MANAGEMENT && onFilter && (
+        {type === LayoutType.ORDER_CONTROL && onFilter && (
           <div className="flex justify-end pt-2">
             <Button
               className="px-6"

@@ -1,8 +1,24 @@
 import authInstance from "./axios";
-import { Part, PartStatus, PartPosition, PartQuality, FilterState } from "@/types";
+import {
+  Part,
+  PartStatus,
+  PartPosition,
+  PartQuality,
+  FilterState,
+} from "@/types";
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
-import { CarFilters, Category } from "@/utils/filterCars";
+import { BackendFilters, Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
+import {
+  mapBrandNameToId,
+  mapModelNameToId,
+  mapBodyTypeNameToId,
+  mapStatusNameToId,
+  mapPositionNameToId,
+  mapQualityNameToId,
+  mapCategoryNameToId,
+  extractName,
+} from "@/utils/filterMappers";
 
 // API Response types
 interface ApiPartResponse {
@@ -136,123 +152,9 @@ function mapQuality(quality: number): PartQuality | undefined {
   return "Used"; // Default fallback
 }
 
-// Helper function to extract ID from FilterOption or return undefined
-function extractId(item: any): number | undefined {
-  if (item && typeof item === "object" && typeof item.id === "number") {
-    return item.id;
-  }
-  return undefined;
-}
-
-// Helper function to get name from FilterOption or string
-function extractName(item: any): string {
-  if (typeof item === "string") return item;
-  if (item && typeof item === "object") {
-    if (item.languages?.en) return item.languages.en;
-    if (item.languages?.name) return item.languages.name;
-    if (item.name) return item.name;
-  }
-  return String(item);
-}
-
-// Generic function to map name to ID from a filter array
-function mapNameToId(
-  name: string,
-  filterArray: any[] | undefined
-): number | undefined {
-  if (!Array.isArray(filterArray)) return undefined;
-
-  for (const item of filterArray) {
-    const itemName = extractName(item);
-    if (itemName === name) {
-      return extractId(item);
-    }
-  }
-  return undefined;
-}
-
-// Map quality name to ID from backend filters
-function mapQualityNameToId(
-  qualityName: string,
-  backendFilters: any
-): number | undefined {
-  return mapNameToId(qualityName, backendFilters?.parts?.qualities);
-}
-
-// Map brand name to ID from backend filters
-function mapBrandNameToId(
-  brandName: string,
-  backendFilters: any
-): number | undefined {
-  return mapNameToId(brandName, backendFilters?.car?.brands);
-}
-
-// Map model name to ID from backend filters
-function mapModelNameToId(
-  modelName: string,
-  backendFilters: any
-): number | undefined {
-  const models = backendFilters?.car?.models || backendFilters?.car?.car_models;
-  return mapNameToId(modelName, models);
-}
-
-// Map body type name to ID from backend filters
-function mapBodyTypeNameToId(
-  bodyTypeName: string,
-  backendFilters: any
-): number | undefined {
-  return mapNameToId(bodyTypeName, backendFilters?.car?.body_types);
-}
-
-// Map status name to ID from backend filters
-function mapStatusNameToId(
-  statusName: string,
-  backendFilters: any
-): number | undefined {
-  return mapNameToId(statusName, backendFilters?.parts?.statuses);
-}
-
-// Map position name to ID from backend filters
-function mapPositionNameToId(
-  positionName: string,
-  backendFilters: any
-): number | undefined {
-  return mapNameToId(positionName, backendFilters?.parts?.positions);
-}
-
-// Helper function to get category name (prefer English, fallback to name)
+// Helper function to get category name
 function getCategoryName(category: Category): string {
-  return category.languages?.en || category.languages?.name || category.name;
-}
-
-// Helper function to recursively find category ID by name
-function findCategoryIdByName(
-  categories: Category[],
-  categoryName: string
-): number | undefined {
-  for (const category of categories) {
-    const name = getCategoryName(category);
-    if (name === categoryName) {
-      return category.id;
-    }
-    if (category.subcategories && category.subcategories.length > 0) {
-      const found = findCategoryIdByName(category.subcategories, categoryName);
-      if (found !== undefined) {
-        return found;
-      }
-    }
-  }
-  return undefined;
-}
-
-// Map category name to ID from backend filters
-function mapCategoryNameToId(
-  categoryName: string,
-  backendFilters: any
-): number | undefined {
-  const categories = backendFilters?.categories;
-  if (!Array.isArray(categories)) return undefined;
-  return findCategoryIdByName(categories, categoryName);
+  return getLocalizedText(category.languages, category.name);
 }
 
 // Map position number to PartPosition
@@ -309,10 +211,11 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
     position: mapPosition(apiPart.position),
     daysInInventory: calculateDaysInInventory(dateAdded),
     dateAdded,
-    dateSold: apiPart.status === 2 && apiPart.reserved_date 
-      ? new Date(apiPart.reserved_date) 
-      : apiPart.status === 2 
-        ? dateAdded 
+    dateSold:
+      apiPart.status === 2 && apiPart.reserved_date
+        ? new Date(apiPart.reserved_date)
+        : apiPart.status === 2
+        ? dateAdded
         : undefined,
     photos,
     warehouse: undefined, // TODO: Get warehouse from API if available
@@ -349,7 +252,11 @@ export const filterStateToQueryParams = (
   }
 
   // Status - convert "All" to undefined, otherwise convert names to IDs
-  if (filters.status !== "All" && Array.isArray(filters.status) && filters.status.length > 0) {
+  if (
+    filters.status !== "All" &&
+    Array.isArray(filters.status) &&
+    filters.status.length > 0
+  ) {
     const statusIds = filters.status
       .map((statusName) => mapStatusNameToId(statusName, backendFilters))
       .filter((id): id is number => id !== undefined);
@@ -439,7 +346,12 @@ export const filterStateToQueryParams = (
   // Wheel filters - convert names to IDs
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
     const wheelDriveIds = filters.wheelDrive
-      .map((driveName) => mapNameToId(driveName, backendFilters?.wheels?.drives || backendFilters?.wheels?.wheel_drives))
+      .map((driveName) =>
+        mapNameToId(
+          driveName,
+          backendFilters?.wheels?.drives || backendFilters?.wheels?.wheel_drives
+        )
+      )
       .filter((id): id is number => id !== undefined);
     if (wheelDriveIds.length > 0) {
       params.wheel_drive = wheelDriveIds;
@@ -462,7 +374,10 @@ export const filterStateToQueryParams = (
 
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
     const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.central_diameter, wheels?.wheels_central_diameter);
+    const filterArray = getWheelsArray(
+      wheels?.central_diameter,
+      wheels?.wheels_central_diameter
+    );
     const centralDiameterIds = filters.wheelCentralDiameter
       .map((diameterName) => mapNameToId(String(diameterName), filterArray))
       .filter((id): id is number => id !== undefined);
@@ -472,7 +387,10 @@ export const filterStateToQueryParams = (
   }
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
     const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.fixing_points, wheels?.wheels_fixing_points);
+    const filterArray = getWheelsArray(
+      wheels?.fixing_points,
+      wheels?.wheels_fixing_points
+    );
     const fixingPointsIds = filters.wheelFixingPoints
       .map((pointsName) => mapNameToId(String(pointsName), filterArray))
       .filter((id): id is number => id !== undefined);
@@ -502,7 +420,10 @@ export const filterStateToQueryParams = (
   }
   if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
     const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.tread_depth, wheels?.wheels_tread_depth);
+    const filterArray = getWheelsArray(
+      wheels?.tread_depth,
+      wheels?.wheels_tread_depth
+    );
     const treadDepthIds = filters.wheelTreadDepth
       .map((depthName) => mapNameToId(String(depthName), filterArray))
       .filter((id): id is number => id !== undefined);
@@ -575,10 +496,9 @@ export const deletePart = async (id: string): Promise<void> => {
 };
 
 // Get filters for parts (using same endpoint as cars, which includes categories)
-export const getFilters = async (): Promise<CarFilters> => {
-  const response = await authInstance.get<CarFilters>(
+export const getFilters = async (): Promise<BackendFilters> => {
+  const response = await authInstance.get<BackendFilters>(
     apiEndpoints.getFilters()
   );
   return response.data;
 };
-

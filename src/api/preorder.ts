@@ -1,7 +1,7 @@
 import authInstance from "./axios";
 import { apiEndpoints } from "./routes/routes";
 import { Part, PartStatus } from "@/types";
-import { Category } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
 
 // API Response types for preorder analysis
 export interface PreorderAnalysisPart {

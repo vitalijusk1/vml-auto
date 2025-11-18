@@ -1,9 +1,9 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { FilterState } from '../../types';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { FilterState } from "../../types";
 
-const defaultFilters: FilterState = {
-  search: '',
-  status: 'All',
+export const defaultFilters: FilterState = {
+  search: "",
+  status: "All",
   dateRange: {},
   carBrand: [],
   carModel: [],
@@ -34,7 +34,7 @@ const defaultFilters: FilterState = {
 };
 
 const filtersSlice = createSlice({
-  name: 'filters',
+  name: "filters",
   initialState: defaultFilters,
   reducers: {
     setFilters: (state, action: PayloadAction<Partial<FilterState>>) => {
@@ -46,4 +46,3 @@ const filtersSlice = createSlice({
 
 export const { setFilters, resetFilters } = filtersSlice.actions;
 export default filtersSlice.reducer;
-

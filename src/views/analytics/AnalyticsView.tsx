@@ -16,7 +16,7 @@ import {
 import { useMemo, useState } from "react";
 import { FilterState } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
-import { defaultFilters, filterParts } from "@/utils/filterParts";
+import { defaultFilters } from "@/store/slices/filtersSlice";
 import { CheckCircle2, BarChart3, Settings, AlertTriangle } from "lucide-react";
 
 const COLORS = {
@@ -32,9 +32,11 @@ export function AnalyticsView() {
   const cars: never[] = [];
 
   // Filter parts based on filters
+  // Note: Since filtering is handled by backend, we use parts directly
+  // If client-side filtering is needed in the future, implement it here
   const filteredParts = useMemo(
-    () => filterParts(parts, filters, cars),
-    [parts, filters, cars]
+    () => parts,
+    [parts]
   );
 
   // Filter orders - only delivered orders

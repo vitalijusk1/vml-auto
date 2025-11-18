@@ -4,16 +4,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Car, Part } from "@/types";
-import { CarDetailContent } from "./components/CarDetailContent";
+import { Part } from "@/types";
 import { PhotoGallery } from "./components/PhotoGallery";
 import { LayoutType } from "../filters/type";
 
-type DetailModalType = Exclude<LayoutType, "analytics">;
+type DetailModalType = Exclude<LayoutType, "analytics" | "car">;
 
 interface DetailModalProps {
   type: DetailModalType;
-  item: Car | Part | null;
+  item: Part | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -23,8 +22,6 @@ export function DetailModal({ type, item, isOpen, onClose }: DetailModalProps) {
 
   const getTitle = () => {
     switch (type) {
-      case LayoutType.CAR:
-        return `${(item as Car).brand} ${(item as Car).model.name}`;
       case LayoutType.PARTS:
         return (item as Part).name;
       default:
@@ -34,8 +31,6 @@ export function DetailModal({ type, item, isOpen, onClose }: DetailModalProps) {
 
   const getContent = () => {
     switch (type) {
-      case LayoutType.CAR:
-        return <CarDetailContent car={item as Car} onClose={onClose} />;
       case LayoutType.PARTS:
         // For parts, only show the photo gallery
         return (

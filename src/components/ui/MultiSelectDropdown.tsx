@@ -139,9 +139,9 @@ export function MultiSelectDropdown<T extends string>({
       </Button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-background shadow-lg">
+        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg overflow-hidden">
           {searchable && (
-            <div className="sticky top-0 z-10 border-b bg-background p-2">
+            <div className="sticky top-0 z-10 border-b border-border bg-background py-2 -mx-[1px] px-[calc(0.5rem+1px)]">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -188,7 +188,7 @@ export function MultiSelectDropdown<T extends string>({
             </div>
           )}
           {!searchable && hasSelection && (
-            <div className="border-b bg-background p-2">
+            <div className="border-b border-border bg-background py-2 -mx-[1px] px-[calc(0.5rem+1px)]">
               <Button
                 type="button"
                 variant="outline"

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CategoryTree } from "../CategoryTree/CategoryTree";
-import { Category } from "@/utils/filterCars";
+import { Category } from "@/utils/backendFilters";
 import { cn } from "@/lib/utils";
 
 interface CategorySectionProps {
