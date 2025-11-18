@@ -4,9 +4,18 @@ import { Part, DashboardMetrics } from "../types";
 import { filterParts } from "../utils/filterParts";
 
 // Base selectors
-export const selectParts = (state: RootState) => state.data.parts;
-export const selectOrders = (state: RootState) => state.data.orders;
-export const selectReturns = (state: RootState) => state.data.returns;
+export const selectParts = (state: RootState) => {
+  const parts = state.data.parts;
+  return Array.isArray(parts) ? parts : [];
+};
+export const selectOrders = (state: RootState) => {
+  const orders = state.data.orders;
+  return Array.isArray(orders) ? orders : [];
+};
+export const selectReturns = (state: RootState) => {
+  const returns = state.data.returns;
+  return Array.isArray(returns) ? returns : [];
+};
 export const selectBackendFilters = (state: RootState) => state.data.backendFilters;
 export const selectFilters = (state: RootState) => state.filters;
 export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
@@ -15,6 +24,8 @@ export const selectSidebarCollapsed = (state: RootState) =>
   state.ui.sidebarCollapsed;
 export const selectPartsPagination = (state: RootState) =>
   state.ui.partsPagination;
+export const selectOrderControlSelectedCarId = (state: RootState) =>
+  state.ui.orderControlSelectedCarId;
 
 // Computed selectors
 // Note: selectFilteredParts now requires cars to be passed as parameter

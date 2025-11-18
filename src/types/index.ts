@@ -101,6 +101,11 @@ export interface Part {
   wheelSpacing?: number;
   wheelTreadDepth?: number;
   wheelWidth?: number;
+  analysisStatusCounts?: {
+    available: number;
+    reserved: number;
+    sold: number;
+  };
 }
 
 export interface OrderItem {
@@ -187,6 +192,7 @@ export interface FilterState {
     max?: number;
   };
   fuelType: FuelType[];
+  engineCapacity?: string[];
   gearbox?: string[];
   bodyType: BodyType[];
   partCategory: string[];

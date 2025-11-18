@@ -4,6 +4,7 @@ import { PartsView } from "./views/parts/PartsView";
 import { OrdersView } from "./views/orders/OrdersView";
 import { ReturnsView } from "./views/returns/ReturnsView";
 import { AnalyticsView } from "./views/analytics/AnalyticsView";
+import { OrderControlView } from "./views/order-control/OrderControlView";
 import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { selectCurrentView, selectBackendFilters } from "./store/selectors";
 import { setBackendFilters } from "./store/slices/dataSlice";
@@ -41,6 +42,8 @@ function App() {
         return <OrdersView />;
       case "returns":
         return <ReturnsView />;
+      case "order-control":
+        return <OrderControlView />;
       case "analytics":
         return <AnalyticsView />;
       default:

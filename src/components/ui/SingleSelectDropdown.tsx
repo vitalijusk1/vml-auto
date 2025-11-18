@@ -9,6 +9,7 @@ interface SingleSelectDropdownProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function SingleSelectDropdown({
@@ -17,6 +18,7 @@ export function SingleSelectDropdown({
   onChange,
   placeholder = "Select option...",
   className,
+  disabled = false,
 }: SingleSelectDropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -50,7 +52,8 @@ export function SingleSelectDropdown({
         variant="outline"
         size="sm"
         className="h-8 w-full justify-between"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
       >
         <span className="truncate">{displayText}</span>
         <ChevronDown

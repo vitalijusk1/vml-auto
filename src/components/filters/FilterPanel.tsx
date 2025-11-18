@@ -11,9 +11,9 @@ import { LayoutType } from "./type";
 import { CarFilters as CarFiltersComponent } from "./components/CarFilters/CarFilters";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
+import { useAppDispatch } from "@/store/hooks";
 import { resetFilters as resetFiltersAction } from "@/store/slices/filtersSlice";
-import { selectBackendFilters } from "@/store/selectors";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
@@ -38,6 +38,8 @@ interface FilterPanelProps<
   onFiltersChange: (filters: T) => void;
   cars?: Car[];
   onTopDetailsFilterChange?: (value: string) => void;
+  onFilter?: () => void;
+  isLoading?: boolean;
 }
 
 const getFilter = (
@@ -83,6 +85,17 @@ const getFilter = (
           cars={cars}
         />
       );
+    case LayoutType.ORDER_MANAGEMENT:
+      return (
+        <OrderManagementFilters
+          filters={filters as FilterState}
+          onFiltersChange={
+            onFiltersChange as (updates: Partial<FilterState>) => void
+          }
+          onReset={onReset}
+          cars={cars}
+        />
+      );
     default:
       return null;
   }
@@ -90,9 +103,16 @@ const getFilter = (
 
 export function FilterPanel<
   T extends FilterState | CarFilters | AnalyticsFilters
->({ type, filters, onFiltersChange, cars = [], onTopDetailsFilterChange }: FilterPanelProps<T>) {
+>({
+  type,
+  filters,
+  onFiltersChange,
+  cars = [],
+  onTopDetailsFilterChange,
+  onFilter,
+  isLoading = false,
+}: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
-  const [isOpen, setIsOpen] = useState(true);
 
   const updateFilters = (
     updates: Partial<FilterState | CarFilters | AnalyticsFilters>
@@ -106,6 +126,9 @@ export function FilterPanel<
       onFiltersChange({} as unknown as T);
     } else if (type === LayoutType.ANALYTICS) {
       onFiltersChange(defaultAnalyticsFilters as T);
+    } else if (type === LayoutType.ORDER_MANAGEMENT) {
+      // Order management filters are local to the page
+      onFiltersChange(defaultFilters as T);
     } else {
       // For parts filters, dispatch reset action to Redux
       dispatch(resetFiltersAction());
@@ -127,7 +150,6 @@ export function FilterPanel<
   };
 
   // For parts filters, get categories and wheels data
-  const backendFilters = useAppSelector(selectBackendFilters);
   const { categories, wheelsFilters } = useBackendFilters();
   const partsFilters =
     type === LayoutType.PARTS ? (filters as FilterState) : null;
@@ -352,21 +374,23 @@ export function FilterPanel<
             {title}
           </CardTitle>
           <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
-            <div className="w-full xs:w-auto">
-              <SingleSelectDropdown
-                options={[
-                  { value: "top-detales", label: "Top parduodamas prekes" },
-                  {
-                    value: "reciausiai-parduodamos",
-                    label: "Nepopuliarios",
-                  },
-                  { value: "be-filtro", label: "Be filtro" },
-                ]}
-                value={topDetailsFilter}
-                onChange={handleTopDetailsFilterChange}
-                className="w-full xs:w-[200px]"
-              />
-            </div>
+            {type !== LayoutType.ORDER_MANAGEMENT && (
+              <div className="w-full xs:w-auto">
+                <SingleSelectDropdown
+                  options={[
+                    { value: "top-detales", label: "Top parduodamas prekes" },
+                    {
+                      value: "reciausiai-parduodamos",
+                      label: "Nepopuliarios",
+                    },
+                    { value: "be-filtro", label: "Be filtro" },
+                  ]}
+                  value={topDetailsFilter}
+                  onChange={handleTopDetailsFilterChange}
+                  className="w-full xs:w-[200px]"
+                />
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -415,6 +439,23 @@ export function FilterPanel<
         {type === LayoutType.PARTS && (
           <div className="flex justify-end pt-2">
             <Button className="px-6">Filtruoti</Button>
+          </div>
+        )}
+        {type === LayoutType.ORDER_MANAGEMENT && onFilter && (
+          <div className="flex justify-end pt-2">
+            <Button
+              className="px-6"
+              onClick={onFilter}
+              disabled={
+                isLoading ||
+                !(filters as FilterState).carBrand ||
+                (filters as FilterState).carBrand?.length === 0 ||
+                !(filters as FilterState).carModel ||
+                (filters as FilterState).carModel?.length === 0
+              }
+            >
+              {isLoading ? "Kraunama..." : "Filtruoti"}
+            </Button>
           </div>
         )}
       </CardContent>
