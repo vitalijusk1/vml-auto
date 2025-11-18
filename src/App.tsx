@@ -9,7 +9,6 @@ import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { selectCurrentView, selectBackendFilters } from "./store/selectors";
 import { setBackendFilters } from "./store/slices/dataSlice";
 import { getFilters } from "./api/parts";
-import { DashboardView } from "./views/dashboard/DashboardView";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -47,8 +46,6 @@ function App() {
 
   const renderView = () => {
     switch (currentView) {
-      case "dashboard":
-        return <DashboardView />;
       case "parts":
         return <PartsView />;
       case "orders":
@@ -60,7 +57,7 @@ function App() {
       case "analytics":
         return <AnalyticsView />;
       default:
-        return <DashboardView />;
+        return <PartsView />;
     }
   };
 

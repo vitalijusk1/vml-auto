@@ -1,7 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type ViewType =
-  | "dashboard"
   | "parts"
   | "orders"
   | "returns"
@@ -25,7 +24,7 @@ interface UIState {
 
 const initialState: UIState = {
   selectedParts: [],
-  currentView: "dashboard",
+  currentView: "parts",
   sidebarCollapsed: false,
   partsPagination: null,
   orderControlSelectedCarId: "",
