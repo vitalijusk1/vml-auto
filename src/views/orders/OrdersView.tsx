@@ -231,7 +231,7 @@ export function OrdersView() {
           isLoading={isLoadingOrders}
           hideCategoriesAndWheels={true}
           hideTopDetailsFilter={true}
-          showOrderIdFilter={true}
+          showOrderIdFilter={false}
         />
       )}
       {!backendFilters && (
