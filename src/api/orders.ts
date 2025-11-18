@@ -186,18 +186,20 @@ const transformOrder = (order: any): any => {
       // Extract car data from part_details.car if available
       const carData = item.part_details?.car;
       const partDetails = item.part_details;
-      
+
       // Extract photo and photo gallery
       const photo = partDetails?.photo || item.photo;
-      const photoGallery = partDetails?.part_photo_gallery 
+      const photoGallery = partDetails?.part_photo_gallery
         ? [
             ...(partDetails.photo ? [partDetails.photo] : []),
-            ...partDetails.part_photo_gallery.filter((p): p is string => !!p)
+            ...((
+              partDetails.part_photo_gallery as string[] | undefined
+            )?.filter((p: string) => !!p) ?? []),
           ]
-        : partDetails?.photo 
-          ? [partDetails.photo] 
-          : undefined;
-      
+        : partDetails?.photo
+        ? [partDetails.photo]
+        : undefined;
+
       return {
         partId: item.item_id || String(item.id || ""),
         partName: item.name || "",
@@ -207,14 +209,26 @@ const transformOrder = (order: any): any => {
         photo: photo,
         photoGallery: photoGallery,
         carId: item.car_id || carData?.id || undefined,
-        manufacturerCode: item.manufacturer_code || partDetails?.manufacturer_code || undefined,
+        manufacturerCode:
+          item.manufacturer_code || partDetails?.manufacturer_code || undefined,
         // Car details from part_details.car
         ...(carData && {
-          carBrand: carData.brand || carData.car_model?.brand?.name || undefined,
+          carBrand:
+            carData.brand || carData.car_model?.brand?.name || undefined,
           carModel: carData.model || carData.car_model?.name || undefined,
-          carYear: carData.year || carData.car_years ? parseInt(carData.car_years) : undefined,
-          bodyType: carData.body_type || carData.car_body_type?.name || undefined,
-          engineCapacity: carData.engine_capacity || carData.car_engine_cubic_capacity ? parseInt(carData.car_engine_cubic_capacity) : undefined,
+          carYear: carData.year
+            ? typeof carData.year === "string"
+              ? parseInt(carData.year)
+              : carData.year
+            : carData.car_years
+            ? parseInt(carData.car_years)
+            : undefined,
+          bodyType:
+            carData.body_type || carData.car_body_type?.name || undefined,
+          engineCapacity:
+            carData.engine_capacity || carData.car_engine_cubic_capacity
+              ? parseInt(carData.car_engine_cubic_capacity)
+              : undefined,
           fuelType: carData.fuel || carData.car_fuel?.name || undefined,
         }),
       };
