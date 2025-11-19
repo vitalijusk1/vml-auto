@@ -1,4 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  memo,
+  startTransition,
+} from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   selectReturns,
@@ -18,12 +25,51 @@ import { renderReturnExpandedContent } from "@/components/tables/components/Retu
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
+import { store } from "@/store";
+
+// Separate component that subscribes to filters - this isolates re-renders
+// Only this component re-renders when filters change, not ReturnsView
+const FilterPanelContainer = memo(function FilterPanelContainer({
+  onFiltersChange,
+  onFilter,
+  isLoading,
+}: {
+  onFiltersChange: (filters: FilterState) => void;
+  onFilter: () => void;
+  isLoading: boolean;
+}) {
+  const filters = useAppSelector(selectFilters);
+  return (
+    <FilterPanel
+      type="parts"
+      filters={filters}
+      onFiltersChange={onFiltersChange}
+      cars={[]}
+      onFilter={onFilter}
+      isLoading={isLoading}
+      hideCategoriesAndWheels={true}
+      hideTopDetailsFilter={true}
+    />
+  );
+});
 
 export function ReturnsView() {
   const dispatch = useAppDispatch();
   const returns = useAppSelector(selectReturns);
   const backendFilters = useAppSelector(selectBackendFilters);
-  const filters = useAppSelector(selectFilters);
+
+  // Use ref to get latest filters without subscribing (prevents re-renders)
+  const filtersRef = useRef<FilterState>(store.getState().filters);
+  const filtersKeyRef = useRef<string>(
+    JSON.stringify(store.getState().filters)
+  );
+  const backendFiltersRef = useRef(backendFilters);
+  const dispatchRef = useRef(dispatch);
+  const isLoadingRef = useRef(false);
+  const setIsLoadingReturnsRef = useRef<((loading: boolean) => void) | null>(
+    null
+  );
+
   const [expandedReturns, setExpandedReturns] = useState<Set<string>>(
     new Set()
   );
@@ -33,50 +79,97 @@ export function ReturnsView() {
     title: string;
   } | null>(null);
 
-  // Serialize filters to detect changes properly (React does shallow comparison)
-  const filtersKey = useMemo(() => {
-    return JSON.stringify(filters);
-  }, [filters]);
-
-  // Fetch returns when filters change
+  // Keep refs in sync
   useEffect(() => {
-    const fetchData = async () => {
-      // Wait for backendFilters to load before fetching with filters
-      // This prevents calling the API with invalid parameters
-      if (!backendFilters) {
-        return;
+    backendFiltersRef.current = backendFilters;
+  }, [backendFilters]);
+
+  useEffect(() => {
+    dispatchRef.current = dispatch;
+  }, [dispatch]);
+
+  useEffect(() => {
+    setIsLoadingReturnsRef.current = setIsLoadingReturns;
+  }, []);
+
+  // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
+
+  // Fetch function that updates loading state only when actually needed
+  const fetchReturns = useCallback(async (skipLoadingState = false) => {
+    if (!backendFiltersRef.current) {
+      return;
+    }
+
+    // Only update loading state if not already loading and not skipping (prevents unnecessary re-renders)
+    if (
+      !skipLoadingState &&
+      !isLoadingRef.current &&
+      setIsLoadingReturnsRef.current
+    ) {
+      isLoadingRef.current = true;
+      // Use setTimeout to defer loading state update, allowing filter change to complete without re-render
+      setTimeout(() => {
+        if (setIsLoadingReturnsRef.current) {
+          setIsLoadingReturnsRef.current(true);
+        }
+      }, 0);
+    }
+
+    try {
+      console.log("Fetching returns...");
+
+      // Convert filters to query params
+      // Use filtersRef.current to get latest filters without causing re-renders
+      const queryParams = filterStateToReturnsQueryParams(
+        filtersRef.current,
+        backendFiltersRef.current
+      );
+
+      // Fetch returns with filters
+      const response = await getReturns(queryParams);
+
+      console.log("Returns response:", response);
+
+      // getReturns returns Return[], so response is already an array
+      const returnsArray = Array.isArray(response) ? response : [];
+
+      dispatchRef.current(setReturns(returnsArray));
+    } catch (error) {
+      console.error("Error fetching returns:", error);
+      // Set empty array on error so table still shows
+      dispatchRef.current(setReturns([]));
+    } finally {
+      if (!skipLoadingState && setIsLoadingReturnsRef.current) {
+        isLoadingRef.current = false;
+        setIsLoadingReturnsRef.current(false);
       }
+    }
+  }, []);
 
-      setIsLoadingReturns(true);
-      try {
-        console.log("Fetching returns...");
+  // Update refs when filters change (but don't fetch - wait for filter button click)
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      const currentFilters = store.getState().filters;
+      const currentKey = JSON.stringify(currentFilters);
 
-        // Convert filters to query params
-        const queryParams = filterStateToReturnsQueryParams(
-          filters,
-          backendFilters
-        );
-
-        // Fetch returns with filters
-        const response = await getReturns(queryParams);
-
-        console.log("Returns response:", response);
-
-        // getReturns returns Return[], so response is already an array
-        const returnsArray = Array.isArray(response) ? response : [];
-
-        dispatch(setReturns(returnsArray));
-      } catch (error) {
-        console.error("Error fetching returns:", error);
-        // Set empty array on error so table still shows
-        dispatch(setReturns([]));
-      } finally {
-        setIsLoadingReturns(false);
+      // Only update refs if filters changed (don't fetch automatically)
+      if (currentKey !== filtersKeyRef.current) {
+        filtersRef.current = currentFilters;
+        filtersKeyRef.current = currentKey;
+        // Don't fetch here - wait for user to click "Filtruoti" button
       }
-    };
+    });
+    return unsubscribe;
+  }, []);
 
-    fetchData();
-  }, [dispatch, filtersKey, backendFilters]);
+  // Fetch initial data on mount or when backendFilters become available
+  useEffect(() => {
+    if (backendFilters && returns.length === 0) {
+      // Only fetch if we don't have returns yet (initial load)
+      fetchReturns(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendFilters]); // Run when backendFilters become available
 
   // Always expand all returns by default when returns change
   useEffect(() => {
@@ -85,7 +178,7 @@ export function ReturnsView() {
     }
   }, [returns]);
 
-  const toggleReturnExpansion = (returnId: string) => {
+  const toggleReturnExpansion = useCallback((returnId: string) => {
     setExpandedReturns((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(returnId)) {
@@ -95,11 +188,29 @@ export function ReturnsView() {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const handlePhotoClick = (photos: string[], title: string) => {
+  const handlePhotoClick = useCallback((photos: string[], title: string) => {
     setSelectedPhotoGallery({ photos, title });
-  };
+  }, []);
+
+  const handleFiltersChange = useCallback(
+    (newFilters: FilterState) => {
+      dispatch(setFilters(newFilters));
+    },
+    [dispatch]
+  );
+
+  const handleFilter = useCallback(() => {
+    // Fetch returns with current filters
+    fetchReturns(false); // false = show loading state
+  }, [fetchReturns]);
+
+  const renderExpandedRow = useCallback(
+    (returnItem: Return) =>
+      renderReturnExpandedContent(returnItem, handlePhotoClick),
+    [handlePhotoClick]
+  );
 
   // Custom filter function for returns (filters across multiple fields)
   const returnFilterFn = useCallback(
@@ -131,20 +242,10 @@ export function ReturnsView() {
       />
 
       {backendFilters && (
-        <FilterPanel
-          type="parts"
-          filters={filters}
-          onFiltersChange={(newFilters) => {
-            dispatch(setFilters(newFilters as FilterState));
-          }}
-          cars={[]}
-          onFilter={() => {
-            // Filter button is handled by the useEffect that watches filtersKey
-          }}
+        <FilterPanelContainer
+          onFiltersChange={handleFiltersChange}
+          onFilter={handleFilter}
           isLoading={isLoadingReturns}
-          hideCategoriesAndWheels={true}
-          hideTopDetailsFilter={true}
-          showOrderIdFilter={false}
         />
       )}
       {!backendFilters && <FilterLoadingCard />}
@@ -159,9 +260,7 @@ export function ReturnsView() {
               data={returns}
               expandedRows={expandedReturns}
               onToggleExpand={toggleReturnExpansion}
-              renderExpandedRow={(returnItem) =>
-                renderReturnExpandedContent(returnItem, handlePhotoClick)
-              }
+              renderExpandedRow={renderExpandedRow}
               filterColumnKey="id"
               filterPlaceholder="Filtruoti grąžinimus..."
               customFilterFn={returnFilterFn}

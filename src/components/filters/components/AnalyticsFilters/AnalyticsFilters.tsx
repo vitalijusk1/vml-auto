@@ -1,5 +1,5 @@
 import { CardContent } from "@/components/ui/card";
-import { FilterState, PartQuality, PartPosition, FuelType, Car } from "@/types";
+import { FilterState, Car } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { BrandFilter } from "../shared/BrandFilter";
@@ -11,6 +11,11 @@ import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 import { FuelTypeFilter } from "../shared/FuelTypeFilter";
 import { YearRangeFilter } from "../shared/YearRangeFilter";
 import { PriceRangeFilter } from "../shared/PriceRangeFilter";
+import {
+  createBrandChangeHandler,
+  createStringArrayHandler,
+  createRangeHandler,
+} from "@/utils/filterHelpers";
 
 interface AnalyticsFiltersProps {
   filters: FilterState;
@@ -43,44 +48,33 @@ export const AnalyticsFilters = ({
         {/* Brand (Manufacturer) */}
         <BrandFilter
           selected={filters.carBrand || []}
-          onChange={(selected) => {
-            onFiltersChange({
-              carBrand: selected,
-              carModel: [],
-            });
-          }}
-          onModelChange={(models) => onFiltersChange({ carModel: models })}
+          onChange={createBrandChangeHandler(onFiltersChange)}
+          // Don't pass onModelChange - AnalyticsFilters already clears carModel in onChange
         />
 
         {/* Model */}
         <ModelFilter
           selected={filters.carModel || []}
           selectedBrands={filters.carBrand || []}
-          onChange={(selected) => onFiltersChange({ carModel: selected })}
+          onChange={createStringArrayHandler(onFiltersChange, "carModel")}
         />
 
         {/* Body Type */}
         <BodyTypeFilter
           selected={filters.bodyType || []}
-          onChange={(selected) =>
-            onFiltersChange({ bodyType: selected as any })
-          }
+          onChange={createStringArrayHandler(onFiltersChange, "bodyType")}
         />
 
         {/* Quality */}
         <QualityFilter
           selected={filters.quality || []}
-          onChange={(selected) =>
-            onFiltersChange({ quality: selected as PartQuality[] })
-          }
+          onChange={createStringArrayHandler(onFiltersChange, "quality")}
         />
 
         {/* Position */}
         <PositionFilter
           selected={filters.position || []}
-          onChange={(selected) =>
-            onFiltersChange({ position: selected as PartPosition[] })
-          }
+          onChange={createStringArrayHandler(onFiltersChange, "position")}
         />
       </div>
 
@@ -90,22 +84,17 @@ export const AnalyticsFilters = ({
         <EngineCapacityFilter
           min={filters.engineCapacityRange?.min}
           max={filters.engineCapacityRange?.max}
-          onChange={(range: { min?: number; max?: number }) =>
-            onFiltersChange({
-              engineCapacityRange: {
-                ...(filters.engineCapacityRange || {}),
-                ...range,
-              },
-            })
-          }
+          onChange={createRangeHandler(
+            onFiltersChange,
+            "engineCapacityRange",
+            filters.engineCapacityRange
+          )}
         />
 
         {/* Fuel Type */}
         <FuelTypeFilter
           selected={filters.fuelType || []}
-          onChange={(selected) =>
-            onFiltersChange({ fuelType: selected as FuelType[] })
-          }
+          onChange={createStringArrayHandler(onFiltersChange, "fuelType")}
           useBackendOptions={false}
         />
 
@@ -113,28 +102,22 @@ export const AnalyticsFilters = ({
         <YearRangeFilter
           min={filters.yearRange?.min}
           max={filters.yearRange?.max}
-          onChange={(range) =>
-            onFiltersChange({
-              yearRange: {
-                ...(filters.yearRange || {}),
-                ...range,
-              },
-            })
-          }
+          onChange={createRangeHandler(
+            onFiltersChange,
+            "yearRange",
+            filters.yearRange
+          )}
         />
 
         {/* Price Range */}
         <PriceRangeFilter
           min={filters.priceRange?.min}
           max={filters.priceRange?.max}
-          onChange={(range) =>
-            onFiltersChange({
-              priceRange: {
-                ...(filters.priceRange || {}),
-                ...range,
-              },
-            })
-          }
+          onChange={createRangeHandler(
+            onFiltersChange,
+            "priceRange",
+            filters.priceRange
+          )}
         />
       </div>
     </CardContent>

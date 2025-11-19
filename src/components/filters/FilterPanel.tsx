@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FilterState, Car } from "@/types";
 import { Filter, RotateCcw } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { defaultFilters } from "@/store/slices/filtersSlice";
 import { LayoutType } from "./type";
 import { PartFilters } from "./components/PartFilters/PartFilters";
@@ -29,7 +29,6 @@ interface FilterPanelProps<T extends FilterState> {
   isLoading?: boolean;
   hideCategoriesAndWheels?: boolean;
   hideTopDetailsFilter?: boolean;
-  showOrderIdFilter?: boolean;
 }
 
 const getFilter = (
@@ -37,8 +36,7 @@ const getFilter = (
   filters: FilterState,
   onFiltersChange: (updates: Partial<FilterState>) => void,
   onReset: () => void,
-  cars: Car[] = [],
-  showOrderIdFilter: boolean = false
+  cars: Car[] = []
 ) => {
   switch (type) {
     case LayoutType.PARTS:
@@ -50,7 +48,6 @@ const getFilter = (
           }
           onReset={onReset}
           cars={cars}
-          showOrderIdFilter={showOrderIdFilter}
         />
       );
     case LayoutType.ANALYTICS:
@@ -90,14 +87,23 @@ export function FilterPanel<T extends FilterState>({
   isLoading = false,
   hideCategoriesAndWheels = false,
   hideTopDetailsFilter = false,
-  showOrderIdFilter = false,
 }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
   const backendFilters = useAppSelector(selectBackendFilters);
 
-  const updateFilters = (updates: Partial<FilterState>) => {
-    onFiltersChange({ ...filters, ...updates });
-  };
+  // Use ref to always get latest filters value to avoid stale closure issues
+  const filtersRef = useRef(filters);
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  const updateFilters = useCallback(
+    (updates: Partial<FilterState>) => {
+      // Use ref to get latest filters value, avoiding stale closure
+      onFiltersChange({ ...filtersRef.current, ...updates } as T);
+    },
+    [onFiltersChange]
+  );
 
   const resetFilters = () => {
     if (type === LayoutType.ANALYTICS) {
@@ -413,14 +419,7 @@ export function FilterPanel<T extends FilterState>({
           hasSelection={hasDefaultFiltersSelection}
           selectionCount={defaultFiltersCount}
         >
-          {getFilter(
-            type,
-            filters,
-            updateFilters,
-            resetFilters,
-            cars,
-            showOrderIdFilter
-          )}
+          {getFilter(type, filters, updateFilters, resetFilters, cars)}
         </FilterSection>
 
         {/* Filter Button */}

@@ -13,7 +13,7 @@ import { getOrders } from "@/api/orders";
 import { setOrders } from "@/store/slices/dataSlice";
 import { getPreorderAnalysis } from "@/api/preorder";
 import { FilterPanel } from "../../components/filters/FilterPanel";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, memo, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
@@ -52,11 +52,80 @@ interface PersistedOrderControlState {
 const cloneDefaultFilters = (): FilterState =>
   JSON.parse(JSON.stringify(defaultFilters)) as FilterState;
 
+// Separate component that manages filter state - this isolates re-renders
+// Only this component re-renders when filters change, not OrderControlView
+const FilterPanelContainer = memo(
+  function FilterPanelContainer({
+    initialFilters,
+    onFiltersChange,
+    onFilter,
+    isLoading,
+  }: {
+    initialFilters: FilterState;
+    onFiltersChange: (filters: FilterState) => void;
+    onFilter: () => void;
+    isLoading: boolean;
+  }) {
+    const [filters, setFilters] = useState<FilterState>(initialFilters);
+
+    // Sync with initialFilters when it changes (but don't cause re-render of parent)
+    useEffect(() => {
+      setFilters(initialFilters);
+    }, [initialFilters]);
+
+    const handleFiltersChange = useCallback(
+      (newFilters: FilterState) => {
+        setFilters(newFilters);
+        // Update parent's ref without causing re-render
+        onFiltersChange(newFilters);
+      },
+      [onFiltersChange]
+    );
+
+    return (
+      <FilterPanel
+        type="order-control"
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        cars={[]}
+        onFilter={onFilter}
+        isLoading={isLoading}
+      />
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison - only re-render if isLoading changes or initialFilters actually changed
+    if (prevProps.isLoading !== nextProps.isLoading) return false;
+    if (prevProps.onFilter !== nextProps.onFilter) return false;
+    if (prevProps.onFiltersChange !== nextProps.onFiltersChange) return false;
+
+    // Deep compare filters
+    const prevFilters = prevProps.initialFilters;
+    const nextFilters = nextProps.initialFilters;
+    if (prevFilters === nextFilters) return true;
+
+    // Compare filter properties
+    return (
+      JSON.stringify(prevFilters.carBrand) ===
+        JSON.stringify(nextFilters.carBrand) &&
+      JSON.stringify(prevFilters.carModel) ===
+        JSON.stringify(nextFilters.carModel) &&
+      JSON.stringify(prevFilters.fuelType) ===
+        JSON.stringify(nextFilters.fuelType) &&
+      JSON.stringify(prevFilters.engineCapacityRange) ===
+        JSON.stringify(nextFilters.engineCapacityRange) &&
+      JSON.stringify(prevFilters.yearRange) ===
+        JSON.stringify(nextFilters.yearRange)
+    );
+  }
+);
+
 export function OrderControlView() {
   const dispatch = useAppDispatch();
   const backendFilters = useAppSelector(selectBackendFilters);
   const orders = useAppSelector(selectOrders);
   const selectedCarId = useAppSelector(selectOrderControlSelectedCarId);
+
   const [cars, setCars] = useState<Car[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
   // Categories are fetched but not displayed in the table (kept for potential future use)
@@ -72,6 +141,14 @@ export function OrderControlView() {
   const [orderFilters, setOrderFilters] = useState<FilterState>(
     cloneDefaultFilters()
   );
+
+  // Use ref to track latest filters without causing re-renders
+  const orderFiltersRef = useRef<FilterState>(cloneDefaultFilters());
+
+  // Keep ref in sync with state (for persistence)
+  useEffect(() => {
+    orderFiltersRef.current = orderFilters;
+  }, [orderFilters]);
   // Ref to prevent double execution in React Strict Mode
   const restoreInProgressRef = useRef(false);
   // Ref to track if we're currently fetching cars to prevent concurrent fetches
@@ -124,18 +201,19 @@ export function OrderControlView() {
       if (stored) {
         const persistedState: PersistedOrderControlState = JSON.parse(stored);
 
-        // Check if persisted filters match current filters
+        // Check if persisted filters match current filters (use ref to avoid re-renders)
+        const currentFilters = orderFiltersRef.current;
         const filtersMatch =
           JSON.stringify(persistedState.filters?.carBrand || []) ===
-            JSON.stringify(orderFilters.carBrand || []) &&
+            JSON.stringify(currentFilters.carBrand || []) &&
           JSON.stringify(persistedState.filters?.carModel || []) ===
-            JSON.stringify(orderFilters.carModel || []) &&
+            JSON.stringify(currentFilters.carModel || []) &&
           JSON.stringify(persistedState.filters?.fuelType || []) ===
-            JSON.stringify(orderFilters.fuelType || []) &&
+            JSON.stringify(currentFilters.fuelType || []) &&
           JSON.stringify(persistedState.filters?.engineCapacityRange || {}) ===
-            JSON.stringify(orderFilters.engineCapacityRange || {}) &&
+            JSON.stringify(currentFilters.engineCapacityRange || {}) &&
           JSON.stringify(persistedState.filters?.yearRange || {}) ===
-            JSON.stringify(orderFilters.yearRange || {});
+            JSON.stringify(currentFilters.yearRange || {});
 
         // If filters don't match, clear everything
         if (!filtersMatch) {
@@ -150,46 +228,43 @@ export function OrderControlView() {
     } catch (error) {
       console.error("Error validating persisted state:", error);
     }
-  }, [
-    orderFilters.carBrand,
-    orderFilters.carModel,
-    orderFilters.fuelType,
-    orderFilters.engineCapacityRange,
-    orderFilters.yearRange,
-    isRestoring,
-    dispatch,
-  ]);
+  }, [isRestoring, dispatch]);
 
-  // Save state to localStorage whenever it changes
+  // Save state to localStorage whenever filters change (using ref to avoid re-renders)
   // Note: Only filters are persisted, cars and selectedCarId are NOT persisted
   useEffect(() => {
     if (!isRestoring) {
-      try {
-        const stateToSave: PersistedOrderControlState = {
-          filters: {
-            carBrand: orderFilters.carBrand,
-            carModel: orderFilters.carModel,
-            fuelType: orderFilters.fuelType,
-            engineCapacityRange: orderFilters.engineCapacityRange,
-            yearRange: orderFilters.yearRange,
-          },
-        };
-        localStorage.setItem(
-          ORDER_CONTROL_STORAGE_KEY,
-          JSON.stringify(stateToSave)
-        );
-      } catch (error) {
-        console.error("Error saving state:", error);
-      }
+      // Use a subscription-like pattern to save when filters change
+      const saveFilters = () => {
+        const currentFilters = orderFiltersRef.current;
+        try {
+          const stateToSave: PersistedOrderControlState = {
+            filters: {
+              carBrand: currentFilters.carBrand,
+              carModel: currentFilters.carModel,
+              fuelType: currentFilters.fuelType,
+              engineCapacityRange: currentFilters.engineCapacityRange,
+              yearRange: currentFilters.yearRange,
+            },
+          };
+          localStorage.setItem(
+            ORDER_CONTROL_STORAGE_KEY,
+            JSON.stringify(stateToSave)
+          );
+        } catch (error) {
+          console.error("Error saving state to localStorage:", error);
+        }
+      };
+
+      // Save immediately
+      saveFilters();
+
+      // Set up interval to periodically save (in case filters change via ref)
+      const intervalId = setInterval(saveFilters, 1000);
+
+      return () => clearInterval(intervalId);
     }
-  }, [
-    orderFilters.carBrand,
-    orderFilters.carModel,
-    orderFilters.fuelType,
-    orderFilters.engineCapacityRange,
-    orderFilters.yearRange,
-    isRestoring,
-  ]);
+  }, [isRestoring]);
 
   // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
@@ -225,12 +300,15 @@ export function OrderControlView() {
     // If we're in restoration mode and have a carIdToPreserve, ensure we don't clear it
     const isRestoringMode = restoreInProgressRef.current || skipDispatch;
 
+    // Use ref to get latest filters without causing re-renders
+    const currentFilters = orderFiltersRef.current;
+
     // Validate required filters
     if (
-      !orderFilters.carBrand ||
-      orderFilters.carBrand.length === 0 ||
-      !orderFilters.carModel ||
-      orderFilters.carModel.length === 0 ||
+      !currentFilters.carBrand ||
+      currentFilters.carBrand.length === 0 ||
+      !currentFilters.carModel ||
+      currentFilters.carModel.length === 0 ||
       !backendFilters
     ) {
       return [];
@@ -253,8 +331,8 @@ export function OrderControlView() {
     try {
       // Convert brand names to IDs
       const brandIds: number[] = [];
-      if (orderFilters.carBrand && orderFilters.carBrand.length > 0) {
-        for (const brandName of orderFilters.carBrand) {
+      if (currentFilters.carBrand && currentFilters.carBrand.length > 0) {
+        for (const brandName of currentFilters.carBrand) {
           const brandId = mapBrandNameToId(brandName, backendFilters);
           if (brandId !== undefined) {
             brandIds.push(brandId);
@@ -265,12 +343,12 @@ export function OrderControlView() {
       // Convert model names to IDs
       // Pass selected brand names to help narrow down the search
       const modelIds: number[] = [];
-      if (orderFilters.carModel && orderFilters.carModel.length > 0) {
-        for (const modelName of orderFilters.carModel) {
+      if (currentFilters.carModel && currentFilters.carModel.length > 0) {
+        for (const modelName of currentFilters.carModel) {
           const modelId = mapModelNameToId(
             modelName,
             backendFilters,
-            orderFilters.carBrand || undefined
+            currentFilters.carBrand || undefined
           );
           if (modelId !== undefined) {
             modelIds.push(modelId);
@@ -280,8 +358,8 @@ export function OrderControlView() {
 
       // Convert fuel type names to IDs
       const fuelIds: number[] = [];
-      if (orderFilters.fuelType && orderFilters.fuelType.length > 0) {
-        for (const fuelTypeName of orderFilters.fuelType) {
+      if (currentFilters.fuelType && currentFilters.fuelType.length > 0) {
+        for (const fuelTypeName of currentFilters.fuelType) {
           const fuelId = mapFuelTypeNameToId(fuelTypeName, backendFilters);
           if (fuelId !== undefined) {
             fuelIds.push(fuelId);
@@ -340,11 +418,12 @@ export function OrderControlView() {
         // No car to preserve in currentSelectedCarId
         // BUT: if we're in restoration mode, check if selectedCarId exists in Redux
         // If it does, try to preserve it (it might have been set before fetchCars was called)
-        if (isRestoringMode && selectedCarId) {
+        const currentSelectedCarId = selectedCarId;
+        if (isRestoringMode && currentSelectedCarId) {
           // We're in restoration mode and have a selectedCarId in Redux
           // Check if this car exists in the fetched cars
           const carExists = response.cars.some(
-            (car) => car.id.toString() === selectedCarId
+            (car) => car.id.toString() === currentSelectedCarId
           );
           if (carExists) {
             // Car exists, keep the selection (don't dispatch since skipDispatch is true)
@@ -398,15 +477,7 @@ export function OrderControlView() {
         console.error("Error clearing persisted state:", error);
       }
     }
-  }, [
-    orderFilters.carBrand,
-    orderFilters.carModel,
-    orderFilters.yearRange,
-    orderFilters.fuelType,
-    orderFilters.engineCapacityRange,
-    isRestoring,
-    hasRestored,
-  ]);
+  }, [isRestoring, hasRestored]);
 
   // Generate car options for dropdown
   const carOptions = useMemo(() => {
@@ -695,9 +766,12 @@ export function OrderControlView() {
       const backendFiltersData = backendFilters as any;
       if (selectedCar.fuel?.id) {
         fuelId = selectedCar.fuel.id;
-      } else if (orderFilters.fuelType && orderFilters.fuelType.length > 0) {
+      } else if (
+        orderFiltersRef.current.fuelType &&
+        orderFiltersRef.current.fuelType.length > 0
+      ) {
         // Try to map fuel type name to ID
-        const fuelTypeName = orderFilters.fuelType[0];
+        const fuelTypeName = orderFiltersRef.current.fuelType[0];
         if (
           backendFiltersData?.car?.fuels &&
           Array.isArray(backendFiltersData.car.fuels)
@@ -743,12 +817,14 @@ export function OrderControlView() {
       // Add engine volume if available
       if (selectedCar.engine?.capacity) {
         params.engine_volume = selectedCar.engine.capacity.toString();
-      } else if (orderFilters.engineCapacityRange) {
-        if (orderFilters.engineCapacityRange.min !== undefined) {
-          params.engine_volume_min = orderFilters.engineCapacityRange.min;
+      } else if (orderFiltersRef.current.engineCapacityRange) {
+        if (orderFiltersRef.current.engineCapacityRange.min !== undefined) {
+          params.engine_volume_min =
+            orderFiltersRef.current.engineCapacityRange.min;
         }
-        if (orderFilters.engineCapacityRange.max !== undefined) {
-          params.engine_volume_max = orderFilters.engineCapacityRange.max;
+        if (orderFiltersRef.current.engineCapacityRange.max !== undefined) {
+          params.engine_volume_max =
+            orderFiltersRef.current.engineCapacityRange.max;
         }
       }
 
@@ -818,7 +894,6 @@ export function OrderControlView() {
   // Clear parts when car selection changes (to avoid showing stale data)
   useEffect(() => {
     if (!isRestoring) {
-      // Clear parts whenever selection changes (including when cleared)
       setParts([]);
       setCategories([]);
     }
@@ -833,8 +908,7 @@ export function OrderControlView() {
       // 3. Car is selected
       // 4. Cars are loaded
       // 5. Backend filters are loaded
-      // 6. We haven't already fetched parts (to avoid duplicate calls)
-      // 7. Not currently fetching (to prevent concurrent calls)
+      // 6. Not currently fetching (to prevent concurrent calls)
       if (
         isRestoring ||
         !hasRestored ||
@@ -859,10 +933,18 @@ export function OrderControlView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCarId, cars.length, backendFilters, isRestoring, hasRestored]);
 
-  const handleFilter = () => {
-    // Fetch cars based on current filters, clearing any existing selection
+  const handleFilter = useCallback(() => {
+    // Fetch cars based on current filters (from ref), clearing any existing selection
+    // Use the ref to get latest filters
     fetchCars(""); // Empty string means clear selection
-  };
+  }, []); // fetchCars is stable, doesn't need to be in deps
+
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    // Update ref immediately (doesn't cause re-render)
+    orderFiltersRef.current = newFilters;
+    // Don't update state immediately - this prevents re-renders
+    // State will be updated for persistence via a separate mechanism if needed
+  }, []);
 
   // Collect all parts to export (selected parts, or all parts if none selected)
   const getPartsToExport = (): Part[] => {
@@ -1019,13 +1101,9 @@ export function OrderControlView() {
         description="Valdykite ir filtruokite užsakymus"
       />
 
-      <FilterPanel
-        type="order-control"
-        filters={orderFilters}
-        onFiltersChange={(newFilters) => {
-          setOrderFilters(newFilters as FilterState);
-        }}
-        cars={[]}
+      <FilterPanelContainer
+        initialFilters={orderFilters}
+        onFiltersChange={handleFiltersChange}
         onFilter={handleFilter}
         isLoading={isLoadingCars}
       />
@@ -1070,11 +1148,6 @@ export function OrderControlView() {
               }
               disabled={cars.length === 0 || isLoadingCars}
             />
-            {isLoadingCars && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Kraunami automobiliai...
-              </p>
-            )}
             {!isLoadingCars && cars.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">
                 Nėra automobilių. Pasirinkite filtrus ir spustelėkite

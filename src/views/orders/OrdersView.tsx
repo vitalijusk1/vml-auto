@@ -1,4 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  memo,
+  startTransition,
+} from "react";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   selectOrders,
@@ -18,12 +25,58 @@ import { renderOrderExpandedContent } from "@/components/tables/components/Order
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
+import { store } from "@/store";
+
+// Separate component that subscribes to filters - this isolates re-renders
+// Only this component re-renders when filters change, not OrdersView
+const FilterPanelContainer = memo(function FilterPanelContainer({
+  onFiltersChange,
+  onFilter,
+  isLoading,
+}: {
+  onFiltersChange: (filters: FilterState) => void;
+  onFilter: () => void;
+  isLoading: boolean;
+}) {
+  const filters = useAppSelector(selectFilters);
+  return (
+    <FilterPanel
+      type="parts"
+      filters={filters}
+      onFiltersChange={onFiltersChange}
+      cars={[]}
+      onFilter={onFilter}
+      isLoading={isLoading}
+      hideCategoriesAndWheels={true}
+      hideTopDetailsFilter={true}
+    />
+  );
+});
 
 export function OrdersView() {
+  console.log("rerender");
   const dispatch = useAppDispatch();
   const orders = useAppSelector(selectOrders);
   const backendFilters = useAppSelector(selectBackendFilters);
-  const filters = useAppSelector(selectFilters);
+
+  // Use ref to get latest filters without subscribing (prevents re-renders)
+  const filtersRef = useRef<FilterState>(store.getState().filters);
+  const filtersKeyRef = useRef<string>(
+    JSON.stringify(store.getState().filters)
+  );
+  const paginationRef = useRef({
+    current_page: 1,
+    per_page: 15,
+    total: 0,
+    last_page: 1,
+  });
+  const backendFiltersRef = useRef(backendFilters);
+  const dispatchRef = useRef(dispatch);
+  const isLoadingRef = useRef(false);
+  const setIsLoadingOrdersRef = useRef<((loading: boolean) => void) | null>(
+    null
+  );
+
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [selectedPhotoGallery, setSelectedPhotoGallery] = useState<{
@@ -37,64 +90,116 @@ export function OrdersView() {
     last_page: 1,
   });
 
+  // Keep refs in sync
+  useEffect(() => {
+    paginationRef.current = pagination;
+  }, [pagination]);
+
+  useEffect(() => {
+    backendFiltersRef.current = backendFilters;
+  }, [backendFilters]);
+
+  useEffect(() => {
+    dispatchRef.current = dispatch;
+  }, [dispatch]);
+
+  useEffect(() => {
+    setIsLoadingOrdersRef.current = setIsLoadingOrders;
+  }, []);
+
   // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
-  // Serialize filters to detect changes properly (React does shallow comparison)
-  const filtersKey = useMemo(() => {
-    return JSON.stringify(filters);
-  }, [filters]);
-
-  // Reset pagination to page 1 when filters change
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, current_page: 1 }));
-  }, [filtersKey]);
-
-  // Fetch orders when filters or pagination change
-  useEffect(() => {
-    const fetchData = async () => {
-      // Wait for backendFilters to load before fetching with filters
-      // This prevents calling the API with invalid parameters
-      if (!backendFilters) {
+  // Fetch function that updates loading state only when actually needed
+  const fetchOrders = useCallback(
+    async (resetPage = false, skipLoadingState = false) => {
+      if (!backendFiltersRef.current) {
         return;
       }
 
-      setIsLoadingOrders(true);
+      // Only update loading state if not already loading and not skipping (prevents unnecessary re-renders)
+      if (
+        !skipLoadingState &&
+        !isLoadingRef.current &&
+        setIsLoadingOrdersRef.current
+      ) {
+        isLoadingRef.current = true;
+        // Use setTimeout to defer loading state update, allowing filter change to complete without re-render
+        setTimeout(() => {
+          if (setIsLoadingOrdersRef.current) {
+            setIsLoadingOrdersRef.current(true);
+          }
+        }, 0);
+      }
+
       try {
-        // Convert filters to query parameters
         const queryParams = filterStateToOrdersQueryParams(
-          filters,
-          backendFilters
+          filtersRef.current,
+          backendFiltersRef.current
         );
 
-        // Always add pagination parameters
-        queryParams.page = pagination.current_page || 1;
-        queryParams.per_page = pagination.per_page || 15;
+        const currentPage = resetPage ? 1 : paginationRef.current.current_page;
+        queryParams.page = currentPage;
+        queryParams.per_page = paginationRef.current.per_page || 15;
 
         console.log("Fetching orders with params:", queryParams);
 
-        // Fetch orders with filters and pagination
         const response = await getOrders(queryParams);
 
         console.log("Orders response:", response);
-        dispatch(setOrders(response.orders));
-        setPagination(response.pagination);
+        dispatchRef.current(setOrders(response.orders));
+        // Use startTransition to batch pagination update, preventing immediate re-render
+        startTransition(() => {
+          setPagination({
+            ...response.pagination,
+            current_page: currentPage,
+          });
+        });
       } catch (error) {
         console.error("Error fetching orders:", error);
-        // Set empty array on error so table still shows
-        dispatch(setOrders([]));
+        dispatchRef.current(setOrders([]));
       } finally {
-        setIsLoadingOrders(false);
+        if (!skipLoadingState && setIsLoadingOrdersRef.current) {
+          isLoadingRef.current = false;
+          setIsLoadingOrdersRef.current(false);
+        }
       }
-    };
+    },
+    []
+  );
 
-    fetchData();
-  }, [
-    dispatch,
-    filtersKey,
-    backendFilters,
-    pagination.current_page,
-    pagination.per_page,
-  ]);
+  // Update refs when filters change (but don't fetch - wait for filter button click)
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => {
+      const currentFilters = store.getState().filters;
+      const currentKey = JSON.stringify(currentFilters);
+
+      // Only update refs if filters changed (don't fetch automatically)
+      if (currentKey !== filtersKeyRef.current) {
+        filtersRef.current = currentFilters;
+        filtersKeyRef.current = currentKey;
+        // Don't fetch here - wait for user to click "Filtruoti" button
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  // Fetch initial data on mount or when backendFilters become available
+  useEffect(() => {
+    if (backendFilters && orders.length === 0) {
+      // Only fetch if we don't have orders yet (initial load)
+      fetchOrders(false, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendFilters]); // Run when backendFilters become available
+
+  // Fetch orders when pagination changes (but not when filters change - handled above)
+  useEffect(() => {
+    // Only fetch if we already have orders (meaning filters were applied or initial load happened)
+    if (backendFilters && orders.length > 0 && pagination.current_page > 0) {
+      fetchOrders(false, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current_page, pagination.per_page]);
 
   // Always expand all orders by default when orders change
   useEffect(() => {
@@ -115,9 +220,43 @@ export function OrdersView() {
     });
   };
 
-  const handlePhotoClick = (photos: string[], title: string) => {
+  const handlePhotoClick = useCallback((photos: string[], title: string) => {
     setSelectedPhotoGallery({ photos, title });
-  };
+  }, []);
+
+  const handleFiltersChange = useCallback(
+    (newFilters: FilterState) => {
+      dispatch(setFilters(newFilters));
+    },
+    [dispatch]
+  );
+
+  const handleFilter = useCallback(() => {
+    // Reset to page 1 when filtering
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
+    // Fetch orders with current filters
+    fetchOrders(true, false); // true = reset to page 1, false = show loading state
+  }, [fetchOrders]);
+
+  const handlePageChange = useCallback((page: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      current_page: page,
+    }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      per_page: pageSize,
+      current_page: 1,
+    }));
+  }, []);
+
+  const renderExpandedRow = useCallback(
+    (order: Order) => renderOrderExpandedContent(order, handlePhotoClick),
+    [handlePhotoClick]
+  );
 
   // Custom filter function for orders (filters across multiple fields)
   const orderFilterFn = useCallback(
@@ -148,20 +287,10 @@ export function OrdersView() {
       />
 
       {backendFilters && (
-        <FilterPanel
-          type="parts"
-          filters={filters}
-          onFiltersChange={(newFilters) => {
-            dispatch(setFilters(newFilters as FilterState));
-          }}
-          cars={[]}
-          onFilter={() => {
-            // Filter button is handled by the useEffect that watches filtersKey
-          }}
+        <FilterPanelContainer
+          onFiltersChange={handleFiltersChange}
+          onFilter={handleFilter}
           isLoading={isLoadingOrders}
-          hideCategoriesAndWheels={true}
-          hideTopDetailsFilter={true}
-          showOrderIdFilter={false}
         />
       )}
       {!backendFilters && <FilterLoadingCard />}
@@ -175,24 +304,11 @@ export function OrdersView() {
               type={LayoutType.ORDERS}
               data={orders}
               serverPagination={pagination}
-              onPageChange={(page) => {
-                setPagination((prev) => ({
-                  ...prev,
-                  current_page: page,
-                }));
-              }}
-              onPageSizeChange={(pageSize) => {
-                setPagination((prev) => ({
-                  ...prev,
-                  per_page: pageSize,
-                  current_page: 1,
-                }));
-              }}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
               expandedRows={expandedOrders}
               onToggleExpand={toggleOrderExpansion}
-              renderExpandedRow={(order) =>
-                renderOrderExpandedContent(order, handlePhotoClick)
-              }
+              renderExpandedRow={renderExpandedRow}
               filterColumnKey="id"
               filterPlaceholder="Filtruoti užsakymus..."
               customFilterFn={orderFilterFn}
