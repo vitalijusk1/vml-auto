@@ -150,12 +150,12 @@ export const filterStateToOrdersQueryParams = (
     }
   }
 
-  // Engine capacity
-  if (filters.engineCapacity && filters.engineCapacity.length > 0) {
-    params.engine_volume =
-      filters.engineCapacity.length === 1
-        ? filters.engineCapacity[0]
-        : filters.engineCapacity;
+  // Engine capacity range
+  if (filters.engineCapacityRange?.min !== undefined) {
+    params.engine_volume_min = filters.engineCapacityRange.min;
+  }
+  if (filters.engineCapacityRange?.max !== undefined) {
+    params.engine_volume_max = filters.engineCapacityRange.max;
   }
 
   // Wheel filters - convert names to IDs

@@ -10,7 +10,7 @@ export const defaultFilters: FilterState = {
   carYear: [],
   yearRange: {},
   fuelType: [],
-  engineCapacity: undefined,
+  engineCapacityRange: undefined,
   gearbox: undefined,
   bodyType: [],
   partCategory: [],

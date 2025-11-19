@@ -44,7 +44,7 @@ interface PersistedOrderControlState {
     carBrand?: FilterState["carBrand"];
     carModel?: FilterState["carModel"];
     fuelType?: FilterState["fuelType"];
-    engineCapacity?: FilterState["engineCapacity"];
+    engineCapacityRange?: FilterState["engineCapacityRange"];
     yearRange?: FilterState["yearRange"];
   };
 }
@@ -97,7 +97,7 @@ export function OrderControlView() {
               carBrand: persistedState.filters.carBrand || [],
               carModel: persistedState.filters.carModel || [],
               fuelType: persistedState.filters.fuelType || [],
-              engineCapacity: persistedState.filters.engineCapacity,
+              engineCapacityRange: persistedState.filters.engineCapacityRange,
               yearRange:
                 persistedState.filters.yearRange || prev.yearRange || {},
             }));
@@ -132,8 +132,8 @@ export function OrderControlView() {
             JSON.stringify(orderFilters.carModel || []) &&
           JSON.stringify(persistedState.filters?.fuelType || []) ===
             JSON.stringify(orderFilters.fuelType || []) &&
-          JSON.stringify(persistedState.filters?.engineCapacity || []) ===
-            JSON.stringify(orderFilters.engineCapacity || []) &&
+          JSON.stringify(persistedState.filters?.engineCapacityRange || {}) ===
+            JSON.stringify(orderFilters.engineCapacityRange || {}) &&
           JSON.stringify(persistedState.filters?.yearRange || {}) ===
             JSON.stringify(orderFilters.yearRange || {});
 
@@ -154,7 +154,7 @@ export function OrderControlView() {
     orderFilters.carBrand,
     orderFilters.carModel,
     orderFilters.fuelType,
-    orderFilters.engineCapacity,
+    orderFilters.engineCapacityRange,
     orderFilters.yearRange,
     isRestoring,
     dispatch,
@@ -170,7 +170,7 @@ export function OrderControlView() {
             carBrand: orderFilters.carBrand,
             carModel: orderFilters.carModel,
             fuelType: orderFilters.fuelType,
-            engineCapacity: orderFilters.engineCapacity,
+            engineCapacityRange: orderFilters.engineCapacityRange,
             yearRange: orderFilters.yearRange,
           },
         };
@@ -186,7 +186,7 @@ export function OrderControlView() {
     orderFilters.carBrand,
     orderFilters.carModel,
     orderFilters.fuelType,
-    orderFilters.engineCapacity,
+    orderFilters.engineCapacityRange,
     orderFilters.yearRange,
     isRestoring,
   ]);
@@ -403,7 +403,7 @@ export function OrderControlView() {
     orderFilters.carModel,
     orderFilters.yearRange,
     orderFilters.fuelType,
-    orderFilters.engineCapacity,
+    orderFilters.engineCapacityRange,
     isRestoring,
     hasRestored,
   ]);
@@ -726,6 +726,8 @@ export function OrderControlView() {
         year: number;
         fuel_id?: number;
         engine_volume?: string;
+        engine_volume_min?: number;
+        engine_volume_max?: number;
         date_from?: string;
         date_to?: string;
       } = {
@@ -741,11 +743,13 @@ export function OrderControlView() {
       // Add engine volume if available
       if (selectedCar.engine?.capacity) {
         params.engine_volume = selectedCar.engine.capacity.toString();
-      } else if (
-        orderFilters.engineCapacity &&
-        orderFilters.engineCapacity.length > 0
-      ) {
-        params.engine_volume = orderFilters.engineCapacity[0];
+      } else if (orderFilters.engineCapacityRange) {
+        if (orderFilters.engineCapacityRange.min !== undefined) {
+          params.engine_volume_min = orderFilters.engineCapacityRange.min;
+        }
+        if (orderFilters.engineCapacityRange.max !== undefined) {
+          params.engine_volume_max = orderFilters.engineCapacityRange.max;
+        }
       }
 
       // Add date range if available from filters (for now, use default range)

@@ -345,6 +345,14 @@ export const filterStateToQueryParams = (
     params.price_max = filters.priceRange.max;
   }
 
+  // Engine capacity range
+  if (filters.engineCapacityRange?.min !== undefined) {
+    params.engine_volume_min = filters.engineCapacityRange.min;
+  }
+  if (filters.engineCapacityRange?.max !== undefined) {
+    params.engine_volume_max = filters.engineCapacityRange.max;
+  }
+
   // Wheel filters - convert names to IDs
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
     const wheelDriveIds = filters.wheelDrive
