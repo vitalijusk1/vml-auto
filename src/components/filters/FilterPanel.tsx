@@ -9,9 +9,10 @@ import { LayoutType } from "./type";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
 import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetFilters as resetFiltersAction } from "@/store/slices/filtersSlice";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
+import { selectBackendFilters } from "@/store/selectors";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
@@ -92,6 +93,7 @@ export function FilterPanel<T extends FilterState>({
   showOrderIdFilter = false,
 }: FilterPanelProps<T>) {
   const dispatch = useAppDispatch();
+  const backendFilters = useAppSelector(selectBackendFilters);
 
   const updateFilters = (updates: Partial<FilterState>) => {
     onFiltersChange({ ...filters, ...updates });
@@ -422,9 +424,15 @@ export function FilterPanel<T extends FilterState>({
         </FilterSection>
 
         {/* Filter Button */}
-        {type === LayoutType.PARTS && (
+        {type === LayoutType.PARTS && onFilter && (
           <div className="flex justify-end pt-2">
-            <Button className="px-6">Filtruoti</Button>
+            <Button
+              className="px-6"
+              onClick={onFilter}
+              disabled={isLoading || !backendFilters}
+            >
+              {isLoading ? "Kraunama..." : "Filtruoti"}
+            </Button>
           </div>
         )}
         {type === LayoutType.ANALYTICS && (

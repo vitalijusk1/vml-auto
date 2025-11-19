@@ -61,10 +61,75 @@ export interface OrdersQueryParams {
   // Car filters
   car_brand?: number | number[];
   car_model?: number | number[];
+  car_year?: number | number[];
   year_min?: number;
   year_max?: number;
+  // Part filters
+  category?: number | number[]; // IDs
+  part_type?: string | string[];
+  quality?: number | number[]; // IDs
+  position?: number | number[]; // IDs
+  body_type?: number | number[]; // IDs
+  // Price range
+  price_min?: number;
+  price_max?: number;
+  // Fuel and engine
   fuel_id?: number | number[];
   engine_volume?: string | string[];
+  // Wheel filters - all are IDs now
+  wheel_drive?: number | number[]; // IDs
+  wheel_side?: number | number[]; // IDs
+  wheel_central_diameter?: number | number[]; // IDs
+  wheel_fixing_points?: number | number[]; // IDs
+  wheel_height?: number | number[]; // IDs
+  wheel_spacing?: number | number[]; // IDs
+  wheel_tread_depth?: number | number[]; // IDs
+  wheel_width?: number | number[]; // IDs
+  // Stale inventory
+  stale_months?: number;
+  // Warehouse
+  warehouse?: string | string[];
+}
+
+// Returns query parameters interface
+export interface ReturnsQueryParams {
+  per_page?: number;
+  page?: number;
+  // Search
+  search?: string;
+  // Status filters
+  status?: number | number[]; // IDs
+  // Car filters
+  car_brand?: number | number[];
+  car_model?: number | number[];
+  car_year?: number | number[];
+  year_min?: number;
+  year_max?: number;
+  // Part filters
+  category?: number | number[]; // IDs
+  part_type?: string | string[];
+  quality?: number | number[]; // IDs
+  position?: number | number[]; // IDs
+  body_type?: number | number[]; // IDs
+  // Price range
+  price_min?: number;
+  price_max?: number;
+  // Fuel and engine
+  fuel_id?: number | number[];
+  engine_volume?: string | string[];
+  // Wheel filters - all are IDs now
+  wheel_drive?: number | number[]; // IDs
+  wheel_side?: number | number[]; // IDs
+  wheel_central_diameter?: number | number[]; // IDs
+  wheel_fixing_points?: number | number[]; // IDs
+  wheel_height?: number | number[]; // IDs
+  wheel_spacing?: number | number[]; // IDs
+  wheel_tread_depth?: number | number[]; // IDs
+  wheel_width?: number | number[]; // IDs
+  // Stale inventory
+  stale_months?: number;
+  // Warehouse
+  warehouse?: string | string[];
 }
 
 // Helper function to build query string from parameters
@@ -143,7 +208,12 @@ export const apiEndpoints = {
   deleteOrder: (id: string) => `/orders/${id}`,
 
   // Returns
-  getReturns: () => `/order-returns`,
+  getReturns: (queryParams?: ReturnsQueryParams) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/order-returns${queryString}`;
+  },
   getReturnById: (id: string) => `/returns/${id}`,
   createReturn: () => `/returns`,
   updateReturn: (id: string) => `/returns/${id}`,

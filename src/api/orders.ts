@@ -5,10 +5,31 @@ import {
   mapBrandNameToId,
   mapModelNameToId,
   mapFuelTypeNameToId,
+  mapBodyTypeNameToId,
+  mapStatusNameToId,
+  mapPositionNameToId,
+  mapQualityNameToId,
+  mapCategoryNamesToIds,
+  mapNameToId,
 } from "@/utils/filterMappers";
+
+// Helper function to get wheels array from backend filters
+const getWheelsArray = (
+  primary?: (string | any)[],
+  fallback?: (string | any)[]
+): (string | any)[] | undefined => {
+  if (Array.isArray(primary) && primary.length > 0) {
+    return primary;
+  }
+  if (Array.isArray(fallback) && fallback.length > 0) {
+    return fallback;
+  }
+  return undefined;
+};
 
 /**
  * Convert FilterState to OrdersQueryParams for API requests
+ * Supports all the same filters as parts API
  */
 export const filterStateToOrdersQueryParams = (
   filters: FilterState,
@@ -21,25 +42,43 @@ export const filterStateToOrdersQueryParams = (
     params.search = filters.search.trim();
   }
 
+  // Status filters (orders use string status, not IDs)
+  if (filters.status && filters.status !== "All") {
+    if (Array.isArray(filters.status)) {
+      params.status = filters.status;
+    } else {
+      params.status = [filters.status];
+    }
+  }
+
+  // Date range
+  if (filters.dateRange?.from) {
+    params.date_from = filters.dateRange.from.toISOString().split("T")[0];
+  }
+  if (filters.dateRange?.to) {
+    params.date_to = filters.dateRange.to.toISOString().split("T")[0];
+  }
+
   // Car filters - convert names to IDs
   if (filters.carBrand && filters.carBrand.length > 0) {
     const brandIds = filters.carBrand
       .map((brandName) => mapBrandNameToId(brandName, backendFilters))
       .filter((id): id is number => id !== undefined);
     if (brandIds.length > 0) {
-      params.car_brand = brandIds.length === 1 ? brandIds[0] : brandIds;
+      params.car_brand = brandIds;
     }
   }
 
   if (filters.carModel && filters.carModel.length > 0) {
     const modelIds = filters.carModel
-      .map((modelName) =>
-        mapModelNameToId(modelName, backendFilters, filters.carBrand)
-      )
+      .map((modelName) => mapModelNameToId(modelName, backendFilters))
       .filter((id): id is number => id !== undefined);
     if (modelIds.length > 0) {
-      params.car_model = modelIds.length === 1 ? modelIds[0] : modelIds;
+      params.car_model = modelIds;
     }
+  }
+  if (filters.carYear && filters.carYear.length > 0) {
+    params.car_year = filters.carYear;
   }
 
   // Year range
@@ -50,13 +89,64 @@ export const filterStateToOrdersQueryParams = (
     params.year_max = filters.yearRange.max;
   }
 
+  // Part filters - convert category names to IDs
+  // Only pass parent IDs when parent is selected with all children
+  if (filters.partCategory && filters.partCategory.length > 0) {
+    const categoryIds = mapCategoryNamesToIds(
+      filters.partCategory,
+      backendFilters
+    );
+    if (categoryIds.length > 0) {
+      params.category = categoryIds;
+    }
+  }
+  if (filters.partType && filters.partType.length > 0) {
+    params.part_type = filters.partType;
+  }
+  if (filters.quality && filters.quality.length > 0) {
+    // Convert quality names to IDs from backend filters
+    const qualityIds = filters.quality
+      .map((qualityName) => mapQualityNameToId(qualityName, backendFilters))
+      .filter((id): id is number => id !== undefined);
+    if (qualityIds.length > 0) {
+      params.quality = qualityIds;
+    }
+  }
+  if (filters.position && filters.position.length > 0) {
+    // Convert position names to IDs
+    const positionIds = filters.position
+      .map((positionName) => mapPositionNameToId(positionName, backendFilters))
+      .filter((id): id is number => id !== undefined);
+    if (positionIds.length > 0) {
+      params.position = positionIds;
+    }
+  }
+
+  // Body type - convert names to IDs
+  if (filters.bodyType && filters.bodyType.length > 0) {
+    const bodyTypeIds = filters.bodyType
+      .map((bodyTypeName) => mapBodyTypeNameToId(bodyTypeName, backendFilters))
+      .filter((id): id is number => id !== undefined);
+    if (bodyTypeIds.length > 0) {
+      params.body_type = bodyTypeIds;
+    }
+  }
+
+  // Price range
+  if (filters.priceRange?.min !== undefined) {
+    params.price_min = filters.priceRange.min;
+  }
+  if (filters.priceRange?.max !== undefined) {
+    params.price_max = filters.priceRange.max;
+  }
+
   // Fuel type
   if (filters.fuelType && filters.fuelType.length > 0) {
     const fuelIds = filters.fuelType
       .map((fuelTypeName) => mapFuelTypeNameToId(fuelTypeName, backendFilters))
       .filter((id): id is number => id !== undefined);
     if (fuelIds.length > 0) {
-      params.fuel_id = fuelIds.length === 1 ? fuelIds[0] : fuelIds;
+      params.fuel_id = fuelIds;
     }
   }
 
@@ -68,12 +158,98 @@ export const filterStateToOrdersQueryParams = (
         : filters.engineCapacity;
   }
 
-  // Date range
-  if (filters.dateRange?.from) {
-    params.date_from = filters.dateRange.from.toISOString().split("T")[0];
+  // Wheel filters - convert names to IDs
+  const wheels = backendFilters?.wheels;
+  if (filters.wheelSide && filters.wheelSide.length > 0) {
+    const filterArray = getWheelsArray(wheels?.wheels);
+    const sideIds = filters.wheelSide
+      .map((sideName) => mapNameToId(sideName, filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (sideIds.length > 0) {
+      params.wheel_side = sideIds;
+    }
   }
-  if (filters.dateRange?.to) {
-    params.date_to = filters.dateRange.to.toISOString().split("T")[0];
+  if (filters.wheelDrive && filters.wheelDrive.length > 0) {
+    const filterArray = getWheelsArray(wheels?.drives, wheels?.wheel_drives);
+    const driveIds = filters.wheelDrive
+      .map((driveName) => mapNameToId(driveName, filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (driveIds.length > 0) {
+      params.wheel_drive = driveIds;
+    }
+  }
+  if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
+    const filterArray = getWheelsArray(
+      wheels?.fixing_points,
+      wheels?.wheels_fixing_points
+    );
+    const fixingPointsIds = filters.wheelFixingPoints
+      .map((pointName) => mapNameToId(String(pointName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (fixingPointsIds.length > 0) {
+      params.wheel_fixing_points = fixingPointsIds;
+    }
+  }
+  if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
+    const filterArray = getWheelsArray(wheels?.spacing, wheels?.wheels_spacing);
+    const spacingIds = filters.wheelSpacing
+      .map((spacingName) => mapNameToId(String(spacingName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (spacingIds.length > 0) {
+      params.wheel_spacing = spacingIds;
+    }
+  }
+  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
+    const filterArray = getWheelsArray(
+      wheels?.central_diameter,
+      wheels?.wheels_central_diameter
+    );
+    const diameterIds = filters.wheelCentralDiameter
+      .map((diameterName) => mapNameToId(String(diameterName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (diameterIds.length > 0) {
+      params.wheel_central_diameter = diameterIds;
+    }
+  }
+  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
+    const filterArray = getWheelsArray(wheels?.height, wheels?.wheels_height);
+    const heightIds = filters.wheelHeight
+      .map((heightName) => mapNameToId(String(heightName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (heightIds.length > 0) {
+      params.wheel_height = heightIds;
+    }
+  }
+  if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
+    const filterArray = getWheelsArray(
+      wheels?.tread_depth,
+      wheels?.wheels_tread_depth
+    );
+    const treadDepthIds = filters.wheelTreadDepth
+      .map((depthName) => mapNameToId(String(depthName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (treadDepthIds.length > 0) {
+      params.wheel_tread_depth = treadDepthIds;
+    }
+  }
+  if (filters.wheelWidth && filters.wheelWidth.length > 0) {
+    const filterArray = getWheelsArray(wheels?.width, wheels?.wheels_width);
+    const widthIds = filters.wheelWidth
+      .map((widthName) => mapNameToId(String(widthName), filterArray))
+      .filter((id): id is number => id !== undefined);
+    if (widthIds.length > 0) {
+      params.wheel_width = widthIds;
+    }
+  }
+
+  // Stale inventory
+  if (filters.staleMonths !== undefined) {
+    params.stale_months = filters.staleMonths;
+  }
+
+  // Warehouse
+  if (filters.warehouse && filters.warehouse.length > 0) {
+    params.warehouse = filters.warehouse;
   }
 
   return params;

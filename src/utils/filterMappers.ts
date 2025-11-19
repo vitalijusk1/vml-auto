@@ -148,10 +148,7 @@ export function mapCategoryNameToId(
     return undefined;
   }
 
-  function findCategoryId(
-    cats: any[],
-    name: string
-  ): number | undefined {
+  function findCategoryId(cats: any[], name: string): number | undefined {
     for (const category of cats) {
       const catName = extractName(category);
       if (catName === name) {
@@ -169,6 +166,148 @@ export function mapCategoryNameToId(
   }
 
   return findCategoryId(categories, categoryName);
+}
+
+/**
+ * Get all child category names recursively for a given category
+ */
+function getAllChildCategoryNames(category: any): string[] {
+  const names: string[] = [];
+  if (category.subcategories && Array.isArray(category.subcategories)) {
+    for (const subcat of category.subcategories) {
+      names.push(extractName(subcat));
+      // Recursively get grandchildren
+      names.push(...getAllChildCategoryNames(subcat));
+    }
+  }
+  return names;
+}
+
+/**
+ * Find a category by name in the categories tree
+ */
+function findCategoryByName(cats: any[], name: string): any | undefined {
+  for (const category of cats) {
+    const catName = extractName(category);
+    if (catName === name) {
+      return category;
+    }
+    // Recursively search subcategories
+    if (category.subcategories && Array.isArray(category.subcategories)) {
+      const found = findCategoryByName(category.subcategories, name);
+      if (found !== undefined) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Convert category names to IDs, but only pass parent IDs when parent is selected with all children
+ * This ensures that when a parent category is selected, we only send the parent ID to the API,
+ * not all child IDs, even though the UI shows all children as selected.
+ */
+export function mapCategoryNamesToIds(
+  categoryNames: string[],
+  backendFilters: any
+): number[] {
+  const categories = backendFilters?.categories;
+  if (!Array.isArray(categories) || categoryNames.length === 0) {
+    return [];
+  }
+
+  const selectedSet = new Set(categoryNames);
+  const resultIds: number[] = [];
+  const coveredByParent = new Set<string>(); // Children covered by a selected parent
+
+  // First pass: identify parent categories that have all children selected
+  // and mark their children as covered
+  for (const categoryName of categoryNames) {
+    const category = findCategoryByName(categories, categoryName);
+    if (!category) {
+      continue;
+    }
+
+    // Check if this category has children
+    const childNames = getAllChildCategoryNames(category);
+    if (childNames.length > 0) {
+      // Check if all children are selected
+      const allChildrenSelected = childNames.every((childName) =>
+        selectedSet.has(childName)
+      );
+
+      if (allChildrenSelected && selectedSet.has(categoryName)) {
+        // Parent is selected with all children - mark children as covered
+        childNames.forEach((childName) => coveredByParent.add(childName));
+      }
+    }
+  }
+
+  // Second pass: process categories, skipping children covered by parents
+  const processedNames = new Set<string>();
+  for (const categoryName of categoryNames) {
+    if (processedNames.has(categoryName)) {
+      continue;
+    }
+
+    // Skip if this child is covered by a parent
+    if (coveredByParent.has(categoryName)) {
+      continue;
+    }
+
+    const category = findCategoryByName(categories, categoryName);
+    if (!category) {
+      // Category not found, try to get ID anyway
+      const id = mapCategoryNameToId(categoryName, backendFilters);
+      if (id !== undefined) {
+        resultIds.push(id);
+        processedNames.add(categoryName);
+      }
+      continue;
+    }
+
+    // Check if this category has children
+    const childNames = getAllChildCategoryNames(category);
+    if (childNames.length > 0) {
+      // Check if all children are selected
+      const allChildrenSelected = childNames.every((childName) =>
+        selectedSet.has(childName)
+      );
+
+      if (allChildrenSelected && selectedSet.has(categoryName)) {
+        // Parent is selected with all children - only add parent ID
+        const parentId = extractId(category);
+        if (parentId !== undefined) {
+          resultIds.push(parentId);
+          processedNames.add(categoryName);
+          // Mark all children as processed so we don't add them
+          childNames.forEach((childName) => processedNames.add(childName));
+        }
+      } else {
+        // Not all children are selected, or parent is not selected
+        // Add this category ID if it's selected
+        if (selectedSet.has(categoryName)) {
+          const id = extractId(category);
+          if (id !== undefined) {
+            resultIds.push(id);
+            processedNames.add(categoryName);
+          }
+        }
+      }
+    } else {
+      // Leaf category (no children) - add it if selected
+      if (selectedSet.has(categoryName)) {
+        const id = extractId(category);
+        if (id !== undefined) {
+          resultIds.push(id);
+          processedNames.add(categoryName);
+        }
+      }
+    }
+  }
+
+  return resultIds;
 }
 
 /**
@@ -200,4 +339,3 @@ export function mapStatusNameToId(
 ): number | undefined {
   return mapNameToId(statusName, backendFilters?.parts?.statuses);
 }
-

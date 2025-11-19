@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectPartsPagination,
@@ -28,6 +28,7 @@ export function PartsView() {
     }
   );
   const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
   // Use empty array for cars since parts are fetched separately
   const cars: never[] = [];
 
@@ -39,38 +40,64 @@ export function PartsView() {
 
   // Note: Filters are fetched in App.tsx on initial load, no need to fetch here
 
-  // Serialize filters to detect changes properly (React does shallow comparison)
-  const filtersKey = useMemo(() => {
-    return JSON.stringify(filters);
-  }, [filters]);
+  // Function to fetch parts based on current filters
+  const fetchParts = async () => {
+    if (!backendFilters) {
+      return;
+    }
 
-  // Fetch parts when pagination or filters change
+    setIsLoadingParts(true);
+    try {
+      // Convert filters to query parameters
+      const queryParams = filterStateToQueryParams(
+        filters,
+        {
+          page: pagination.current_page,
+          per_page: pagination.per_page,
+        },
+        backendFilters
+      );
+
+      // Fetch parts with filters
+      const response = await getParts(queryParams);
+      setParts(response.parts);
+      setPagination(response.pagination);
+      // Save pagination to Redux
+      dispatch(setPartsPagination(response.pagination));
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoadingParts(false);
+    }
+  };
+
+  // Fetch initial data on mount or when backendFilters become available
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Convert filters to query parameters
-        const queryParams = filterStateToQueryParams(
-          filters,
-          {
-            page: pagination.current_page,
-            per_page: pagination.per_page,
-          },
-          backendFilters
-        );
+    if (backendFilters && parts.length === 0) {
+      // Only fetch if we don't have parts yet (initial load)
+      fetchParts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendFilters]); // Run when backendFilters become available
 
-        // Fetch parts with filters
-        const response = await getParts(queryParams);
-        setParts(response.parts);
-        setPagination(response.pagination);
-        // Save pagination to Redux
-        dispatch(setPartsPagination(response.pagination));
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+  // Fetch parts when pagination changes (but not when filters change)
+  // Only fetch if we already have parts (meaning filters were applied)
+  useEffect(() => {
+    // Only fetch if we already have parts (meaning filters were applied)
+    // This handles pagination changes after initial filter
+    if (parts.length > 0 || pagination.current_page > 1) {
+      fetchParts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current_page, pagination.per_page]);
 
-    fetchData();
-  }, [dispatch, pagination.current_page, pagination.per_page, filtersKey]);
+  // Handle filter button click
+  const handleFilter = () => {
+    // Reset to page 1 when filtering
+    setPagination((prev) => ({ ...prev, current_page: 1 }));
+    // Fetch parts with current filters
+    fetchParts();
+  };
 
   return (
     <div className="space-y-6">
@@ -84,11 +111,11 @@ export function PartsView() {
         filters={filters}
         onFiltersChange={(newFilters) => {
           dispatch(setFilters(newFilters));
-          // Reset to page 1 when filters change
-          setPagination((prev) => ({ ...prev, current_page: 1 }));
         }}
         cars={cars}
         onTopDetailsFilterChange={setTopDetailsFilter}
+        onFilter={handleFilter}
+        isLoading={isLoadingParts}
       />
 
       <Table

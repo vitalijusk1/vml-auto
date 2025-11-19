@@ -44,7 +44,6 @@ export const OrderManagementFilters = ({
               carModel: [],
             });
           }}
-          onModelChange={(models) => onFiltersChange({ carModel: models })}
         />
 
         {/* Model */}

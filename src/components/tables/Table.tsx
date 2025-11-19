@@ -274,7 +274,7 @@ export function Table<T extends Car | Part | Order | Return>({
             </TableHeader>
             <TableBody>
               {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => {
+                table.getRowModel().rows.map((row, index) => {
                   const item = row.original;
                   // Extract item ID based on type - all current types have string or number id
                   let itemId: string;
@@ -286,6 +286,13 @@ export function Table<T extends Car | Part | Order | Return>({
                     itemId = row.id;
                   }
                   const isExpanded = expandedRows?.has(itemId) ?? false;
+                  const isLastRow =
+                    index === table.getRowModel().rows.length - 1;
+                  // Show separator for orders and returns, but not after the last row
+                  const showSeparator =
+                    (type === LayoutType.ORDERS ||
+                      type === LayoutType.RETURNS) &&
+                    !isLastRow;
 
                   return (
                     <Fragment key={row.id}>
@@ -324,6 +331,17 @@ export function Table<T extends Car | Part | Order | Return>({
                           >
                             {renderExpandedRow(item)}
                           </TableCell>
+                        </TableRow>
+                      )}
+                      {showSeparator && (
+                        <TableRow
+                          key={`${row.id}-separator`}
+                          className="hover:bg-transparent border-b-0"
+                        >
+                          <TableCell
+                            colSpan={columns.length}
+                            className="p-0 py-2 border-b border-border"
+                          />
                         </TableRow>
                       )}
                     </Fragment>
