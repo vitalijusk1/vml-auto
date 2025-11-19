@@ -56,9 +56,15 @@ export const OrderManagementFilters = ({
 
         {/* Engine Capacity */}
         <EngineCapacityFilter
-          selected={filters.engineCapacity || []}
-          onChange={(selected: string[]) =>
-            onFiltersChange({ engineCapacity: selected })
+          min={filters.engineCapacityRange?.min}
+          max={filters.engineCapacityRange?.max}
+          onChange={(range: { min?: number; max?: number }) =>
+            onFiltersChange({
+              engineCapacityRange: {
+                ...(filters.engineCapacityRange || {}),
+                ...range,
+              },
+            })
           }
         />
 

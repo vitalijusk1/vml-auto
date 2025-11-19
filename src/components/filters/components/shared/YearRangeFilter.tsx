@@ -1,4 +1,5 @@
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
+import { useEffect } from "react";
 
 interface YearRangeFilterProps {
   label?: string;
@@ -13,6 +14,13 @@ export const YearRangeFilter = ({
   max,
   onChange,
 }: YearRangeFilterProps) => {
+  // Auto-correct invalid range: if min > max, clear max
+  useEffect(() => {
+    if (min !== undefined && max !== undefined && min > max) {
+      onChange({ min, max: undefined });
+    }
+  }, [min, max, onChange]);
+
   const yearOptions = Array.from(
     { length: new Date().getFullYear() - 1959 },
     (_, i) => {
@@ -21,12 +29,24 @@ export const YearRangeFilter = ({
     }
   );
 
+  // Filter options for "from" - only show years <= max (if max is set)
+  const fromOptions =
+    max !== undefined
+      ? yearOptions.filter((opt) => parseInt(opt.value) <= max)
+      : yearOptions;
+
+  // Filter options for "to" - only show years >= min (if min is set)
+  const toOptions =
+    min !== undefined
+      ? yearOptions.filter((opt) => parseInt(opt.value) >= min)
+      : yearOptions;
+
   return (
     <div>
       <label className="text-sm font-medium mb-2 block">{label}</label>
       <div className="grid grid-cols-2 gap-2">
         <SingleSelectDropdown
-          options={[{ value: "", label: "Nuo" }, ...yearOptions]}
+          options={[{ value: "", label: "Nuo" }, ...fromOptions]}
           value={min?.toString() || ""}
           onChange={(value: string) =>
             onChange({
@@ -38,7 +58,7 @@ export const YearRangeFilter = ({
           className="[&>button]:h-10"
         />
         <SingleSelectDropdown
-          options={[{ value: "", label: "Iki" }, ...yearOptions]}
+          options={[{ value: "", label: "Iki" }, ...toOptions]}
           value={max?.toString() || ""}
           onChange={(value: string) =>
             onChange({

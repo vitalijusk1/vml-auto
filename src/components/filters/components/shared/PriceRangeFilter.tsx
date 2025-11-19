@@ -1,4 +1,5 @@
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
+import { useEffect } from "react";
 
 interface PriceRangeFilterProps {
   label?: string;
@@ -35,12 +36,33 @@ export const PriceRangeFilter = ({
   max,
   onChange,
 }: PriceRangeFilterProps) => {
+  // Auto-correct invalid range: if min > max, clear max
+  useEffect(() => {
+    if (min !== undefined && max !== undefined && min > max) {
+      onChange({ min, max: undefined });
+    }
+  }, [min, max, onChange]);
+
+  // Filter options for "from" - only show values <= max (if max is set)
+  const fromOptions = max !== undefined
+    ? PRICE_OPTIONS.filter(
+        (opt) => opt.value === "" || parseFloat(opt.value) <= max
+      )
+    : PRICE_OPTIONS;
+
+  // Filter options for "to" - only show values >= min (if min is set)
+  const toOptions = min !== undefined
+    ? MAX_PRICE_OPTIONS.filter(
+        (opt) => opt.value === "" || parseFloat(opt.value) >= min
+      )
+    : MAX_PRICE_OPTIONS;
+
   return (
     <div>
       <label className="text-sm font-medium mb-2 block">{label}</label>
       <div className="grid grid-cols-2 gap-2">
       <SingleSelectDropdown
-        options={PRICE_OPTIONS}
+        options={fromOptions}
         value={min?.toString() || ""}
         onChange={(value: string) =>
           onChange({
@@ -54,7 +76,7 @@ export const PriceRangeFilter = ({
       <SingleSelectDropdown
         options={[
           { value: "", label: "Iki" },
-          ...MAX_PRICE_OPTIONS,
+          ...toOptions,
         ]}
         value={max?.toString() || ""}
         onChange={(value: string) =>

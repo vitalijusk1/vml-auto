@@ -32,6 +32,9 @@ export interface PartsQueryParams {
   // Price range
   price_min?: number;
   price_max?: number;
+  // Engine volume range
+  engine_volume_min?: number;
+  engine_volume_max?: number;
   // Wheel filters - all are IDs now
   wheel_drive?: number | number[]; // IDs
   wheel_side?: number | number[]; // IDs
@@ -76,6 +79,8 @@ export interface OrdersQueryParams {
   // Fuel and engine
   fuel_id?: number | number[];
   engine_volume?: string | string[];
+  engine_volume_min?: number;
+  engine_volume_max?: number;
   // Wheel filters - all are IDs now
   wheel_drive?: number | number[]; // IDs
   wheel_side?: number | number[]; // IDs
@@ -117,6 +122,8 @@ export interface ReturnsQueryParams {
   // Fuel and engine
   fuel_id?: number | number[];
   engine_volume?: string | string[];
+  engine_volume_min?: number;
+  engine_volume_max?: number;
   // Wheel filters - all are IDs now
   wheel_drive?: number | number[]; // IDs
   wheel_side?: number | number[]; // IDs
@@ -229,6 +236,8 @@ export const apiEndpoints = {
     year?: number;
     fuel_id?: number;
     engine_volume?: string;
+    engine_volume_min?: number;
+    engine_volume_max?: number;
     date_from?: string;
     date_to?: string;
   }) => {

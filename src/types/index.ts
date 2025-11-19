@@ -222,7 +222,10 @@ export interface FilterState {
     max?: number;
   };
   fuelType: FuelType[];
-  engineCapacity?: string[];
+  engineCapacityRange?: {
+    min?: number;
+    max?: number;
+  };
   gearbox?: string[];
   bodyType: BodyType[];
   partCategory: string[];

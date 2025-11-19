@@ -88,8 +88,16 @@ export const AnalyticsFilters = ({
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
         {/* Engine Volume */}
         <EngineCapacityFilter
-          selected={filters.engineCapacity || []}
-          onChange={(selected) => onFiltersChange({ engineCapacity: selected })}
+          min={filters.engineCapacityRange?.min}
+          max={filters.engineCapacityRange?.max}
+          onChange={(range: { min?: number; max?: number }) =>
+            onFiltersChange({
+              engineCapacityRange: {
+                ...(filters.engineCapacityRange || {}),
+                ...range,
+              },
+            })
+          }
         />
 
         {/* Fuel Type */}
