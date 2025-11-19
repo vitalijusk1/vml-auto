@@ -16,8 +16,7 @@ import {
   mapStatusNameToId,
   mapPositionNameToId,
   mapQualityNameToId,
-  mapCategoryNameToId,
-  extractName,
+  mapCategoryNamesToIds,
   mapNameToId,
 } from "@/utils/filterMappers";
 
@@ -296,10 +295,12 @@ export const filterStateToQueryParams = (
   }
 
   // Part filters - convert category names to IDs
+  // Only pass parent IDs when parent is selected with all children
   if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = filters.partCategory
-      .map((categoryName) => mapCategoryNameToId(categoryName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const categoryIds = mapCategoryNamesToIds(
+      filters.partCategory,
+      backendFilters
+    );
     if (categoryIds.length > 0) {
       params.category = categoryIds;
     }

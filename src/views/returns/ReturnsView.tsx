@@ -9,7 +9,7 @@ import { FilterState, Return } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { setReturns } from "@/store/slices/dataSlice";
 import { setFilters } from "@/store/slices/filtersSlice";
-import { getReturns } from "@/api/returns";
+import { getReturns, filterStateToReturnsQueryParams } from "@/api/returns";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { LayoutType } from "@/components/filters/type";
 import { Table } from "@/components/tables/Table";
@@ -51,9 +51,14 @@ export function ReturnsView() {
       try {
         console.log("Fetching returns...");
 
-        // Fetch returns
-        // Note: API might not support pagination/filters yet, so we'll fetch all and paginate client-side
-        const response = await getReturns();
+        // Convert filters to query params
+        const queryParams = filterStateToReturnsQueryParams(
+          filters,
+          backendFilters
+        );
+
+        // Fetch returns with filters
+        const response = await getReturns(queryParams);
 
         console.log("Returns response:", response);
 
