@@ -18,7 +18,8 @@ import uiSlice from "./slices/uiSlice";
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["filters", "ui"], // Only persist filters and UI state
+  whitelist: ["ui"], // Only persist UI state (sidebarCollapsed, currentView, orderControlSelectedCarId)
+  // Filters are handled per-page with sessionStorage (resets when tab closes)
 };
 
 const rootReducer = combineReducers({

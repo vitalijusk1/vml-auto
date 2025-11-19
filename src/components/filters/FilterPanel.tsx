@@ -9,8 +9,7 @@ import { LayoutType } from "./type";
 import { PartFilters } from "./components/PartFilters/PartFilters";
 import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
 import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { resetFilters as resetFiltersAction } from "@/store/slices/filtersSlice";
+import { useAppSelector } from "@/store/hooks";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
 import { selectBackendFilters } from "@/store/selectors";
 import { CategorySection } from "./components/CategorySection/CategorySection";
@@ -88,7 +87,6 @@ export function FilterPanel<T extends FilterState>({
   hideCategoriesAndWheels = false,
   hideTopDetailsFilter = false,
 }: FilterPanelProps<T>) {
-  const dispatch = useAppDispatch();
   const backendFilters = useAppSelector(selectBackendFilters);
 
   // Use ref to always get latest filters value to avoid stale closure issues
@@ -106,16 +104,8 @@ export function FilterPanel<T extends FilterState>({
   );
 
   const resetFilters = () => {
-    if (type === LayoutType.ANALYTICS) {
-      onFiltersChange(defaultFilters as T);
-    } else if (type === LayoutType.ORDER_CONTROL) {
-      // Order management filters are local to the page
-      onFiltersChange(defaultFilters as T);
-    } else {
-      // For parts filters, dispatch reset action to Redux
-      dispatch(resetFiltersAction());
-      onFiltersChange(defaultFilters as T);
-    }
+    // All filters are now page-specific (local state), no need to dispatch to Redux
+    onFiltersChange(defaultFilters as T);
   };
 
   // Get title based on type
