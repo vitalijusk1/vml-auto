@@ -32,22 +32,27 @@ export const ModelFilter = ({
       return allModels;
     }
 
+    // Create a Set for faster brand name lookups
+    const selectedBrandsSet = new Set(selectedBrands || []);
+
     // If no brands selected, return all models from all brands
-    if (!selectedBrands || selectedBrands.length === 0) {
-      const allModelsFromBrands: string[] = [];
+    if (selectedBrandsSet.size === 0) {
+      const allModelsFromBrands = new Set<string>();
       for (const brand of backendFiltersData.car.brands) {
         if (brand.models && Array.isArray(brand.models)) {
-          const brandModels = brand.models.map((model: any) => {
-            return model.name || String(model);
-          });
-          allModelsFromBrands.push(...brandModels);
+          for (const model of brand.models) {
+            const modelName = model.name || String(model);
+            if (modelName) {
+              allModelsFromBrands.add(modelName);
+            }
+          }
         }
       }
-      return [...new Set(allModelsFromBrands)]; // Remove duplicates
+      return Array.from(allModelsFromBrands);
     }
 
     // Get selected brand names and find matching brands
-    const modelsByBrand: string[] = [];
+    const modelsByBrand = new Set<string>();
 
     for (const brand of backendFiltersData.car.brands) {
       // Extract brand name
@@ -56,20 +61,22 @@ export const ModelFilter = ({
           ? brand
           : brand.languages?.en || brand.languages?.name || brand.name;
 
-      // Check if this brand is selected
-      if (selectedBrands.includes(brandName)) {
+      // Check if this brand is selected using Set for O(1) lookup
+      if (selectedBrandsSet.has(brandName)) {
         // Extract models from this brand
         if (brand.models && Array.isArray(brand.models)) {
-          const brandModels = brand.models.map((model: any) => {
-            return model.name || String(model);
-          });
-          modelsByBrand.push(...brandModels);
+          for (const model of brand.models) {
+            const modelName = model.name || String(model);
+            if (modelName) {
+              modelsByBrand.add(modelName);
+            }
+          }
         }
       }
     }
 
     // Return unique models from selected brands
-    return [...new Set(modelsByBrand)];
+    return Array.from(modelsByBrand);
   }, [allModels, selectedBrands, backendFilters]);
 
   return (

@@ -19,8 +19,11 @@ export const BrandFilter = ({
   const { brands } = useBackendFilters();
 
   const handleChange = (newSelected: string[]) => {
+    // Call onChange to update brands
     onChange(newSelected);
-    // Clear models when brands change
+    // Clear models when brands change - only call if onModelChange is provided
+    // Note: PartFilters already clears models in onChange, so this is mainly
+    // for other components that use BrandFilter
     if (onModelChange) {
       onModelChange([]);
     }
