@@ -12,8 +12,7 @@ import { getCars } from "@/api/cars";
 import { getOrders } from "@/api/orders";
 import { setOrders } from "@/store/slices/dataSlice";
 import { getPreorderAnalysis } from "@/api/preorder";
-import { FilterPanel } from "../../components/filters/FilterPanel";
-import { useEffect, useState, useMemo, useRef, memo, useCallback } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
@@ -21,7 +20,6 @@ import { Filter, RotateCcw, Download } from "lucide-react";
 import { Car, Part, FilterState } from "@/types";
 import { CategoryPartsTable } from "../../components/tables/components/CategoryPartsTable";
 import { Category } from "@/utils/backendFilters";
-import { defaultFilters } from "@/store/slices/filtersSlice";
 import {
   mapBrandNameToId,
   mapModelNameToId,
@@ -31,13 +29,15 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingState } from "@/components/ui/LoadingState";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
+import { OrderControlFilterCard } from "./components/OrderControlFilterCard";
+import { defaultFilters } from "@/store/slices/filtersSlice";
 
 // Initialize pdfMake with fonts
 if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
   pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 }
 
-const ORDER_CONTROL_STORAGE_KEY = "orderControlState";
+import { StorageKeys } from "@/utils/storageKeys";
 
 interface PersistedOrderControlState {
   filters: {
@@ -51,74 +51,6 @@ interface PersistedOrderControlState {
 
 const cloneDefaultFilters = (): FilterState =>
   JSON.parse(JSON.stringify(defaultFilters)) as FilterState;
-
-// Separate component that manages filter state - this isolates re-renders
-// Only this component re-renders when filters change, not OrderControlView
-const FilterPanelContainer = memo(
-  function FilterPanelContainer({
-    initialFilters,
-    onFiltersChange,
-    onFilter,
-    isLoading,
-  }: {
-    initialFilters: FilterState;
-    onFiltersChange: (filters: FilterState) => void;
-    onFilter: () => void;
-    isLoading: boolean;
-  }) {
-    const [filters, setFilters] = useState<FilterState>(initialFilters);
-
-    // Sync with initialFilters when it changes (but don't cause re-render of parent)
-    useEffect(() => {
-      setFilters(initialFilters);
-    }, [initialFilters]);
-
-    const handleFiltersChange = useCallback(
-      (newFilters: FilterState) => {
-        setFilters(newFilters);
-        // Update parent's ref without causing re-render
-        onFiltersChange(newFilters);
-      },
-      [onFiltersChange]
-    );
-
-    return (
-      <FilterPanel
-        type="order-control"
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        cars={[]}
-        onFilter={onFilter}
-        isLoading={isLoading}
-      />
-    );
-  },
-  (prevProps, nextProps) => {
-    // Custom comparison - only re-render if isLoading changes or initialFilters actually changed
-    if (prevProps.isLoading !== nextProps.isLoading) return false;
-    if (prevProps.onFilter !== nextProps.onFilter) return false;
-    if (prevProps.onFiltersChange !== nextProps.onFiltersChange) return false;
-
-    // Deep compare filters
-    const prevFilters = prevProps.initialFilters;
-    const nextFilters = nextProps.initialFilters;
-    if (prevFilters === nextFilters) return true;
-
-    // Compare filter properties
-    return (
-      JSON.stringify(prevFilters.carBrand) ===
-        JSON.stringify(nextFilters.carBrand) &&
-      JSON.stringify(prevFilters.carModel) ===
-        JSON.stringify(nextFilters.carModel) &&
-      JSON.stringify(prevFilters.fuelType) ===
-        JSON.stringify(nextFilters.fuelType) &&
-      JSON.stringify(prevFilters.engineCapacityRange) ===
-        JSON.stringify(nextFilters.engineCapacityRange) &&
-      JSON.stringify(prevFilters.yearRange) ===
-        JSON.stringify(nextFilters.yearRange)
-    );
-  }
-);
 
 export function OrderControlView() {
   const dispatch = useAppDispatch();
@@ -138,17 +70,10 @@ export function OrderControlView() {
     new Set()
   );
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
-  const [orderFilters, setOrderFilters] = useState<FilterState>(
-    cloneDefaultFilters()
-  );
 
   // Use ref to track latest filters without causing re-renders
+  // Filters are now managed by OrderControlFilterCard, but we need the ref for fetchCars
   const orderFiltersRef = useRef<FilterState>(cloneDefaultFilters());
-
-  // Keep ref in sync with state (for persistence)
-  useEffect(() => {
-    orderFiltersRef.current = orderFilters;
-  }, [orderFilters]);
   // Ref to prevent double execution in React Strict Mode
   const restoreInProgressRef = useRef(false);
   // Ref to track if we're currently fetching cars to prevent concurrent fetches
@@ -160,24 +85,25 @@ export function OrderControlView() {
 
   // Load persisted state on mount (only once)
   // Note: Only filters are persisted, cars and selectedCarId are NOT persisted
+  // Uses sessionStorage - resets when browser tab closes
+  // Filters are now loaded by OrderControlFilterCard, but we still need to sync the ref
   useEffect(() => {
     const loadPersistedState = () => {
       try {
-        const stored = localStorage.getItem(ORDER_CONTROL_STORAGE_KEY);
+        const stored = sessionStorage.getItem(StorageKeys.ORDER_CONTROL_STATE);
         if (stored) {
           const persistedState: PersistedOrderControlState = JSON.parse(stored);
 
-          // Restore only filters, not cars (user will click "Filtruoti" to fetch cars)
+          // Sync ref with persisted filters (for fetchCars to use)
           if (persistedState.filters) {
-            setOrderFilters((prev) => ({
-              ...prev,
+            orderFiltersRef.current = {
+              ...cloneDefaultFilters(),
               carBrand: persistedState.filters.carBrand || [],
               carModel: persistedState.filters.carModel || [],
               fuelType: persistedState.filters.fuelType || [],
               engineCapacityRange: persistedState.filters.engineCapacityRange,
-              yearRange:
-                persistedState.filters.yearRange || prev.yearRange || {},
-            }));
+              yearRange: persistedState.filters.yearRange || {},
+            };
           }
         }
       } catch (error) {
@@ -197,7 +123,7 @@ export function OrderControlView() {
     if (isRestoring) return;
 
     try {
-      const stored = localStorage.getItem(ORDER_CONTROL_STORAGE_KEY);
+      const stored = sessionStorage.getItem(StorageKeys.ORDER_CONTROL_STATE);
       if (stored) {
         const persistedState: PersistedOrderControlState = JSON.parse(stored);
 
@@ -222,7 +148,7 @@ export function OrderControlView() {
           setParts([]);
           setCategories([]);
           // Clear persisted state when filters change
-          localStorage.removeItem(ORDER_CONTROL_STORAGE_KEY);
+          sessionStorage.removeItem(StorageKeys.ORDER_CONTROL_STATE);
         }
       }
     } catch (error) {
@@ -230,7 +156,7 @@ export function OrderControlView() {
     }
   }, [isRestoring, dispatch]);
 
-  // Save state to localStorage whenever filters change (using ref to avoid re-renders)
+  // Save state to sessionStorage whenever filters change (using ref to avoid re-renders)
   // Note: Only filters are persisted, cars and selectedCarId are NOT persisted
   useEffect(() => {
     if (!isRestoring) {
@@ -247,12 +173,12 @@ export function OrderControlView() {
               yearRange: currentFilters.yearRange,
             },
           };
-          localStorage.setItem(
-            ORDER_CONTROL_STORAGE_KEY,
+          sessionStorage.setItem(
+            StorageKeys.ORDER_CONTROL_STATE,
             JSON.stringify(stateToSave)
           );
         } catch (error) {
-          console.error("Error saving state to localStorage:", error);
+          console.error("Error saving state to sessionStorage:", error);
         }
       };
 
@@ -472,7 +398,7 @@ export function OrderControlView() {
       hasFetchedCarsDuringRestoreRef.current = false;
       // Clear persisted state when filters change
       try {
-        localStorage.removeItem(ORDER_CONTROL_STORAGE_KEY);
+        sessionStorage.removeItem(StorageKeys.ORDER_CONTROL_STATE);
       } catch (error) {
         console.error("Error clearing persisted state:", error);
       }
@@ -723,7 +649,7 @@ export function OrderControlView() {
     setCategories([]);
     // Clear persisted state
     try {
-      localStorage.removeItem(ORDER_CONTROL_STORAGE_KEY);
+      sessionStorage.removeItem(StorageKeys.ORDER_CONTROL_STATE);
     } catch (error) {
       console.error("Error clearing persisted state:", error);
     }
@@ -872,7 +798,7 @@ export function OrderControlView() {
       restoreInProgressRef.current = true;
 
       try {
-        // Filters are restored from localStorage in loadPersistedState
+        // Filters are restored from sessionStorage in loadPersistedState
         // Cars are not persisted - user needs to click "Filtruoti" to fetch cars
         // Just mark as restored
         hasFetchedCarsDuringRestoreRef.current = true;
@@ -1101,12 +1027,14 @@ export function OrderControlView() {
         description="Valdykite ir filtruokite užsakymus"
       />
 
-      <FilterPanelContainer
-        initialFilters={orderFilters}
-        onFiltersChange={handleFiltersChange}
-        onFilter={handleFilter}
-        isLoading={isLoadingCars}
-      />
+      {backendFilters && (
+        <OrderControlFilterCard
+          onFiltersChange={handleFiltersChange}
+          onFilter={handleFilter}
+          isLoading={isLoadingCars}
+          backendFilters={backendFilters}
+        />
+      )}
 
       {/* Car Selection Panel */}
       <Card>

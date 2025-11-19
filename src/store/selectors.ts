@@ -15,26 +15,24 @@ export const selectReturns = (state: RootState) => {
   const returns = state.data.returns;
   return Array.isArray(returns) ? returns : [];
 };
-export const selectBackendFilters = (state: RootState) => state.data.backendFilters;
+export const selectBackendFilters = (state: RootState) =>
+  state.data.backendFilters;
 export const selectCars = (state: RootState) => {
   const cars = state.data.cars;
   return Array.isArray(cars) ? cars : [];
 };
 export const selectFilters = (state: RootState) => state.filters;
-export const selectSelectedParts = (state: RootState) => state.ui.selectedParts;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
 export const selectSidebarCollapsed = (state: RootState) =>
   state.ui.sidebarCollapsed;
-export const selectPartsPagination = (state: RootState) =>
-  state.ui.partsPagination;
 export const selectOrderControlSelectedCarId = (state: RootState) =>
   state.ui.orderControlSelectedCarId;
 
 // Computed selectors
 // Note: All filtering is now handled by the backend
 // This selector is kept for compatibility but returns parts unchanged
-export const makeSelectFilteredParts = (cars: any[]) =>
-  createSelector([selectParts, selectFilters], (parts, filters) => {
+export const makeSelectFilteredParts = () =>
+  createSelector([selectParts], (parts) => {
     // All filtering is handled by backend, return parts as-is
     return parts;
   });
