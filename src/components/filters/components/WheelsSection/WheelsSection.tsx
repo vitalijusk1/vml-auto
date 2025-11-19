@@ -71,7 +71,7 @@ export function WheelsSection({
         {wheels.wheel_drives && wheels.wheel_drives.length > 0 && (
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Rato pavara
+              Varomieji ratai
             </label>
             <MultiSelectDropdown
               options={wheels.wheel_drives}

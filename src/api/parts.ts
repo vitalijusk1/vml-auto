@@ -18,6 +18,7 @@ import {
   mapQualityNameToId,
   mapCategoryNameToId,
   extractName,
+  mapNameToId,
 } from "@/utils/filterMappers";
 
 // API Response types

@@ -47,29 +47,32 @@ export function MultiSelectDropdown<T extends string>({
     };
   }, [isOpen]);
 
-  const toggleOption = (option: T) => {
-    // Normalize strings for comparison (trim whitespace, handle numbers)
-    const normalize = (val: T | string): string => {
-      const str = String(val).trim();
-      // Try to normalize numbers (e.g., "10.0" -> "10")
-      const num = Number(str);
-      if (!isNaN(num) && isFinite(num)) {
-        return String(num);
-      }
-      return str;
-    };
+  // Normalize function - moved outside to avoid recreating on every render
+  const normalize = React.useCallback((val: T | string): string => {
+    const str = String(val).trim();
+    // Try to normalize numbers (e.g., "10.0" -> "10")
+    const num = Number(str);
+    if (!isNaN(num) && isFinite(num)) {
+      return String(num);
+    }
+    return str;
+  }, []);
 
+  // Memoize selected items as a Set for O(1) lookups
+  const selectedSet = React.useMemo(() => {
+    return new Set(selected.map(normalize));
+  }, [selected, normalize]);
+
+  const toggleOption = (option: T) => {
     const normalizedOption = normalize(option);
-    const isSelected = selected.some(
-      (item) => normalize(item) === normalizedOption
-    );
+    const isSelected = selectedSet.has(normalizedOption);
 
     if (isSelected) {
       // Remove all instances of this option (in case of duplicates)
       onChange(selected.filter((item) => normalize(item) !== normalizedOption));
     } else {
       // Add the option only if it's not already selected
-      if (!selected.some((item) => normalize(item) === normalizedOption)) {
+      if (!selectedSet.has(normalizedOption)) {
         onChange([...selected, option]);
       }
     }
@@ -139,7 +142,13 @@ export function MultiSelectDropdown<T extends string>({
       </Button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg overflow-hidden">
+        <div
+          className="absolute z-50 mt-1 w-full rounded-md border border-border bg-background shadow-lg overflow-hidden"
+          onMouseDown={(e) => {
+            // Prevent click-outside handler from closing dropdown when clicking inside
+            e.stopPropagation();
+          }}
+        >
           {searchable && (
             <div className="sticky top-0 z-10 border-b border-border bg-background py-2 -mx-[1px] px-[calc(0.5rem+1px)]">
               <div className="flex items-center gap-2">
@@ -153,6 +162,7 @@ export function MultiSelectDropdown<T extends string>({
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8 pr-8 h-8"
                     onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
                     onKeyDown={(e) => {
                       // Prevent closing dropdown when typing
                       e.stopPropagation();
@@ -198,48 +208,68 @@ export function MultiSelectDropdown<T extends string>({
                   e.stopPropagation();
                   onChange([]);
                 }}
+                onMouseDown={(e) => e.stopPropagation()}
                 title="Clear selection"
               >
                 Clear
               </Button>
             </div>
           )}
-          <div className="max-h-60 overflow-auto p-1">
+          <div
+            className="max-h-60 overflow-auto p-1"
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              // Use CSS containment to improve rendering performance
+              contain: "layout style paint",
+            }}
+          >
             {filteredOptions.length === 0 ? (
               <div className="px-2 py-1.5 text-sm text-muted-foreground">
                 {searchQuery ? "No results found" : "No options available"}
               </div>
             ) : (
               filteredOptions.map((option) => {
-                // Normalize strings for comparison (trim whitespace, handle numbers)
-                const normalize = (val: T | string): string => {
-                  const str = String(val).trim();
-                  // Try to normalize numbers (e.g., "10.0" -> "10")
-                  const num = Number(str);
-                  if (!isNaN(num) && isFinite(num)) {
-                    return String(num);
-                  }
-                  return str;
-                };
-
                 const normalizedOption = normalize(option);
-                const isSelected = selected.some(
-                  (item) => normalize(item) === normalizedOption
-                );
+                const isSelected = selectedSet.has(normalizedOption);
 
                 return (
-                  <label
+                  <div
                     key={option}
                     className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent"
+                    onMouseDown={(e) => {
+                      // Prevent the dropdown from closing when clicking on options
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      // Only toggle if clicking on the div itself, not the checkbox
+                      // (checkbox has its own onChange handler)
+                      if (
+                        e.target === e.currentTarget ||
+                        (e.target as HTMLElement).tagName === "SPAN"
+                      ) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleOption(option);
+                      }
+                    }}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => toggleOption(option)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        toggleOption(option);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                      }}
                       className="rounded"
                     />
                     <span className="flex-1">{option}</span>
-                  </label>
+                  </div>
                 );
               })
             )}

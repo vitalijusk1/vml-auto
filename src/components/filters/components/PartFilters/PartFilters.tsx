@@ -70,9 +70,6 @@ export const PartFilters = ({
               carModel: [],
             });
           }}
-          onModelChange={(models: string[]) =>
-            onFiltersChange({ carModel: models })
-          }
         />
 
         {/* Model */}
