@@ -1,10 +1,15 @@
-import { FilterState, FuelType } from "@/types";
+import { FilterState } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { BrandFilter } from "../shared/BrandFilter";
 import { ModelFilter } from "../shared/ModelFilter";
 import { FuelTypeFilter } from "../shared/FuelTypeFilter";
 import { YearRangeFilter } from "../shared/YearRangeFilter";
+import {
+  createBrandChangeHandler,
+  createStringArrayHandler,
+  createRangeHandler,
+} from "@/utils/filterHelpers";
 import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 
 interface OrderManagementFiltersProps {
@@ -38,12 +43,7 @@ export const OrderManagementFilters = ({
         <BrandFilter
           required={true}
           selected={filters.carBrand || []}
-          onChange={(selected) => {
-            onFiltersChange({
-              carBrand: selected,
-              carModel: [],
-            });
-          }}
+          onChange={createBrandChangeHandler(onFiltersChange)}
         />
 
         {/* Model */}
@@ -51,29 +51,24 @@ export const OrderManagementFilters = ({
           required={true}
           selected={filters.carModel || []}
           selectedBrands={filters.carBrand || []}
-          onChange={(selected) => onFiltersChange({ carModel: selected })}
+          onChange={createStringArrayHandler(onFiltersChange, "carModel")}
         />
 
         {/* Engine Capacity */}
         <EngineCapacityFilter
           min={filters.engineCapacityRange?.min}
           max={filters.engineCapacityRange?.max}
-          onChange={(range: { min?: number; max?: number }) =>
-            onFiltersChange({
-              engineCapacityRange: {
-                ...(filters.engineCapacityRange || {}),
-                ...range,
-              },
-            })
-          }
+          onChange={createRangeHandler(
+            onFiltersChange,
+            "engineCapacityRange",
+            filters.engineCapacityRange
+          )}
         />
 
         {/* Fuel Type */}
         <FuelTypeFilter
           selected={filters.fuelType || []}
-          onChange={(selected: string[]) =>
-            onFiltersChange({ fuelType: selected as FuelType[] })
-          }
+          onChange={createStringArrayHandler(onFiltersChange, "fuelType")}
           useBackendOptions={false}
         />
 
@@ -81,14 +76,11 @@ export const OrderManagementFilters = ({
         <YearRangeFilter
           min={filters.yearRange?.min}
           max={filters.yearRange?.max}
-          onChange={(range: { min?: number; max?: number }) =>
-            onFiltersChange({
-              yearRange: {
-                ...(filters.yearRange || {}),
-                ...range,
-              },
-            })
-          }
+          onChange={createRangeHandler(
+            onFiltersChange,
+            "yearRange",
+            filters.yearRange
+          )}
         />
       </div>
     </div>

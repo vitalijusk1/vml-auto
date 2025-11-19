@@ -1,5 +1,9 @@
 import { useAppSelector } from "@/store/hooks";
-import { selectParts, selectOrders } from "@/store/selectors";
+import {
+  selectParts,
+  selectOrders,
+  selectBackendFilters,
+} from "@/store/selectors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -13,7 +17,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback, memo } from "react";
 import { FilterState } from "@/types";
 import { FilterPanel } from "../../components/filters/FilterPanel";
 import { defaultFilters } from "@/store/slices/filtersSlice";
@@ -24,20 +28,215 @@ const COLORS = {
   line: "#60A5FA",
 };
 
+// Memoized component for summary metrics cards to prevent unnecessary re-renders
+const SummaryMetricsCards = memo(
+  function SummaryMetricsCards({
+    metrics,
+    currencyFormatter,
+  }: {
+    metrics: {
+      partsInStock: number;
+      totalSold: number;
+      totalPartsAllTime: number;
+      earnings: number;
+      activeOrders: number;
+      partsNotSold3Months: number;
+    };
+    currencyFormatter: (value: number) => string;
+  }) {
+    return (
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Dalys sandėlyje
+            </CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics.partsInStock.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Iš viso parduota
+            </CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics.totalSold.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Iš viso detalių (Per visa laiką)
+            </CardTitle>
+            <Settings className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics.totalPartsAllTime.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uždarbis</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {currencyFormatter(metrics.earnings)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Aktyvūs užsakymai
+            </CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics.activeOrders.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Dalys, kurios neparduotos per 3 mėn.
+            </CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics.partsNotSold3Months.toLocaleString()}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if metrics actually changed
+    return (
+      prevProps.metrics.partsInStock === nextProps.metrics.partsInStock &&
+      prevProps.metrics.totalSold === nextProps.metrics.totalSold &&
+      prevProps.metrics.totalPartsAllTime ===
+        nextProps.metrics.totalPartsAllTime &&
+      prevProps.metrics.earnings === nextProps.metrics.earnings &&
+      prevProps.metrics.activeOrders === nextProps.metrics.activeOrders &&
+      prevProps.metrics.partsNotSold3Months ===
+        nextProps.metrics.partsNotSold3Months &&
+      prevProps.currencyFormatter === nextProps.currencyFormatter
+    );
+  }
+);
+
+// Separate component that manages filter state - this isolates re-renders
+// Only this component re-renders when filters change, not AnalyticsView
+const FilterPanelContainer = memo(
+  function FilterPanelContainer({
+    initialFilters,
+    onFiltersChange,
+  }: {
+    initialFilters: FilterState;
+    onFiltersChange: (filters: FilterState) => void;
+  }) {
+    const [filters, setFilters] = useState<FilterState>(initialFilters);
+
+    // Sync with initialFilters when it changes (but don't cause re-render of parent)
+    useEffect(() => {
+      setFilters(initialFilters);
+    }, [initialFilters]);
+
+    const handleFiltersChange = useCallback(
+      (newFilters: FilterState) => {
+        setFilters(newFilters);
+        // Update parent's ref without causing re-render
+        onFiltersChange(newFilters);
+      },
+      [onFiltersChange]
+    );
+
+    return (
+      <FilterPanel
+        type="analytics"
+        filters={filters}
+        onFiltersChange={handleFiltersChange}
+        cars={[]}
+        hideCategoriesAndWheels={true}
+        hideTopDetailsFilter={true}
+      />
+    );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison - only re-render if initialFilters actually changed
+    if (prevProps.onFiltersChange !== nextProps.onFiltersChange) return false;
+
+    // Deep compare filters
+    const prevFilters = prevProps.initialFilters;
+    const nextFilters = nextProps.initialFilters;
+    if (prevFilters === nextFilters) return true;
+
+    // Compare filter properties
+    return (
+      JSON.stringify(prevFilters.carBrand) ===
+        JSON.stringify(nextFilters.carBrand) &&
+      JSON.stringify(prevFilters.carModel) ===
+        JSON.stringify(nextFilters.carModel) &&
+      JSON.stringify(prevFilters.fuelType) ===
+        JSON.stringify(nextFilters.fuelType) &&
+      JSON.stringify(prevFilters.engineCapacityRange) ===
+        JSON.stringify(nextFilters.engineCapacityRange) &&
+      JSON.stringify(prevFilters.yearRange) ===
+        JSON.stringify(nextFilters.yearRange) &&
+      JSON.stringify(prevFilters.bodyType) ===
+        JSON.stringify(nextFilters.bodyType) &&
+      JSON.stringify(prevFilters.quality) ===
+        JSON.stringify(nextFilters.quality) &&
+      JSON.stringify(prevFilters.position) ===
+        JSON.stringify(nextFilters.position) &&
+      JSON.stringify(prevFilters.priceRange) ===
+        JSON.stringify(nextFilters.priceRange)
+    );
+  }
+);
+
 export function AnalyticsView() {
   const parts = useAppSelector(selectParts);
   const orders = useAppSelector(selectOrders);
+  const backendFilters = useAppSelector(selectBackendFilters);
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
-  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
-  const cars: never[] = [];
 
-  // Filter parts based on filters
-  // Note: Since filtering is handled by backend, we use parts directly
-  // If client-side filtering is needed in the future, implement it here
-  const filteredParts = useMemo(
-    () => parts,
-    [parts]
-  );
+  // Use ref to track latest filters without causing re-renders
+  const filtersRef = useRef<FilterState>(defaultFilters);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  // Handle filter changes - only update ref, don't update state to prevent AnalyticsView re-render
+  // FilterPanelContainer manages its own state internally, so it will still re-render when needed
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    filtersRef.current = newFilters;
+    // Don't call setFilters - this prevents AnalyticsView from re-rendering
+    // FilterPanelContainer manages its own state, so it will update correctly
+  }, []);
 
   // Filter orders - only delivered orders
   const filteredOrders = useMemo(() => {
@@ -47,27 +246,30 @@ export function AnalyticsView() {
   // Summary metrics - matching the image
   const summaryMetrics = useMemo(() => {
     const partsInStock = parts.filter((p) => p.status === "In Stock").length;
-    
+
     // Calculate total sold from orders
     const totalSold = orders
       .filter((o) => o.status === "Delivered")
       .reduce((sum, order) => {
-        return sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0);
+        return (
+          sum +
+          order.items.reduce((itemSum, item) => itemSum + item.quantity, 0)
+        );
       }, 0);
-    
+
     const totalPartsAllTime = parts.length;
-    
+
     // Calculate earnings from delivered orders
     const earnings = filteredOrders.reduce(
       (sum, order) => sum + order.totalAmountEUR,
       0
     );
-    
+
     // Active orders (non-delivered, non-cancelled)
     const activeOrders = orders.filter(
       (o) => o.status !== "Delivered" && o.status !== "Cancelled"
     ).length;
-    
+
     // Parts not sold for 3 months
     const threeMonthsAgo = new Date();
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -88,12 +290,13 @@ export function AnalyticsView() {
   // Parts Sold by Car Model - from orders
   const partsSoldByModel = useMemo(() => {
     const modelData: Record<string, number> = {};
-    
+
     filteredOrders.forEach((order) => {
       order.items.forEach((item) => {
         const part = parts.find((p) => p.id === item.partId);
         if (part && part.carModel) {
-          modelData[part.carModel] = (modelData[part.carModel] || 0) + item.quantity;
+          modelData[part.carModel] =
+            (modelData[part.carModel] || 0) + item.quantity;
         }
       });
     });
@@ -107,12 +310,13 @@ export function AnalyticsView() {
   // Parts Sold by Category - from orders
   const partsSoldByCategory = useMemo(() => {
     const categoryData: Record<string, number> = {};
-    
+
     filteredOrders.forEach((order) => {
       order.items.forEach((item) => {
         const part = parts.find((p) => p.id === item.partId);
         if (part && part.category) {
-          categoryData[part.category] = (categoryData[part.category] || 0) + item.quantity;
+          categoryData[part.category] =
+            (categoryData[part.category] || 0) + item.quantity;
         }
       });
     });
@@ -125,7 +329,7 @@ export function AnalyticsView() {
   // Sales Trend - units per day
   const salesTrend = useMemo(() => {
     const dailyData: Record<string, number> = {};
-    
+
     filteredOrders.forEach((order) => {
       const dateKey = order.date.toISOString().split("T")[0];
       const units = order.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -134,7 +338,7 @@ export function AnalyticsView() {
 
     // Get all dates and sort
     const sortedDates = Object.keys(dailyData).sort();
-    
+
     // If we have data, return it; otherwise generate sample data for this year
     if (sortedDates.length > 0) {
       return sortedDates.map((date) => ({
@@ -148,7 +352,7 @@ export function AnalyticsView() {
     const endDate = new Date();
     const sampleData = [];
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= endDate) {
       const dateKey = currentDate.toISOString().split("T")[0];
       // Generate random units between 30-50 for demo
@@ -158,7 +362,7 @@ export function AnalyticsView() {
       });
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return sampleData;
   }, [filteredOrders]);
 
@@ -175,94 +379,30 @@ export function AnalyticsView() {
       <div>
         <h1 className="text-3xl font-bold mb-2">Analatika</h1>
         <p className="text-muted-foreground">
-          Prekių kiekiai sandėlyje, laikymo trukmė, kaina ir likęs atsargas sandėlyje
+          Prekių kiekiai sandėlyje, laikymo trukmė, kaina ir likęs atsargas
+          sandėlyje
         </p>
       </div>
 
       {/* Filters Panel */}
-      <FilterPanel
-        type="analytics"
-        filters={filters}
-        onFiltersChange={setFilters}
-        cars={cars}
-        hideCategoriesAndWheels={true}
-        hideTopDetailsFilter={true}
-      />
+      {backendFilters ? (
+        <FilterPanelContainer
+          initialFilters={filters}
+          onFiltersChange={handleFiltersChange}
+        />
+      ) : (
+        <Card>
+          <CardContent>
+            <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Metrics Cards - 6 cards in 2 rows */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dalys sandėlyje</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryMetrics.partsInStock.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Iš viso parduota</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryMetrics.totalSold.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Iš viso detalių (Per visa laiką)</CardTitle>
-            <Settings className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryMetrics.totalPartsAllTime.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Uždarbis</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currencyFormatter(summaryMetrics.earnings)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktyvūs užsakymai</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryMetrics.activeOrders.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dalys, kurios neparduotos per 3 mėn.</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryMetrics.partsNotSold3Months.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <SummaryMetricsCards
+        metrics={summaryMetrics}
+        currencyFormatter={currencyFormatter}
+      />
 
       {/* Charts */}
       <div className="space-y-6">
@@ -275,7 +415,12 @@ export function AnalyticsView() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={partsSoldByModel}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="model" angle={-45} textAnchor="end" height={100} />
+                <XAxis
+                  dataKey="model"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -294,7 +439,12 @@ export function AnalyticsView() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={partsSoldByCategory}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
+                <XAxis
+                  dataKey="category"
+                  angle={-45}
+                  textAnchor="end"
+                  height={100}
+                />
                 <YAxis />
                 <Tooltip />
                 <Legend />
@@ -323,25 +473,38 @@ export function AnalyticsView() {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={salesTrend}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
+                <XAxis
+                  dataKey="date"
                   tickFormatter={(value) => {
                     const date = new Date(value);
-                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return date.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    });
                   }}
                 />
-                <YAxis label={{ value: 'Units per Day', angle: -90, position: 'insideLeft' }} />
-                <Tooltip 
+                <YAxis
+                  label={{
+                    value: "Units per Day",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip
                   labelFormatter={(value) => {
                     const date = new Date(value);
-                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                    return date.toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    });
                   }}
                 />
                 <Legend />
-                <Line 
-                  type="monotone" 
-                  dataKey="units" 
-                  stroke={COLORS.line} 
+                <Line
+                  type="monotone"
+                  dataKey="units"
+                  stroke={COLORS.line}
                   strokeWidth={2}
                   name="→ Units per Day"
                 />
