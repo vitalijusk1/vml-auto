@@ -8,7 +8,6 @@ import { getCars } from "@/api/cars";
 
 interface OrderControlFilterCardProps {
   onCarsUpdate: (cars: Car[]) => void;
-  onFiltersChange?: (filters: FilterState) => void;
   backendFilters: any;
 }
 
@@ -16,7 +15,6 @@ interface OrderControlFilterCardProps {
 // Only this component re-renders when filters change, not OrderControlView
 export const OrderControlFilterCard = memo(function OrderControlFilterCard({
   onCarsUpdate,
-  onFiltersChange,
   backendFilters,
 }: OrderControlFilterCardProps) {
   const [filters, setFilters] = useState<FilterState>(
@@ -97,14 +95,9 @@ export const OrderControlFilterCard = memo(function OrderControlFilterCard({
     }
   }, [filters, backendFilters, onCarsUpdate]);
 
-  const handleFiltersChange = useCallback(
-    (newFilters: FilterState) => {
-      setFilters(newFilters);
-      // Sync filters to parent ref if callback provided
-      onFiltersChange?.(newFilters);
-    },
-    [onFiltersChange]
-  );
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+  }, []);
 
   const handleFilter = useCallback(() => {
     // Fetch immediately when filter button is clicked
@@ -116,7 +109,6 @@ export const OrderControlFilterCard = memo(function OrderControlFilterCard({
       type={LayoutType.ORDER_CONTROL}
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      cars={[]}
       onFilter={handleFilter}
       isLoading={isLoading}
     />

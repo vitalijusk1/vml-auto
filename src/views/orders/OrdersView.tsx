@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectOrders, selectBackendFilters } from "@/store/selectors";
 import { Order } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { LayoutType } from "@/components/filters/type";
 import { Table } from "@/components/tables/Table";
 import { PhotoGalleryModal } from "@/components/modals/PhotoGalleryModal";
@@ -10,6 +9,7 @@ import { renderOrderExpandedContent } from "@/components/tables/components/Order
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { OrdersFilterCard } from "./components/OrdersFilterCard";
+import { useTablePagination } from "@/hooks/useTablePagination";
 
 export function OrdersView() {
   const orders = useAppSelector(selectOrders);
@@ -20,30 +20,12 @@ export function OrdersView() {
     photos: string[];
     title: string;
   } | null>(null);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    per_page: 15,
-    total: 0,
-    last_page: 1,
-  });
-
-  // Callback for OrdersFilterCard to update orders
-  // Orders are stored in Redux, so this callback is mainly for future extensibility
-  const handleOrdersUpdate = useCallback(() => {
-    // Orders are stored in Redux via dispatch in OrdersFilterCard
-  }, []);
-
-  const handlePaginationUpdate = useCallback(
-    (newPagination: {
-      current_page: number;
-      per_page: number;
-      total: number;
-      last_page: number;
-    }) => {
-      setPagination(newPagination);
-    },
-    []
-  );
+  const {
+    pagination,
+    handlePaginationUpdate,
+    handlePageChange,
+    handlePageSizeChange,
+  } = useTablePagination();
 
   // Always expand all orders by default when orders change
   useEffect(() => {
@@ -66,21 +48,6 @@ export function OrdersView() {
 
   const handlePhotoClick = useCallback((photos: string[], title: string) => {
     setSelectedPhotoGallery({ photos, title });
-  }, []);
-
-  const handlePageChange = useCallback((page: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      current_page: page,
-    }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((pageSize: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      per_page: pageSize,
-      current_page: 1,
-    }));
   }, []);
 
   const renderExpandedRow = useCallback(
@@ -118,7 +85,6 @@ export function OrdersView() {
 
       {backendFilters && (
         <OrdersFilterCard
-          onOrdersUpdate={handleOrdersUpdate}
           onPaginationUpdate={handlePaginationUpdate}
           pagination={pagination}
           backendFilters={backendFilters}
@@ -126,23 +92,19 @@ export function OrdersView() {
       )}
       {!backendFilters && <FilterLoadingCard />}
 
-      <Card className="border-0 shadow-none">
-        <CardContent className="p-0">
-          <Table<Order>
-            type={LayoutType.ORDERS}
-            data={orders}
-            serverPagination={pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            expandedRows={expandedOrders}
-            onToggleExpand={toggleOrderExpansion}
-            renderExpandedRow={renderExpandedRow}
-            filterColumnKey="id"
-            filterPlaceholder="Filtruoti užsakymus..."
-            customFilterFn={orderFilterFn}
-          />
-        </CardContent>
-      </Card>
+      <Table<Order>
+        type={LayoutType.ORDERS}
+        data={orders}
+        serverPagination={pagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        expandedRows={expandedOrders}
+        onToggleExpand={toggleOrderExpansion}
+        renderExpandedRow={renderExpandedRow}
+        filterColumnKey="id"
+        filterPlaceholder="Filtruoti užsakymus..."
+        customFilterFn={orderFilterFn}
+      />
 
       {/* Photo Gallery Modal */}
       {selectedPhotoGallery && (

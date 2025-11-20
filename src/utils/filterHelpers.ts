@@ -78,8 +78,12 @@ function getAllChildCategoryIds(category: any): number[] {
 
 /**
  * Find a category by ID in the categories tree
+ * Generic function that works with any tree structure that has `id` and `subcategories` properties
  */
-function findCategoryById(cats: any[], id: number): any | undefined {
+export function findCategoryById<T extends { id: number; subcategories?: T[] }>(
+  cats: T[],
+  id: number
+): T | undefined {
   for (const category of cats) {
     if (category.id === id) {
       return category;
@@ -110,6 +114,18 @@ export function extractCategoryIds(
     return [];
   }
 
+  // Create a lookup map for O(1) category access
+  const categoryMap = new Map<number, any>();
+  const addToMap = (cats: any[]) => {
+    cats.forEach((cat) => {
+      categoryMap.set(cat.id, cat);
+      if (cat.subcategories && Array.isArray(cat.subcategories)) {
+        addToMap(cat.subcategories);
+      }
+    });
+  };
+  addToMap(categories);
+
   const selectedIds = new Set(categoryOptions.map((cat) => cat.id));
   const resultIds: number[] = [];
   const coveredByParent = new Set<number>(); // Children covered by a selected parent
@@ -117,7 +133,7 @@ export function extractCategoryIds(
   // First pass: identify parent categories that have all children selected
   // and mark their children as covered
   for (const categoryOption of categoryOptions) {
-    const category = findCategoryById(categories, categoryOption.id);
+    const category = categoryMap.get(categoryOption.id);
     if (!category) {
       continue;
     }
@@ -149,7 +165,7 @@ export function extractCategoryIds(
       continue;
     }
 
-    const category = findCategoryById(categories, categoryOption.id);
+    const category = categoryMap.get(categoryOption.id);
     if (!category) {
       // Category not found in backend, use the ID from FilterOption
       resultIds.push(categoryOption.id);

@@ -1,5 +1,5 @@
 import { CardContent } from "@/components/ui/card";
-import { FilterState, Car } from "@/types";
+import { FilterState } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { BrandFilter } from "../shared/BrandFilter";
@@ -11,23 +11,18 @@ import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 import { FuelTypeFilter } from "../shared/FuelTypeFilter";
 import { YearRangeFilter } from "../shared/YearRangeFilter";
 import { PriceRangeFilter } from "../shared/PriceRangeFilter";
-import {
-  brandChangeHandler,
-  rangeHandler,
-} from "@/utils/filterHelpers";
+import { brandChangeHandler, rangeHandler } from "@/utils/filterHelpers";
 
 interface AnalyticsFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
-  cars?: Car[];
 }
 
 export const AnalyticsFilters = ({
   filters,
   onFiltersChange,
   onReset: _onReset,
-  cars: _cars = [],
 }: AnalyticsFiltersProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
 

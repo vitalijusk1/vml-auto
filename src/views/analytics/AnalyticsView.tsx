@@ -4,7 +4,6 @@ import {
   selectOrders,
   selectBackendFilters,
 } from "@/store/selectors";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
@@ -17,226 +16,20 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { useMemo, useState, useRef, useEffect, useCallback, memo } from "react";
-import { FilterState } from "@/types";
-import { FilterPanel } from "../../components/filters/FilterPanel";
-import { defaultFilters } from "@/store/slices/filtersSlice";
-import { CheckCircle2, BarChart3, Settings, AlertTriangle } from "lucide-react";
+import { useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnalyticsFilterCard } from "./components/AnalyticsFilterCard";
+import { SummaryMetricsCards } from "./components/SummaryMetricsCards";
 
 const COLORS = {
   primary: "#000000",
   line: "#60A5FA",
 };
 
-// Memoized component for summary metrics cards to prevent unnecessary re-renders
-const SummaryMetricsCards = memo(
-  function SummaryMetricsCards({
-    metrics,
-    currencyFormatter,
-  }: {
-    metrics: {
-      partsInStock: number;
-      totalSold: number;
-      totalPartsAllTime: number;
-      earnings: number;
-      activeOrders: number;
-      partsNotSold3Months: number;
-    };
-    currencyFormatter: (value: number) => string;
-  }) {
-    return (
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Dalys sandėlyje
-            </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.partsInStock.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Iš viso parduota
-            </CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.totalSold.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Iš viso detalių (Per visa laiką)
-            </CardTitle>
-            <Settings className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.totalPartsAllTime.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Uždarbis</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currencyFormatter(metrics.earnings)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Aktyvūs užsakymai
-            </CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.activeOrders.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Dalys, kurios neparduotos per 3 mėn.
-            </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {metrics.partsNotSold3Months.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  },
-  (prevProps, nextProps) => {
-    // Only re-render if metrics actually changed
-    return (
-      prevProps.metrics.partsInStock === nextProps.metrics.partsInStock &&
-      prevProps.metrics.totalSold === nextProps.metrics.totalSold &&
-      prevProps.metrics.totalPartsAllTime ===
-        nextProps.metrics.totalPartsAllTime &&
-      prevProps.metrics.earnings === nextProps.metrics.earnings &&
-      prevProps.metrics.activeOrders === nextProps.metrics.activeOrders &&
-      prevProps.metrics.partsNotSold3Months ===
-        nextProps.metrics.partsNotSold3Months &&
-      prevProps.currencyFormatter === nextProps.currencyFormatter
-    );
-  }
-);
-
-// Separate component that manages filter state - this isolates re-renders
-// Only this component re-renders when filters change, not AnalyticsView
-const FilterPanelContainer = memo(
-  function FilterPanelContainer({
-    initialFilters,
-    onFiltersChange,
-  }: {
-    initialFilters: FilterState;
-    onFiltersChange: (filters: FilterState) => void;
-  }) {
-    const [filters, setFilters] = useState<FilterState>(initialFilters);
-
-    // Sync with initialFilters when it changes (but don't cause re-render of parent)
-    useEffect(() => {
-      setFilters(initialFilters);
-    }, [initialFilters]);
-
-    const handleFiltersChange = useCallback(
-      (newFilters: FilterState) => {
-        setFilters(newFilters);
-        // Update parent's ref without causing re-render
-        onFiltersChange(newFilters);
-      },
-      [onFiltersChange]
-    );
-
-    return (
-      <FilterPanel
-        type="analytics"
-        filters={filters}
-        onFiltersChange={handleFiltersChange}
-        cars={[]}
-        hideCategoriesAndWheels={true}
-        hideTopDetailsFilter={true}
-      />
-    );
-  },
-  (prevProps, nextProps) => {
-    // Custom comparison - only re-render if initialFilters actually changed
-    if (prevProps.onFiltersChange !== nextProps.onFiltersChange) return false;
-
-    // Deep compare filters
-    const prevFilters = prevProps.initialFilters;
-    const nextFilters = nextProps.initialFilters;
-    if (prevFilters === nextFilters) return true;
-
-    // Compare filter properties
-    return (
-      JSON.stringify(prevFilters.carBrand) ===
-        JSON.stringify(nextFilters.carBrand) &&
-      JSON.stringify(prevFilters.carModel) ===
-        JSON.stringify(nextFilters.carModel) &&
-      JSON.stringify(prevFilters.fuelType) ===
-        JSON.stringify(nextFilters.fuelType) &&
-      JSON.stringify(prevFilters.engineCapacityRange) ===
-        JSON.stringify(nextFilters.engineCapacityRange) &&
-      JSON.stringify(prevFilters.yearRange) ===
-        JSON.stringify(nextFilters.yearRange) &&
-      JSON.stringify(prevFilters.bodyType) ===
-        JSON.stringify(nextFilters.bodyType) &&
-      JSON.stringify(prevFilters.quality) ===
-        JSON.stringify(nextFilters.quality) &&
-      JSON.stringify(prevFilters.position) ===
-        JSON.stringify(nextFilters.position) &&
-      JSON.stringify(prevFilters.priceRange) ===
-        JSON.stringify(nextFilters.priceRange)
-    );
-  }
-);
-
 export function AnalyticsView() {
   const parts = useAppSelector(selectParts);
   const orders = useAppSelector(selectOrders);
   const backendFilters = useAppSelector(selectBackendFilters);
-  const [filters, setFilters] = useState<FilterState>(defaultFilters);
-
-  // Use ref to track latest filters without causing re-renders
-  const filtersRef = useRef<FilterState>(defaultFilters);
-
-  // Keep ref in sync with state
-  useEffect(() => {
-    filtersRef.current = filters;
-  }, [filters]);
-
-  // Handle filter changes - only update ref, don't update state to prevent AnalyticsView re-render
-  // FilterPanelContainer manages its own state internally, so it will still re-render when needed
-  const handleFiltersChange = useCallback((newFilters: FilterState) => {
-    filtersRef.current = newFilters;
-    // Don't call setFilters - this prevents AnalyticsView from re-rendering
-    // FilterPanelContainer manages its own state, so it will update correctly
-  }, []);
 
   // Filter orders - only delivered orders
   const filteredOrders = useMemo(() => {
@@ -386,10 +179,7 @@ export function AnalyticsView() {
 
       {/* Filters Panel */}
       {backendFilters ? (
-        <FilterPanelContainer
-          initialFilters={filters}
-          onFiltersChange={handleFiltersChange}
-        />
+        <AnalyticsFilterCard backendFilters={backendFilters} />
       ) : (
         <Card>
           <CardContent>

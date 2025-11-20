@@ -19,6 +19,12 @@ export type BodyType =
   | "Van";
 
 // Filter option type for storing filter selections with both name and ID
+export enum TopDetailsFilter {
+  TOP_SELLING = "top-detales",
+  LEAST_SELLING = "reciausiai-parduodamos",
+  NONE = "be-filtro",
+}
+
 export interface FilterOption {
   name: string;
   id: number;

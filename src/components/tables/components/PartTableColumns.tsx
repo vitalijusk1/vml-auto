@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Part, PartStatus, Order } from "@/types";
+import { Part, PartStatus, Order, TopDetailsFilter } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
@@ -85,7 +85,7 @@ const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
 interface PartTableColumnsProps {
   onItemClick: (part: Part) => void;
   backendFilters?: any;
-  topDetailsFilter?: string;
+  topDetailsFilter?: TopDetailsFilter;
   orders?: Order[];
 }
 
@@ -95,7 +95,7 @@ export function PartTableColumns({
   topDetailsFilter,
   orders = [],
 }: PartTableColumnsProps): ColumnDef<Part>[] {
-  const isTopSellingMode = topDetailsFilter === "top-detales";
+  const isTopSellingMode = topDetailsFilter === TopDetailsFilter.TOP_SELLING;
 
   // Calculate sold count and average price for a part
   const getPartSalesData = (part: Part) => {

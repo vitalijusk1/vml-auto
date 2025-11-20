@@ -140,10 +140,13 @@ export function CategoryPartsTable({
     return ids;
   };
 
+  // Use generic findCategoryById helper, but adapt it for CategoryData structure
   const findCategoryDataById = (
     data: CategoryData[],
     id: number
   ): CategoryData | undefined => {
+    // Since CategoryData wraps Category, we can use findCategoryById on the category property
+    // But we need to return CategoryData, so we search manually
     for (const item of data) {
       if (item.category.id === id) return item;
       if (item.subcategories && item.subcategories.length > 0) {
@@ -154,8 +157,10 @@ export function CategoryPartsTable({
     return undefined;
   };
 
+  // Get category and all descendant IDs from CategoryData structure
   const getCategoryAndDescendantIds = (data: CategoryData): number[] => {
     const ids: number[] = [data.category.id];
+    // Recursively get from subcategories (CategoryData structure)
     if (data.subcategories && data.subcategories.length > 0) {
       data.subcategories.forEach((sub) => {
         ids.push(...getCategoryAndDescendantIds(sub));
