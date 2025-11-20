@@ -4,7 +4,7 @@ import { Input } from "./input";
 import { ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface MultiSelectDropdownProps<T extends string> {
+interface MultiSelectDropdownProps<T> {
   options: T[];
   selected: T[];
   onChange: (selected: T[]) => void;
@@ -12,9 +12,11 @@ interface MultiSelectDropdownProps<T extends string> {
   className?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
+  getDisplayValue: (item: T) => string;
+  getValue: (item: T) => string | number;
 }
 
-export function MultiSelectDropdown<T extends string>({
+export function MultiSelectDropdown<T>({
   options,
   selected,
   onChange,
@@ -22,6 +24,8 @@ export function MultiSelectDropdown<T extends string>({
   className,
   searchable = false,
   searchPlaceholder = "Search...",
+  getDisplayValue,
+  getValue,
 }: MultiSelectDropdownProps<T>) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -47,16 +51,17 @@ export function MultiSelectDropdown<T extends string>({
     };
   }, [isOpen]);
 
-  // Normalize function - moved outside to avoid recreating on every render
-  const normalize = React.useCallback((val: T | string): string => {
-    const str = String(val).trim();
+  // Normalize function - extract value for comparison
+  const normalize = React.useCallback((val: T): string => {
+    const value = getValue(val);
+    const str = String(value).trim();
     // Try to normalize numbers (e.g., "10.0" -> "10")
     const num = Number(str);
     if (!isNaN(num) && isFinite(num)) {
       return String(num);
     }
     return str;
-  }, []);
+  }, [getValue]);
 
   // Memoize selected items as a Set for O(1) lookups
   const selectedSet = React.useMemo(() => {
@@ -84,8 +89,10 @@ export function MultiSelectDropdown<T extends string>({
       return options;
     }
     const query = searchQuery.toLowerCase();
-    return options.filter((option) => option.toLowerCase().includes(query));
-  }, [options, searchQuery, searchable]);
+    return options.filter((option) => 
+      getDisplayValue(option).toLowerCase().includes(query)
+    );
+  }, [options, searchQuery, searchable, getDisplayValue]);
 
   // Focus search input when dropdown opens
   React.useEffect(() => {
@@ -108,7 +115,7 @@ export function MultiSelectDropdown<T extends string>({
     selected.length === 0
       ? placeholder
       : selected.length === 1
-      ? selected[0]
+      ? getDisplayValue(selected[0])
       : `${selected.length} selected`;
 
   const hasSelection = selected.length > 0;
@@ -228,13 +235,15 @@ export function MultiSelectDropdown<T extends string>({
                 {searchQuery ? "No results found" : "No options available"}
               </div>
             ) : (
-              filteredOptions.map((option) => {
+              filteredOptions.map((option, index) => {
                 const normalizedOption = normalize(option);
                 const isSelected = selectedSet.has(normalizedOption);
+                const optionValue = getValue(option);
+                const optionDisplay = getDisplayValue(option);
 
                 return (
                   <div
-                    key={option}
+                    key={`${optionValue}-${index}`}
                     className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm cursor-pointer hover:bg-accent"
                     onMouseDown={(e) => {
                       // Prevent the dropdown from closing when clicking on options
@@ -268,7 +277,7 @@ export function MultiSelectDropdown<T extends string>({
                       }}
                       className="rounded"
                     />
-                    <span className="flex-1">{option}</span>
+                    <span className="flex-1">{optionDisplay}</span>
                   </div>
                 );
               })

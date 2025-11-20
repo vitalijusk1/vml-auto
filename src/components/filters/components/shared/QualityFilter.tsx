@@ -1,11 +1,11 @@
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
-import { PartQuality } from "@/types";
+import { FilterOption } from "@/types";
 
 interface QualityFilterProps {
   label?: string;
-  selected: string[];
-  onChange: (selected: string[]) => void;
+  selected: FilterOption[];
+  onChange: (selected: FilterOption[]) => void;
 }
 
 export const QualityFilter = ({
@@ -25,6 +25,8 @@ export const QualityFilter = ({
         placeholder="Visi"
         searchable={true}
         searchPlaceholder="Ieškoti kokybių..."
+        getDisplayValue={(item) => item.name}
+        getValue={(item) => item.id}
       />
     </div>
   );

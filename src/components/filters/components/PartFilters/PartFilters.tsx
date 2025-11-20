@@ -13,9 +13,8 @@ import { StatusFilter } from "../shared/StatusFilter";
 import { PriceRangeFilter } from "../shared/PriceRangeFilter";
 import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 import {
-  createBrandChangeHandler,
-  createStringArrayHandler,
-  createRangeHandler,
+  brandChangeHandler,
+  rangeHandler,
 } from "@/utils/filterHelpers";
 
 interface PartFiltersProps {
@@ -47,39 +46,47 @@ export const PartFilters = ({
         {/* Brand (Manufacturer) */}
         <BrandFilter
           selected={filters.carBrand || []}
-          onChange={createBrandChangeHandler(onFiltersChange)}
+          onChange={brandChangeHandler(onFiltersChange)}
         />
 
         {/* Model */}
         <ModelFilter
           selected={filters.carModel || []}
           selectedBrands={filters.carBrand || []}
-          onChange={createStringArrayHandler(onFiltersChange, "carModel")}
+          onChange={(selected) =>
+            onFiltersChange({ carModel: selected } as Partial<FilterState>)
+          }
         />
 
         {/* Body Type */}
         <BodyTypeFilter
           selected={filters.bodyType || []}
-          onChange={createStringArrayHandler(onFiltersChange, "bodyType")}
+          onChange={(selected) =>
+            onFiltersChange({ bodyType: selected } as Partial<FilterState>)
+          }
         />
 
         {/* Quality */}
         <QualityFilter
           selected={filters.quality || []}
-          onChange={createStringArrayHandler(onFiltersChange, "quality")}
+          onChange={(selected) =>
+            onFiltersChange({ quality: selected } as Partial<FilterState>)
+          }
         />
 
         {/* Position */}
         <PositionFilter
           selected={filters.position || []}
-          onChange={createStringArrayHandler(onFiltersChange, "position")}
+          onChange={(selected) =>
+            onFiltersChange({ position: selected } as Partial<FilterState>)
+          }
         />
 
         {/* Engine Volume */}
         <EngineCapacityFilter
           min={filters.engineCapacityRange?.min}
           max={filters.engineCapacityRange?.max}
-          onChange={createRangeHandler(
+          onChange={rangeHandler(
             onFiltersChange,
             "engineCapacityRange",
             filters.engineCapacityRange
@@ -89,19 +96,18 @@ export const PartFilters = ({
         {/* Fuel Type */}
         <FuelTypeFilter
           selected={filters.fuelType || []}
-          onChange={createStringArrayHandler(onFiltersChange, "fuelType")}
+          onChange={(selected) =>
+            onFiltersChange({ fuelType: selected } as Partial<FilterState>)
+          }
           useBackendOptions={true}
         />
 
         {/* Status */}
         <StatusFilter
-          selected={
-            filters.status === "All" ? [] : (filters.status as string[])
-          }
+          selected={filters.status === "All" ? [] : filters.status}
           onChange={(selected) =>
             onFiltersChange({
-              status:
-                selected.length === 0 ? "All" : (selected as PartStatus[]),
+              status: selected.length === 0 ? "All" : selected,
             })
           }
         />
@@ -110,7 +116,7 @@ export const PartFilters = ({
         <YearRangeFilter
           min={filters.yearRange?.min}
           max={filters.yearRange?.max}
-          onChange={createRangeHandler(
+          onChange={rangeHandler(
             onFiltersChange,
             "yearRange",
             filters.yearRange
@@ -121,7 +127,7 @@ export const PartFilters = ({
         <PriceRangeFilter
           min={filters.priceRange?.min}
           max={filters.priceRange?.max}
-          onChange={createRangeHandler(
+          onChange={rangeHandler(
             onFiltersChange,
             "priceRange",
             filters.priceRange

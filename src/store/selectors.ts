@@ -116,19 +116,22 @@ export const makeSelectTopPerformers = (
 
       // Apply additional filters if provided
       if (combinedFilters.carBrand?.length) {
-        topParts = topParts.filter((p) =>
-          combinedFilters.carBrand!.includes(p.carBrand)
+        const brandNames = new Set(
+          combinedFilters.carBrand.map((brand) => brand.name)
         );
+        topParts = topParts.filter((p) => brandNames.has(p.carBrand));
       }
       if (combinedFilters.carModel?.length) {
-        topParts = topParts.filter((p) =>
-          combinedFilters.carModel!.includes(p.carModel)
+        const modelNames = new Set(
+          combinedFilters.carModel.map((model) => model.name)
         );
+        topParts = topParts.filter((p) => modelNames.has(p.carModel));
       }
       if (combinedFilters.partCategory?.length) {
-        topParts = topParts.filter((p) =>
-          combinedFilters.partCategory!.includes(p.category)
+        const categoryNames = new Set(
+          combinedFilters.partCategory.map((cat) => cat.name)
         );
+        topParts = topParts.filter((p) => categoryNames.has(p.category));
       }
 
       return topParts.slice(0, limit);

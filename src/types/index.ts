@@ -18,11 +18,26 @@ export type BodyType =
   | "Estate"
   | "Van";
 
+// Filter option type for storing filter selections with both name and ID
+export interface FilterOption {
+  name: string;
+  id: number;
+}
+
+// Range filter field names in FilterState
+export type RangeFilterField =
+  | "yearRange"
+  | "priceRange"
+  | "engineCapacityRange";
+
 export interface Car {
   id: number;
   photo: string | null;
   photo_gallery: string[];
-  brand: string;
+  brand: {
+    id: number;
+    name: string;
+  };
   model: {
     id: number;
     name: string;
@@ -209,29 +224,29 @@ export interface DashboardMetrics {
 
 export interface FilterState {
   search: string;
-  status: PartStatus[] | "All";
+  status: FilterOption[] | "All";
   dateRange: {
     from?: Date;
     to?: Date;
   };
-  carBrand: string[];
-  carModel: string[];
+  carBrand: FilterOption[];
+  carModel: FilterOption[];
   carYear: number[];
   yearRange: {
     min?: number;
     max?: number;
   };
-  fuelType: FuelType[];
+  fuelType: FilterOption[];
   engineCapacityRange?: {
     min?: number;
     max?: number;
   };
-  gearbox?: string[];
-  bodyType: BodyType[];
-  partCategory: string[];
-  partType: string[];
-  quality: PartQuality[];
-  position: PartPosition[];
+  gearbox?: FilterOption[];
+  bodyType: FilterOption[];
+  partCategory: FilterOption[];
+  partType: FilterOption[];
+  quality: FilterOption[];
+  position: FilterOption[];
   priceRange: {
     min?: number;
     max?: number;
@@ -248,14 +263,14 @@ export interface FilterState {
     category?: string;
   };
   // Wheel-specific filters
-  wheelDrive?: ("AWD" | "RWD" | "FWD")[];
-  wheelSide?: ("Left" | "Right")[];
-  wheelCentralDiameter?: number[];
-  wheelFixingPoints?: number[];
-  wheelHeight?: number[];
-  wheelSpacing?: number[];
-  wheelTreadDepth?: number[];
-  wheelWidth?: number[];
+  wheelDrive?: FilterOption[];
+  wheelSide?: FilterOption[];
+  wheelCentralDiameter?: FilterOption[];
+  wheelFixingPoints?: FilterOption[];
+  wheelHeight?: FilterOption[];
+  wheelSpacing?: FilterOption[];
+  wheelTreadDepth?: FilterOption[];
+  wheelWidth?: FilterOption[];
   // Warehouse filter
-  warehouse?: string[];
+  warehouse?: FilterOption[];
 }

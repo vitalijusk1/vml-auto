@@ -1,15 +1,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { useAppSelector } from "@/store/hooks";
-import { selectBackendFilters } from "@/store/selectors";
-import { Part } from "@/types";
+import { selectParts, selectBackendFilters } from "@/store/selectors";
 import { Table } from "../../components/tables/Table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PartsFilterCard } from "./components/PartsFilterCard";
 
 export function PartsView() {
+  const parts = useAppSelector(selectParts);
   const backendFilters = useAppSelector(selectBackendFilters);
-
-  const [parts, setParts] = useState<Part[]>([]);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 15,
@@ -25,11 +23,6 @@ export function PartsView() {
   const filteredParts = useMemo(() => {
     return parts;
   }, [parts]);
-
-  // Callbacks for FilterPanelContainer to update parts and pagination
-  const handlePartsUpdate = useCallback((newParts: Part[]) => {
-    setParts(newParts);
-  }, []);
 
   const handlePaginationUpdate = useCallback(
     (newPagination: {
@@ -69,7 +62,6 @@ export function PartsView() {
       />
 
       <PartsFilterCard
-        onPartsUpdate={handlePartsUpdate}
         onPaginationUpdate={handlePaginationUpdate}
         pagination={pagination}
         backendFilters={backendFilters}

@@ -27,7 +27,7 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
       <PhotoGallery
         photos={allPhotos}
         title="Photo Gallery"
-        altPrefix={`${car.brand} ${car.model.name} - Photo`}
+        altPrefix={`${car.brand.name} ${car.model.name} - Photo`}
       />
 
       {/* Car Details */}
@@ -48,7 +48,7 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             <div className="flex items-center gap-2">
               <CarIcon className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm">
-                <strong>Brand:</strong> {car.brand}
+                <strong>Brand:</strong> {car.brand.name}
               </span>
             </div>
             <div className="flex items-center gap-2">

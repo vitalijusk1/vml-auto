@@ -2,8 +2,40 @@ import { useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { Category } from "@/utils/backendFilters";
+import { FilterOption } from "@/types";
 
-// Helper function to extract names from FilterOption arrays or string arrays
+// Helper function to extract FilterOption objects from backend filter data
+const extractFilterOptions = (items: any[]): FilterOption[] => {
+  return items
+    .map((item) => {
+      if (typeof item === "string") {
+        // If it's a string, we can't create a FilterOption without an ID
+        // This shouldn't happen with the new backend, but handle gracefully
+        return null;
+      }
+      if (item && typeof item === "object" && item.id !== undefined) {
+        // Extract name - prioritize Lithuanian, fallback to English, then name property
+        let name = "";
+        if (item.languages?.lt) {
+          name = item.languages.lt;
+        } else if (item.languages?.en) {
+          name = item.languages.en;
+        } else if (item.languages?.name) {
+          name = item.languages.name;
+        } else if (item.name) {
+          name = item.name;
+        } else {
+          // Fallback to string representation if no name found
+          name = String(item.id);
+        }
+        return { name, id: item.id };
+      }
+      return null;
+    })
+    .filter((item): item is FilterOption => item !== null);
+};
+
+// Helper function to extract names from FilterOption arrays or string arrays (for statuses and wheels)
 const extractNames = (items: any[]): string[] => {
   return items.map((item) => {
     if (typeof item === "string") return item;
@@ -19,27 +51,27 @@ const extractNames = (items: any[]): string[] => {
 };
 
 interface WheelsFilters {
-  wheels?: string[];
-  wheel_drives?: string[];
-  wheels_fixing_points?: string[];
-  wheels_spacing?: string[];
-  wheels_central_diameter?: string[];
-  wheels_width?: string[];
-  wheels_height?: string[];
-  wheels_tread_depth?: string[];
+  wheels?: FilterOption[];
+  wheel_drives?: FilterOption[];
+  wheels_fixing_points?: FilterOption[];
+  wheels_spacing?: FilterOption[];
+  wheels_central_diameter?: FilterOption[];
+  wheels_width?: FilterOption[];
+  wheels_height?: FilterOption[];
+  wheels_tread_depth?: FilterOption[];
 }
 
 export interface UseBackendFiltersReturn {
   // Car filters
-  brands: string[];
-  models: string[];
-  bodyTypes: string[];
-  fuelTypes: string[];
+  brands: FilterOption[];
+  models: FilterOption[];
+  bodyTypes: FilterOption[];
+  fuelTypes: FilterOption[];
 
   // Parts filters
-  statuses: string[];
-  qualities: string[];
-  positions: string[];
+  statuses: FilterOption[];
+  qualities: FilterOption[];
+  positions: FilterOption[];
 
   // Shared filters
   categories: Category[];
@@ -56,43 +88,44 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
   // Extract car filters
   const brands = useMemo(() => {
     const brandsData = backendFilters?.car?.brands;
-    return Array.isArray(brandsData) ? extractNames(brandsData) : [];
+    return Array.isArray(brandsData) ? extractFilterOptions(brandsData) : [];
   }, [backendFilters]);
 
   const models = useMemo(() => {
     const carFilters = backendFilters?.car;
     const modelsData = carFilters?.models || carFilters?.car_models;
-    return Array.isArray(modelsData) ? extractNames(modelsData) : [];
+    return Array.isArray(modelsData) ? extractFilterOptions(modelsData) : [];
   }, [backendFilters]);
 
   const bodyTypes = useMemo(() => {
     const bodyTypesData = backendFilters?.car?.body_types;
-    return Array.isArray(bodyTypesData) ? extractNames(bodyTypesData) : [];
+    return Array.isArray(bodyTypesData) ? extractFilterOptions(bodyTypesData) : [];
   }, [backendFilters]);
 
   const fuelTypes = useMemo(() => {
     const fuelTypesData =
       backendFilters?.car?.fuel_types || backendFilters?.car?.fuels;
-    return Array.isArray(fuelTypesData) ? extractNames(fuelTypesData) : [];
+    return Array.isArray(fuelTypesData) ? extractFilterOptions(fuelTypesData) : [];
   }, [backendFilters]);
 
   // Extract parts filters
   const statuses = useMemo(() => {
-    if (Array.isArray(backendFilters?.parts?.statuses)) {
-      return extractNames(backendFilters.parts.statuses);
+    const statusesData = backendFilters?.parts?.statuses;
+    if (Array.isArray(statusesData)) {
+      return extractFilterOptions(statusesData);
     }
-    // Fallback to default statuses if not available from backend
-    return ["In Stock", "Reserved", "Sold", "Returned"];
+    // Fallback to empty array if not available from backend
+    return [];
   }, [backendFilters]);
 
   const qualities = useMemo(() => {
     const qualitiesData = backendFilters?.parts?.qualities;
-    return Array.isArray(qualitiesData) ? extractNames(qualitiesData) : [];
+    return Array.isArray(qualitiesData) ? extractFilterOptions(qualitiesData) : [];
   }, [backendFilters]);
 
   const positions = useMemo(() => {
     const positionsData = backendFilters?.parts?.positions;
-    return Array.isArray(positionsData) ? extractNames(positionsData) : [];
+    return Array.isArray(positionsData) ? extractFilterOptions(positionsData) : [];
   }, [backendFilters]);
 
   // Extract categories
@@ -107,79 +140,61 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
     const wheels = backendFilters?.wheels;
     if (!wheels) return undefined;
 
-    // Map backend keys to WheelsSection expected keys and extract names
+    // Helper to get array from either property
+    const getWheelsArray = (prop1: any, prop2: any): any[] | undefined => {
+      if (Array.isArray(prop1)) return prop1;
+      if (Array.isArray(prop2)) return prop2;
+      return undefined;
+    };
+
+    // Map backend keys to WheelsSection expected keys and extract FilterOption[]
     return {
-      wheels: wheels.wheels ? extractNames(wheels.wheels) : undefined,
-      wheel_drives:
-        wheels.drives || wheels.wheel_drives
-          ? extractNames(
-              Array.isArray(wheels.drives)
-                ? wheels.drives
-                : Array.isArray(wheels.wheel_drives)
-                ? wheels.wheel_drives
-                : []
-            )
-          : undefined,
-      wheels_fixing_points:
-        wheels.fixing_points || wheels.wheels_fixing_points
-          ? extractNames(
-              Array.isArray(wheels.fixing_points)
-                ? wheels.fixing_points
-                : Array.isArray(wheels.wheels_fixing_points)
-                ? wheels.wheels_fixing_points
-                : []
-            )
-          : undefined,
-      wheels_spacing:
-        wheels.spacing || wheels.wheels_spacing
-          ? extractNames(
-              Array.isArray(wheels.spacing)
-                ? wheels.spacing
-                : Array.isArray(wheels.wheels_spacing)
-                ? wheels.wheels_spacing
-                : []
-            )
-          : undefined,
-      wheels_central_diameter:
-        wheels.central_diameter || wheels.wheels_central_diameter
-          ? extractNames(
-              Array.isArray(wheels.central_diameter)
-                ? wheels.central_diameter
-                : Array.isArray(wheels.wheels_central_diameter)
-                ? wheels.wheels_central_diameter
-                : []
-            )
-          : undefined,
-      wheels_width:
-        wheels.width || wheels.wheels_width
-          ? extractNames(
-              Array.isArray(wheels.width)
-                ? wheels.width
-                : Array.isArray(wheels.wheels_width)
-                ? wheels.wheels_width
-                : []
-            )
-          : undefined,
-      wheels_height:
-        wheels.height || wheels.wheels_height
-          ? extractNames(
-              Array.isArray(wheels.height)
-                ? wheels.height
-                : Array.isArray(wheels.wheels_height)
-                ? wheels.wheels_height
-                : []
-            )
-          : undefined,
-      wheels_tread_depth:
-        wheels.tread_depth || wheels.wheels_tread_depth
-          ? extractNames(
-              Array.isArray(wheels.tread_depth)
-                ? wheels.tread_depth
-                : Array.isArray(wheels.wheels_tread_depth)
-                ? wheels.wheels_tread_depth
-                : []
-            )
-          : undefined,
+      wheels: wheels.wheels ? extractFilterOptions(wheels.wheels) : undefined,
+      wheel_drives: getWheelsArray(wheels.drives, wheels.wheel_drives)
+        ? extractFilterOptions(
+            getWheelsArray(wheels.drives, wheels.wheel_drives)!
+          )
+        : undefined,
+      wheels_fixing_points: getWheelsArray(
+        wheels.fixing_points,
+        wheels.wheels_fixing_points
+      )
+        ? extractFilterOptions(
+            getWheelsArray(wheels.fixing_points, wheels.wheels_fixing_points)!
+          )
+        : undefined,
+      wheels_spacing: getWheelsArray(wheels.spacing, wheels.wheels_spacing)
+        ? extractFilterOptions(
+            getWheelsArray(wheels.spacing, wheels.wheels_spacing)!
+          )
+        : undefined,
+      wheels_central_diameter: getWheelsArray(
+        wheels.central_diameter,
+        wheels.wheels_central_diameter
+      )
+        ? extractFilterOptions(
+            getWheelsArray(
+              wheels.central_diameter,
+              wheels.wheels_central_diameter
+            )!
+          )
+        : undefined,
+      wheels_width: getWheelsArray(wheels.width, wheels.wheels_width)
+        ? extractFilterOptions(getWheelsArray(wheels.width, wheels.wheels_width)!)
+        : undefined,
+      wheels_height: getWheelsArray(wheels.height, wheels.wheels_height)
+        ? extractFilterOptions(
+            getWheelsArray(wheels.height, wheels.wheels_height)!
+          )
+        : undefined,
+      wheels_tread_depth: getWheelsArray(
+        wheels.tread_depth,
+        wheels.wheels_tread_depth
+      )
+        ? extractFilterOptions(
+            getWheelsArray(wheels.tread_depth, wheels.wheels_tread_depth)!
+          )
+        : undefined,
     };
   }, [backendFilters]);
 

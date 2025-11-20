@@ -1,11 +1,11 @@
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
-import { PartStatus } from "@/types";
+import { FilterOption } from "@/types";
 
 interface StatusFilterProps {
   label?: string;
-  selected: string[];
-  onChange: (selected: string[]) => void;
+  selected: FilterOption[];
+  onChange: (selected: FilterOption[]) => void;
   placeholder?: string;
 }
 
@@ -27,6 +27,8 @@ export const StatusFilter = ({
         placeholder={placeholder}
         searchable={true}
         searchPlaceholder="Ieškoti būsenų..."
+        getDisplayValue={(item) => item.name}
+        getValue={(item) => item.id}
       />
     </div>
   );

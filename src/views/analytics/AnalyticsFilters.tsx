@@ -51,7 +51,7 @@ export function AnalyticsFiltersPanel({
   }, [parts]);
 
   const uniqueBrands = useMemo(() => {
-    return Array.from(new Set(cars.map((c) => c.brand))).sort();
+    return Array.from(new Set(cars.map((c) => c.brand.name))).sort();
   }, [cars]);
 
   const updateFilters = (updates: Partial<AnalyticsFilters>) => {

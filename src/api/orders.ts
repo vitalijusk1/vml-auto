@@ -1,31 +1,7 @@
 import authInstance from "./axios";
 import { Order, FilterState, OrderStatus } from "@/types";
 import { apiEndpoints, OrdersQueryParams } from "./routes/routes";
-import {
-  mapBrandNameToId,
-  mapModelNameToId,
-  mapFuelTypeNameToId,
-  mapBodyTypeNameToId,
-  mapStatusNameToId,
-  mapPositionNameToId,
-  mapQualityNameToId,
-  mapCategoryNamesToIds,
-  mapNameToId,
-} from "@/utils/filterMappers";
-
-// Helper function to get wheels array from backend filters
-const getWheelsArray = (
-  primary?: (string | any)[],
-  fallback?: (string | any)[]
-): (string | any)[] | undefined => {
-  if (Array.isArray(primary) && primary.length > 0) {
-    return primary;
-  }
-  if (Array.isArray(fallback) && fallback.length > 0) {
-    return fallback;
-  }
-  return undefined;
-};
+import { extractCategoryIds } from "@/utils/filterHelpers";
 
 /**
  * Convert FilterState to OrdersQueryParams for API requests
@@ -59,20 +35,16 @@ export const filterStateToOrdersQueryParams = (
     params.date_to = filters.dateRange.to.toISOString().split("T")[0];
   }
 
-  // Car filters - convert names to IDs
+  // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand
-      .map((brandName) => mapBrandNameToId(brandName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const brandIds = filters.carBrand.map((brand) => brand.id);
     if (brandIds.length > 0) {
       params.car_brand = brandIds;
     }
   }
 
   if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel
-      .map((modelName) => mapModelNameToId(modelName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const modelIds = filters.carModel.map((model) => model.id);
     if (modelIds.length > 0) {
       params.car_model = modelIds;
     }
@@ -89,10 +61,10 @@ export const filterStateToOrdersQueryParams = (
     params.year_max = filters.yearRange.max;
   }
 
-  // Part filters - convert category names to IDs
+  // Part filters - extract IDs directly from FilterOption objects
   // Only pass parent IDs when parent is selected with all children
   if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = mapCategoryNamesToIds(
+    const categoryIds = extractCategoryIds(
       filters.partCategory,
       backendFilters
     );
@@ -101,32 +73,25 @@ export const filterStateToOrdersQueryParams = (
     }
   }
   if (filters.partType && filters.partType.length > 0) {
-    params.part_type = filters.partType;
+    params.part_type = filters.partType.map((type) => type.name);
   }
   if (filters.quality && filters.quality.length > 0) {
-    // Convert quality names to IDs from backend filters
-    const qualityIds = filters.quality
-      .map((qualityName) => mapQualityNameToId(qualityName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const qualityIds = filters.quality.map((quality) => quality.id);
     if (qualityIds.length > 0) {
       params.quality = qualityIds;
     }
   }
+
   if (filters.position && filters.position.length > 0) {
-    // Convert position names to IDs
-    const positionIds = filters.position
-      .map((positionName) => mapPositionNameToId(positionName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const positionIds = filters.position.map((position) => position.id);
     if (positionIds.length > 0) {
       params.position = positionIds;
     }
   }
 
-  // Body type - convert names to IDs
+  // Body type - extract IDs directly from FilterOption objects
   if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType
-      .map((bodyTypeName) => mapBodyTypeNameToId(bodyTypeName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
     if (bodyTypeIds.length > 0) {
       params.body_type = bodyTypeIds;
     }
@@ -140,11 +105,9 @@ export const filterStateToOrdersQueryParams = (
     params.price_max = filters.priceRange.max;
   }
 
-  // Fuel type
+  // Fuel type - extract IDs directly from FilterOption objects
   if (filters.fuelType && filters.fuelType.length > 0) {
-    const fuelIds = filters.fuelType
-      .map((fuelTypeName) => mapFuelTypeNameToId(fuelTypeName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const fuelIds = filters.fuelType.map((fuel) => fuel.id);
     if (fuelIds.length > 0) {
       params.fuel_id = fuelIds;
     }
@@ -158,85 +121,63 @@ export const filterStateToOrdersQueryParams = (
     params.engine_volume_max = filters.engineCapacityRange.max;
   }
 
-  // Wheel filters - convert names to IDs
-  const wheels = backendFilters?.wheels;
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelSide && filters.wheelSide.length > 0) {
-    const filterArray = getWheelsArray(wheels?.wheels);
-    const sideIds = filters.wheelSide
-      .map((sideName) => mapNameToId(sideName, filterArray))
-      .filter((id): id is number => id !== undefined);
+    const sideIds = filters.wheelSide.map((side) => side.id);
     if (sideIds.length > 0) {
       params.wheel_side = sideIds;
     }
   }
+
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const filterArray = getWheelsArray(wheels?.drives, wheels?.wheel_drives);
-    const driveIds = filters.wheelDrive
-      .map((driveName) => mapNameToId(driveName, filterArray))
-      .filter((id): id is number => id !== undefined);
+    const driveIds = filters.wheelDrive.map((drive) => drive.id);
     if (driveIds.length > 0) {
       params.wheel_drive = driveIds;
     }
   }
+
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.fixing_points,
-      wheels?.wheels_fixing_points
+    const fixingPointsIds = filters.wheelFixingPoints.map(
+      (points) => points.id
     );
-    const fixingPointsIds = filters.wheelFixingPoints
-      .map((pointName) => mapNameToId(String(pointName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (fixingPointsIds.length > 0) {
       params.wheel_fixing_points = fixingPointsIds;
     }
   }
+
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const filterArray = getWheelsArray(wheels?.spacing, wheels?.wheels_spacing);
-    const spacingIds = filters.wheelSpacing
-      .map((spacingName) => mapNameToId(String(spacingName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
     if (spacingIds.length > 0) {
       params.wheel_spacing = spacingIds;
     }
   }
+
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.central_diameter,
-      wheels?.wheels_central_diameter
+    const diameterIds = filters.wheelCentralDiameter.map(
+      (diameter) => diameter.id
     );
-    const diameterIds = filters.wheelCentralDiameter
-      .map((diameterName) => mapNameToId(String(diameterName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (diameterIds.length > 0) {
       params.wheel_central_diameter = diameterIds;
     }
   }
+
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const filterArray = getWheelsArray(wheels?.height, wheels?.wheels_height);
-    const heightIds = filters.wheelHeight
-      .map((heightName) => mapNameToId(String(heightName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const heightIds = filters.wheelHeight.map((height) => height.id);
     if (heightIds.length > 0) {
       params.wheel_height = heightIds;
     }
   }
+
   if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.tread_depth,
-      wheels?.wheels_tread_depth
-    );
-    const treadDepthIds = filters.wheelTreadDepth
-      .map((depthName) => mapNameToId(String(depthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const treadDepthIds = filters.wheelTreadDepth.map((depth) => depth.id);
     if (treadDepthIds.length > 0) {
       params.wheel_tread_depth = treadDepthIds;
     }
   }
+
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const filterArray = getWheelsArray(wheels?.width, wheels?.wheels_width);
-    const widthIds = filters.wheelWidth
-      .map((widthName) => mapNameToId(String(widthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const widthIds = filters.wheelWidth.map((width) => width.id);
     if (widthIds.length > 0) {
       params.wheel_width = widthIds;
     }
@@ -247,9 +188,9 @@ export const filterStateToOrdersQueryParams = (
     params.stale_months = filters.staleMonths;
   }
 
-  // Warehouse
+  // Warehouse - extract names from FilterOption objects (warehouse might be string[])
   if (filters.warehouse && filters.warehouse.length > 0) {
-    params.warehouse = filters.warehouse;
+    params.warehouse = filters.warehouse.map((w) => w.name);
   }
 
   return params;

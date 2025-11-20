@@ -1,17 +1,7 @@
 import authInstance from "./axios";
 import { Return, ReturnStatus, Customer, FilterState } from "@/types";
 import { apiEndpoints, ReturnsQueryParams } from "./routes/routes";
-import {
-  mapBrandNameToId,
-  mapModelNameToId,
-  mapFuelTypeNameToId,
-  mapBodyTypeNameToId,
-  mapStatusNameToId,
-  mapPositionNameToId,
-  mapQualityNameToId,
-  mapCategoryNamesToIds,
-  mapNameToId,
-} from "@/utils/filterMappers";
+import { extractCategoryIds } from "@/utils/filterHelpers";
 
 // API response types
 interface ApiReturnResponse {
@@ -112,7 +102,11 @@ interface ApiReturnsResponse {
 // Map API return status to ReturnStatus type
 const mapReturnStatus = (status: string): ReturnStatus => {
   const statusLower = status.toLowerCase();
-  if (statusLower.includes("returned") || statusLower.includes("refunded") || statusLower === "paid_out") {
+  if (
+    statusLower.includes("returned") ||
+    statusLower.includes("refunded") ||
+    statusLower === "paid_out"
+  ) {
     return "Refunded";
   }
   if (statusLower.includes("approved")) {
@@ -127,8 +121,9 @@ const mapReturnStatus = (status: string): ReturnStatus => {
 // Transform API return data to Return type
 const transformReturn = (apiReturn: ApiReturnResponse): Return => {
   // Determine if customer is a company (check if last name contains company indicators)
-  const fullName = `${apiReturn.customer_first_name} ${apiReturn.customer_last_name}`.trim();
-  const isCompany = 
+  const fullName =
+    `${apiReturn.customer_first_name} ${apiReturn.customer_last_name}`.trim();
+  const isCompany =
     apiReturn.customer_last_name.includes("SLU") ||
     apiReturn.customer_last_name.includes("Oy") ||
     apiReturn.customer_last_name.includes("Ltd") ||
@@ -153,8 +148,9 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
   };
 
   // Parse amounts - API provides amounts as strings in seller_currency
-  const returnAmount = parseFloat(apiReturn.total_returnable_amount || "0") || 0;
-  
+  const returnAmount =
+    parseFloat(apiReturn.total_returnable_amount || "0") || 0;
+
   // Use seller_currency to determine EUR/PLN amounts
   // API only provides amounts in seller_currency, so we set the other to 0
   const isEUR = apiReturn.seller_currency === "EUR";
@@ -162,13 +158,18 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
   const refundableAmountPLN = isEUR ? 0 : returnAmount;
 
   // Get order_id and id from first item if available
-  const firstItem = apiReturn.items && apiReturn.items.length > 0 ? apiReturn.items[0] : null;
-  const itemOrderId = firstItem?.order_id ? String(firstItem.order_id) : undefined;
+  const firstItem =
+    apiReturn.items && apiReturn.items.length > 0 ? apiReturn.items[0] : null;
+  const itemOrderId = firstItem?.order_id
+    ? String(firstItem.order_id)
+    : undefined;
   const itemId = firstItem?.id ? String(firstItem.id) : undefined;
 
   return {
     id: String(apiReturn.return_id),
-    orderId: apiReturn.order_id ? String(apiReturn.order_id) : String(apiReturn.return_id),
+    orderId: apiReturn.order_id
+      ? String(apiReturn.order_id)
+      : String(apiReturn.return_id),
     itemOrderId: itemOrderId,
     itemId: itemId,
     dateCreated: new Date(apiReturn.return_date),
@@ -181,41 +182,43 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
       const isItemEUR = item.currency === "EUR";
       let priceEUR = 0;
       let pricePLN = 0;
-      
+
       if (isEUR) {
         // Seller currency is EUR
-        priceEUR = isItemEUR ? item.price : (item.price_in_seller_currency || 0);
+        priceEUR = isItemEUR ? item.price : item.price_in_seller_currency || 0;
         pricePLN = 0; // No PLN amount provided
       } else {
         // Seller currency is PLN (or other)
         priceEUR = 0; // No EUR amount provided
-        pricePLN = !isItemEUR ? item.price : (item.price_in_seller_currency || 0);
+        pricePLN = !isItemEUR ? item.price : item.price_in_seller_currency || 0;
       }
-      
+
       // Extract part details from part_details if available
       const partDetails = item.part_details;
       const carData = partDetails?.car;
-      
+
       // Map status number to string (0=In Stock, 2=Reserved, 4=Sold, etc.)
       const statusMap: Record<number, string> = {
         0: "In Stock",
         2: "Reserved",
         4: "Sold",
       };
-      const partStatus = partDetails?.status !== undefined 
-        ? statusMap[partDetails.status] || `Status ${partDetails.status}`
-        : undefined;
-      
+      const partStatus =
+        partDetails?.status !== undefined
+          ? statusMap[partDetails.status] || `Status ${partDetails.status}`
+          : undefined;
+
       // Use manufacturer_code, visible_code, or other_code as part code
-      const partCode = partDetails?.manufacturer_code || 
-                      partDetails?.visible_code || 
-                      partDetails?.other_code;
-      
+      const partCode =
+        partDetails?.manufacturer_code ||
+        partDetails?.visible_code ||
+        partDetails?.other_code;
+
       // Parse price from string
-      const partPriceEUR = partDetails?.price 
-        ? parseFloat(partDetails.price) 
+      const partPriceEUR = partDetails?.price
+        ? parseFloat(partDetails.price)
         : undefined;
-      
+
       return {
         partId: item.part_id ? String(item.part_id) : "",
         partName: item.name || "",
@@ -231,14 +234,14 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
         partWarehouse: undefined, // Not available in API response
         partPriceEUR: partPriceEUR,
         photo: partDetails?.photo,
-        photoGallery: partDetails?.part_photo_gallery 
+        photoGallery: partDetails?.part_photo_gallery
           ? [
               ...(partDetails.photo ? [partDetails.photo] : []),
-              ...partDetails.part_photo_gallery.filter((p): p is string => !!p)
+              ...partDetails.part_photo_gallery.filter((p): p is string => !!p),
             ]
-          : partDetails?.photo 
-            ? [partDetails.photo] 
-            : undefined,
+          : partDetails?.photo
+          ? [partDetails.photo]
+          : undefined,
         manufacturerCode: partDetails?.manufacturer_code,
         // Car details from part_details.car
         carBrand: carData?.brand,
@@ -246,8 +249,8 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
         carYear: carData?.year ? parseInt(carData.year) : undefined,
         carBodyType: carData?.body_type || undefined,
         carFuelType: carData?.fuel || undefined,
-        carEngineCapacity: carData?.engine_volume 
-          ? parseFloat(carData.engine_volume) 
+        carEngineCapacity: carData?.engine_volume
+          ? parseFloat(carData.engine_volume)
           : undefined,
       };
     }),
@@ -259,20 +262,6 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
     refundStatus: apiReturn.refund_status,
     creditNoteUrl: apiReturn.refund_invoice_url || undefined,
   };
-};
-
-// Helper function to get wheels array from backend filters
-const getWheelsArray = (
-  primary?: (string | any)[],
-  fallback?: (string | any)[]
-): (string | any)[] | undefined => {
-  if (Array.isArray(primary) && primary.length > 0) {
-    return primary;
-  }
-  if (Array.isArray(fallback) && fallback.length > 0) {
-    return fallback;
-  }
-  return undefined;
 };
 
 /**
@@ -296,27 +285,22 @@ export const filterStateToReturnsQueryParams = (
     Array.isArray(filters.status) &&
     filters.status.length > 0
   ) {
-    const statusIds = filters.status
-      .map((statusName) => mapStatusNameToId(statusName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const statusIds = filters.status.map((status) => status.id);
     if (statusIds.length > 0) {
       params.status = statusIds;
     }
   }
 
-  // Car filters - convert names to IDs
+  // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand
-      .map((brandName) => mapBrandNameToId(brandName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const brandIds = filters.carBrand.map((brand) => brand.id);
     if (brandIds.length > 0) {
       params.car_brand = brandIds;
     }
   }
+
   if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel
-      .map((modelName) => mapModelNameToId(modelName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const modelIds = filters.carModel.map((model) => model.id);
     if (modelIds.length > 0) {
       params.car_model = modelIds;
     }
@@ -333,10 +317,10 @@ export const filterStateToReturnsQueryParams = (
     params.year_max = filters.yearRange.max;
   }
 
-  // Part filters - convert category names to IDs
+  // Part filters - extract IDs directly from FilterOption objects
   // Only pass parent IDs when parent is selected with all children
   if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = mapCategoryNamesToIds(
+    const categoryIds = extractCategoryIds(
       filters.partCategory,
       backendFilters
     );
@@ -345,32 +329,25 @@ export const filterStateToReturnsQueryParams = (
     }
   }
   if (filters.partType && filters.partType.length > 0) {
-    params.part_type = filters.partType;
+    params.part_type = filters.partType.map((type) => type.name);
   }
   if (filters.quality && filters.quality.length > 0) {
-    // Convert quality names to IDs from backend filters
-    const qualityIds = filters.quality
-      .map((qualityName) => mapQualityNameToId(qualityName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const qualityIds = filters.quality.map((quality) => quality.id);
     if (qualityIds.length > 0) {
       params.quality = qualityIds;
     }
   }
+
   if (filters.position && filters.position.length > 0) {
-    // Convert position names to IDs
-    const positionIds = filters.position
-      .map((positionName) => mapPositionNameToId(positionName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const positionIds = filters.position.map((position) => position.id);
     if (positionIds.length > 0) {
       params.position = positionIds;
     }
   }
 
-  // Body type - convert names to IDs
+  // Body type - extract IDs directly from FilterOption objects
   if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType
-      .map((bodyTypeName) => mapBodyTypeNameToId(bodyTypeName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
     if (bodyTypeIds.length > 0) {
       params.body_type = bodyTypeIds;
     }
@@ -384,11 +361,9 @@ export const filterStateToReturnsQueryParams = (
     params.price_max = filters.priceRange.max;
   }
 
-  // Fuel type
+  // Fuel type - extract IDs directly from FilterOption objects
   if (filters.fuelType && filters.fuelType.length > 0) {
-    const fuelIds = filters.fuelType
-      .map((fuelTypeName) => mapFuelTypeNameToId(fuelTypeName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const fuelIds = filters.fuelType.map((fuel) => fuel.id);
     if (fuelIds.length > 0) {
       params.fuel_id = fuelIds;
     }
@@ -402,85 +377,63 @@ export const filterStateToReturnsQueryParams = (
     params.engine_volume_max = filters.engineCapacityRange.max;
   }
 
-  // Wheel filters - convert names to IDs
-  const wheels = backendFilters?.wheels;
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelSide && filters.wheelSide.length > 0) {
-    const filterArray = getWheelsArray(wheels?.wheels);
-    const sideIds = filters.wheelSide
-      .map((sideName) => mapNameToId(sideName, filterArray))
-      .filter((id): id is number => id !== undefined);
+    const sideIds = filters.wheelSide.map((side) => side.id);
     if (sideIds.length > 0) {
       params.wheel_side = sideIds;
     }
   }
+
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const filterArray = getWheelsArray(wheels?.drives, wheels?.wheel_drives);
-    const driveIds = filters.wheelDrive
-      .map((driveName) => mapNameToId(driveName, filterArray))
-      .filter((id): id is number => id !== undefined);
+    const driveIds = filters.wheelDrive.map((drive) => drive.id);
     if (driveIds.length > 0) {
       params.wheel_drive = driveIds;
     }
   }
+
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.fixing_points,
-      wheels?.wheels_fixing_points
+    const fixingPointsIds = filters.wheelFixingPoints.map(
+      (points) => points.id
     );
-    const fixingPointsIds = filters.wheelFixingPoints
-      .map((pointName) => mapNameToId(String(pointName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (fixingPointsIds.length > 0) {
       params.wheel_fixing_points = fixingPointsIds;
     }
   }
+
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const filterArray = getWheelsArray(wheels?.spacing, wheels?.wheels_spacing);
-    const spacingIds = filters.wheelSpacing
-      .map((spacingName) => mapNameToId(String(spacingName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
     if (spacingIds.length > 0) {
       params.wheel_spacing = spacingIds;
     }
   }
+
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.central_diameter,
-      wheels?.wheels_central_diameter
+    const diameterIds = filters.wheelCentralDiameter.map(
+      (diameter) => diameter.id
     );
-    const diameterIds = filters.wheelCentralDiameter
-      .map((diameterName) => mapNameToId(String(diameterName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (diameterIds.length > 0) {
       params.wheel_central_diameter = diameterIds;
     }
   }
+
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const filterArray = getWheelsArray(wheels?.height, wheels?.wheels_height);
-    const heightIds = filters.wheelHeight
-      .map((heightName) => mapNameToId(String(heightName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const heightIds = filters.wheelHeight.map((height) => height.id);
     if (heightIds.length > 0) {
       params.wheel_height = heightIds;
     }
   }
+
   if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
-    const filterArray = getWheelsArray(
-      wheels?.tread_depth,
-      wheels?.wheels_tread_depth
-    );
-    const treadDepthIds = filters.wheelTreadDepth
-      .map((depthName) => mapNameToId(String(depthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const treadDepthIds = filters.wheelTreadDepth.map((depth) => depth.id);
     if (treadDepthIds.length > 0) {
       params.wheel_tread_depth = treadDepthIds;
     }
   }
+
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const filterArray = getWheelsArray(wheels?.width, wheels?.wheels_width);
-    const widthIds = filters.wheelWidth
-      .map((widthName) => mapNameToId(String(widthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const widthIds = filters.wheelWidth.map((width) => width.id);
     if (widthIds.length > 0) {
       params.wheel_width = widthIds;
     }
@@ -491,9 +444,9 @@ export const filterStateToReturnsQueryParams = (
     params.stale_months = filters.staleMonths;
   }
 
-  // Warehouse
+  // Warehouse - extract names from FilterOption objects (warehouse might be string[])
   if (filters.warehouse && filters.warehouse.length > 0) {
-    params.warehouse = filters.warehouse;
+    params.warehouse = filters.warehouse.map((w) => w.name);
   }
 
   return params;
@@ -506,22 +459,26 @@ export const getReturns = async (
   const response = await authInstance.get<ApiReturnsResponse>(
     apiEndpoints.getReturns(queryParams)
   );
-  
+
   // Handle response structure: { success: true, data: [...] }
-  if (response.data && response.data.success && Array.isArray(response.data.data)) {
+  if (
+    response.data &&
+    response.data.success &&
+    Array.isArray(response.data.data)
+  ) {
     return response.data.data.map(transformReturn);
   }
-  
+
   // Fallback: if data is directly an array
   if (Array.isArray(response.data)) {
     return response.data.map(transformReturn);
   }
-  
+
   // Fallback: if data.data exists
   if (response.data && Array.isArray((response.data as any).data)) {
     return (response.data as any).data.map(transformReturn);
   }
-  
+
   console.warn("Unexpected returns API response structure:", response.data);
   return [];
 };
@@ -536,7 +493,10 @@ export const getReturn = async (id: string): Promise<Return> => {
 export const createReturn = async (
   returnItem: Omit<Return, "id">
 ): Promise<Return> => {
-  const response = await authInstance.post(apiEndpoints.createReturn(), returnItem);
+  const response = await authInstance.post(
+    apiEndpoints.createReturn(),
+    returnItem
+  );
   return response.data;
 };
 
@@ -545,7 +505,10 @@ export const updateReturn = async (
   id: string,
   returnItem: Partial<Return>
 ): Promise<Return> => {
-  const response = await authInstance.put(apiEndpoints.updateReturn(id), returnItem);
+  const response = await authInstance.put(
+    apiEndpoints.updateReturn(id),
+    returnItem
+  );
   return response.data;
 };
 
@@ -553,4 +516,3 @@ export const updateReturn = async (
 export const deleteReturn = async (id: string): Promise<void> => {
   await authInstance.delete(apiEndpoints.deleteReturn(id));
 };
-

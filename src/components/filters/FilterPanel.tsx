@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilterState, Car } from "@/types";
+import { FilterState, Car, FilterOption } from "@/types";
 import { Filter, RotateCcw } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -146,32 +146,19 @@ export function FilterPanel<T extends FilterState>({
     return undefined;
   };
 
-  // Convert category names to IDs for CategorySection
+  // Convert FilterOption[] to IDs for CategorySection
   const selectedCategoryIds = useMemo(() => {
     if (!partsFilters?.partCategory || partsFilters.partCategory.length === 0) {
       return [];
     }
-    const ids: number[] = [];
-    const findIdsByName = (cats: Category[], names: string[]) => {
-      for (const cat of cats) {
-        const name = getCategoryName(cat);
-        if (names.includes(name)) {
-          ids.push(cat.id);
-        }
-        if (cat.subcategories && cat.subcategories.length > 0) {
-          findIdsByName(cat.subcategories, names);
-        }
-      }
-    };
-    findIdsByName(categories, partsFilters.partCategory);
-    return ids;
-  }, [partsFilters?.partCategory, categories]);
+    return partsFilters.partCategory.map((cat) => cat.id);
+  }, [partsFilters?.partCategory]);
 
-  // Helper function to get all child category names recursively
-  const getAllChildCategoryNames = (category: Category): string[] => {
-    const names: string[] = [];
+  // Helper function to get all child category FilterOptions recursively
+  const getAllChildCategoryOptions = (category: Category): FilterOption[] => {
+    const options: FilterOption[] = [];
     const addCategoryAndChildren = (cat: Category) => {
-      names.push(getCategoryName(cat));
+      options.push({ id: cat.id, name: getCategoryName(cat) });
       if (cat.subcategories && cat.subcategories.length > 0) {
         cat.subcategories.forEach((subcat) => {
           addCategoryAndChildren(subcat);
@@ -183,7 +170,7 @@ export function FilterPanel<T extends FilterState>({
         addCategoryAndChildren(subcat);
       });
     }
-    return names;
+    return options;
   };
 
   // Handle category toggle
@@ -192,30 +179,35 @@ export function FilterPanel<T extends FilterState>({
     const category = findCategoryById(categories, categoryId);
     if (!category) return;
 
-    const categoryName = getCategoryName(category);
     const currentCategories = partsFilters.partCategory || [];
-    const isSelected = currentCategories.includes(categoryName);
+    const categoryOption: FilterOption = {
+      id: category.id,
+      name: getCategoryName(category),
+    };
+    const isSelected = currentCategories.some((cat) => cat.id === categoryId);
 
     if (isSelected) {
       // Unselect parent and all children
-      const childNames = getAllChildCategoryNames(category);
-      const namesToRemove = [categoryName, ...childNames];
+      const childOptions = getAllChildCategoryOptions(category);
+      const idsToRemove = new Set([
+        categoryId,
+        ...childOptions.map((opt) => opt.id),
+      ]);
       updateFilters({
         partCategory: currentCategories.filter(
-          (name) => !namesToRemove.includes(name)
+          (cat) => !idsToRemove.has(cat.id)
         ),
       } as Partial<FilterState>);
     } else {
       // Select parent and all children
-      const childNames = getAllChildCategoryNames(category);
-      const namesToAdd = [categoryName, ...childNames];
-      // Add only names that aren't already selected
-      const newCategories = [...currentCategories];
-      namesToAdd.forEach((name) => {
-        if (!newCategories.includes(name)) {
-          newCategories.push(name);
-        }
-      });
+      const childOptions = getAllChildCategoryOptions(category);
+      const optionsToAdd = [categoryOption, ...childOptions];
+      // Add only options that aren't already selected
+      const existingIds = new Set(currentCategories.map((cat) => cat.id));
+      const newCategories = [
+        ...currentCategories,
+        ...optionsToAdd.filter((opt) => !existingIds.has(opt.id)),
+      ];
       updateFilters({
         partCategory: newCategories,
       } as Partial<FilterState>);
@@ -223,7 +215,7 @@ export function FilterPanel<T extends FilterState>({
   };
 
   // Convert FilterState wheel properties to WheelsSection format
-  const selectedWheelFilters = useMemo((): Record<string, string[]> => {
+  const selectedWheelFilters = useMemo((): Record<string, FilterOption[]> => {
     if (!partsFilters) {
       return {
         wheels: [],
@@ -239,45 +231,47 @@ export function FilterPanel<T extends FilterState>({
     return {
       wheels: partsFilters.wheelSide || [],
       wheel_drives: partsFilters.wheelDrive || [],
-      wheels_fixing_points: partsFilters.wheelFixingPoints?.map(String) || [],
-      wheels_spacing: partsFilters.wheelSpacing?.map(String) || [],
-      wheels_central_diameter:
-        partsFilters.wheelCentralDiameter?.map(String) || [],
-      wheels_width: partsFilters.wheelWidth?.map(String) || [],
-      wheels_height: partsFilters.wheelHeight?.map(String) || [],
-      wheels_tread_depth: partsFilters.wheelTreadDepth?.map(String) || [],
+      wheels_fixing_points: partsFilters.wheelFixingPoints || [],
+      wheels_spacing: partsFilters.wheelSpacing || [],
+      wheels_central_diameter: partsFilters.wheelCentralDiameter || [],
+      wheels_width: partsFilters.wheelWidth || [],
+      wheels_height: partsFilters.wheelHeight || [],
+      wheels_tread_depth: partsFilters.wheelTreadDepth || [],
     };
   }, [partsFilters]);
 
   // Handle wheel filter changes
-  const handleWheelFilterChange = (filterKey: string, selected: string[]) => {
+  const handleWheelFilterChange = (
+    filterKey: string,
+    selected: FilterOption[]
+  ) => {
     if (!partsFilters) return;
     const updates: Partial<FilterState> = {};
 
     switch (filterKey) {
       case "wheels":
-        updates.wheelSide = selected as ("Left" | "Right")[];
+        updates.wheelSide = selected;
         break;
       case "wheel_drives":
-        updates.wheelDrive = selected as ("AWD" | "RWD" | "FWD")[];
+        updates.wheelDrive = selected;
         break;
       case "wheels_fixing_points":
-        updates.wheelFixingPoints = selected.map(Number);
+        updates.wheelFixingPoints = selected;
         break;
       case "wheels_spacing":
-        updates.wheelSpacing = selected.map(Number);
+        updates.wheelSpacing = selected;
         break;
       case "wheels_central_diameter":
-        updates.wheelCentralDiameter = selected.map(Number);
+        updates.wheelCentralDiameter = selected;
         break;
       case "wheels_width":
-        updates.wheelWidth = selected.map(Number);
+        updates.wheelWidth = selected;
         break;
       case "wheels_height":
-        updates.wheelHeight = selected.map(Number);
+        updates.wheelHeight = selected;
         break;
       case "wheels_tread_depth":
-        updates.wheelTreadDepth = selected.map(Number);
+        updates.wheelTreadDepth = selected;
         break;
     }
 

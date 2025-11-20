@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, memo } from "react";
+import { useAppDispatch } from "@/store/hooks";
 import { getParts, filterStateToQueryParams } from "@/api/parts";
 import { Part, FilterState } from "@/types";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { StorageKeys } from "@/utils/storageKeys";
 import { loadPersistedFilters } from "@/utils/storageHelpers";
+import { setParts } from "@/store/slices/dataSlice";
 import { LayoutType } from "@/components/filters/type";
 
 interface PartsFilterCardProps {
-  onPartsUpdate: (parts: Part[]) => void;
   onPaginationUpdate: (pagination: {
     current_page: number;
     per_page: number;
@@ -28,13 +29,13 @@ interface PartsFilterCardProps {
 // Separate component that manages local filter state and fetching - this isolates re-renders
 // Only this component re-renders when filters change, not PartsView
 export const PartsFilterCard = memo(function PartsFilterCard({
-  onPartsUpdate,
   onPaginationUpdate,
   pagination,
   backendFilters,
   cars,
   onTopDetailsFilterChange,
 }: PartsFilterCardProps) {
+  const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<FilterState>(
     loadPersistedFilters(StorageKeys.PARTS_FILTERS)
   );
@@ -70,14 +71,14 @@ export const PartsFilterCard = memo(function PartsFilterCard({
       );
 
       const response = await getParts(queryParams);
-      onPartsUpdate(response.parts);
+      dispatch(setParts(response.parts));
       onPaginationUpdate(response.pagination);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [filters, pagination, backendFilters, onPartsUpdate, onPaginationUpdate]);
+  }, [filters, pagination, backendFilters, dispatch, onPaginationUpdate]);
 
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
