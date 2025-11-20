@@ -1,20 +1,21 @@
 import { useState, useMemo } from "react";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { FilterSection } from "../FilterSection/FilterSection";
+import { FilterOption } from "@/types";
 
 interface WheelsSectionProps {
   wheels: {
-    wheels?: string[];
-    wheel_drives?: string[];
-    wheels_fixing_points?: string[];
-    wheels_spacing?: string[];
-    wheels_central_diameter?: string[];
-    wheels_width?: string[];
-    wheels_height?: string[];
-    wheels_tread_depth?: string[];
+    wheels?: FilterOption[];
+    wheel_drives?: FilterOption[];
+    wheels_fixing_points?: FilterOption[];
+    wheels_spacing?: FilterOption[];
+    wheels_central_diameter?: FilterOption[];
+    wheels_width?: FilterOption[];
+    wheels_height?: FilterOption[];
+    wheels_tread_depth?: FilterOption[];
   };
-  selectedFilters: Record<string, string[]>;
-  onFilterChange: (filterKey: string, selected: string[]) => void;
+  selectedFilters: Record<string, FilterOption[]>;
+  onFilterChange: (filterKey: string, selected: FilterOption[]) => void;
 }
 
 export function WheelsSection({
@@ -63,6 +64,8 @@ export function WheelsSection({
               placeholder="Visi"
               searchable={true}
               searchPlaceholder="Ieškoti rato pusės..."
+              getDisplayValue={(item) => item.name}
+              getValue={(item) => item.id}
             />
           </div>
         )}
@@ -82,6 +85,8 @@ export function WheelsSection({
               placeholder="Visi"
               searchable={true}
               searchPlaceholder="Ieškoti rato pavaros..."
+              getDisplayValue={(item) => item.name}
+              getValue={(item) => item.id}
             />
           </div>
         )}
@@ -102,6 +107,8 @@ export function WheelsSection({
                 placeholder="Visi"
                 searchable={true}
                 searchPlaceholder="Ieškoti tvirtinimo taškų..."
+                getDisplayValue={(item) => item.name}
+                getValue={(item) => item.id}
               />
             </div>
           )}
@@ -121,6 +128,8 @@ export function WheelsSection({
               placeholder="Visi"
               searchable={true}
               searchPlaceholder="Ieškoti tarpo..."
+              getDisplayValue={(item) => item.name}
+              getValue={(item) => item.id}
             />
           </div>
         )}
@@ -141,6 +150,8 @@ export function WheelsSection({
                 placeholder="Visi"
                 searchable={true}
                 searchPlaceholder="Ieškoti centrinio skersmens..."
+                getDisplayValue={(item) => item.name}
+                getValue={(item) => item.id}
               />
             </div>
           )}
@@ -158,6 +169,8 @@ export function WheelsSection({
               placeholder="Visi"
               searchable={true}
               searchPlaceholder="Ieškoti pločio..."
+              getDisplayValue={(item) => item.name}
+              getValue={(item) => item.id}
             />
           </div>
         )}
@@ -175,6 +188,8 @@ export function WheelsSection({
               placeholder="Visi"
               searchable={true}
               searchPlaceholder="Ieškoti aukščio..."
+              getDisplayValue={(item) => item.name}
+              getValue={(item) => item.id}
             />
           </div>
         )}
@@ -195,6 +210,8 @@ export function WheelsSection({
                 placeholder="Visi"
                 searchable={true}
                 searchPlaceholder="Ieškoti protektoriaus gylio..."
+                getDisplayValue={(item) => item.name}
+                getValue={(item) => item.id}
               />
             </div>
           )}

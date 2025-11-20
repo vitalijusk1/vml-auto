@@ -9,16 +9,7 @@ import {
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
 import { BackendFilters, Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
-import {
-  mapBrandNameToId,
-  mapModelNameToId,
-  mapBodyTypeNameToId,
-  mapStatusNameToId,
-  mapPositionNameToId,
-  mapQualityNameToId,
-  mapCategoryNamesToIds,
-  mapNameToId,
-} from "@/utils/filterMappers";
+import { extractCategoryIds } from "@/utils/filterHelpers";
 
 // API Response types
 interface ApiPartResponse {
@@ -251,33 +242,27 @@ export const filterStateToQueryParams = (
     params.search = filters.search.trim();
   }
 
-  // Status - convert "All" to undefined, otherwise convert names to IDs
+  // Status - extract IDs directly from FilterOption objects
   if (
     filters.status !== "All" &&
     Array.isArray(filters.status) &&
     filters.status.length > 0
   ) {
-    const statusIds = filters.status
-      .map((statusName) => mapStatusNameToId(statusName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const statusIds = filters.status.map((status) => status.id);
     if (statusIds.length > 0) {
       params.status = statusIds;
     }
   }
 
-  // Car filters - convert names to IDs
+  // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand
-      .map((brandName) => mapBrandNameToId(brandName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const brandIds = filters.carBrand.map((brand) => brand.id);
     if (brandIds.length > 0) {
       params.car_brand = brandIds;
     }
   }
   if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel
-      .map((modelName) => mapModelNameToId(modelName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const modelIds = filters.carModel.map((model) => model.id);
     if (modelIds.length > 0) {
       params.car_model = modelIds;
     }
@@ -294,10 +279,10 @@ export const filterStateToQueryParams = (
     params.year_max = filters.yearRange.max;
   }
 
-  // Part filters - convert category names to IDs
+  // Part filters - extract IDs directly from FilterOption objects
   // Only pass parent IDs when parent is selected with all children
   if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = mapCategoryNamesToIds(
+    const categoryIds = extractCategoryIds(
       filters.partCategory,
       backendFilters
     );
@@ -306,32 +291,24 @@ export const filterStateToQueryParams = (
     }
   }
   if (filters.partType && filters.partType.length > 0) {
-    params.part_type = filters.partType;
+    params.part_type = filters.partType.map((type) => type.name);
   }
   if (filters.quality && filters.quality.length > 0) {
-    // Convert quality names to IDs from backend filters
-    const qualityIds = filters.quality
-      .map((qualityName) => mapQualityNameToId(qualityName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const qualityIds = filters.quality.map((quality) => quality.id);
     if (qualityIds.length > 0) {
       params.quality = qualityIds;
     }
   }
   if (filters.position && filters.position.length > 0) {
-    // Convert position names to IDs
-    const positionIds = filters.position
-      .map((positionName) => mapPositionNameToId(positionName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const positionIds = filters.position.map((position) => position.id);
     if (positionIds.length > 0) {
       params.position = positionIds;
     }
   }
 
-  // Body type - convert names to IDs
+  // Body type - extract IDs directly from FilterOption objects
   if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType
-      .map((bodyTypeName) => mapBodyTypeNameToId(bodyTypeName, backendFilters))
-      .filter((id): id is number => id !== undefined);
+    const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
     if (bodyTypeIds.length > 0) {
       params.body_type = bodyTypeIds;
     }
@@ -353,100 +330,56 @@ export const filterStateToQueryParams = (
     params.engine_volume_max = filters.engineCapacityRange.max;
   }
 
-  // Wheel filters - convert names to IDs
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const wheelDriveIds = filters.wheelDrive
-      .map((driveName) =>
-        mapNameToId(
-          driveName,
-          backendFilters?.wheels?.drives || backendFilters?.wheels?.wheel_drives
-        )
-      )
-      .filter((id): id is number => id !== undefined);
+    const wheelDriveIds = filters.wheelDrive.map((drive) => drive.id);
     if (wheelDriveIds.length > 0) {
       params.wheel_drive = wheelDriveIds;
     }
   }
   if (filters.wheelSide && filters.wheelSide.length > 0) {
-    const wheelSideIds = filters.wheelSide
-      .map((sideName) => mapNameToId(sideName, backendFilters?.wheels?.wheels))
-      .filter((id): id is number => id !== undefined);
+    const wheelSideIds = filters.wheelSide.map((side) => side.id);
     if (wheelSideIds.length > 0) {
       params.wheel_side = wheelSideIds;
     }
   }
-  // Helper to safely get array from wheels filter
-  const getWheelsArray = (prop1: any, prop2: any): any[] | undefined => {
-    if (Array.isArray(prop1)) return prop1;
-    if (Array.isArray(prop2)) return prop2;
-    return undefined;
-  };
-
+  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(
-      wheels?.central_diameter,
-      wheels?.wheels_central_diameter
+    const centralDiameterIds = filters.wheelCentralDiameter.map(
+      (diameter) => diameter.id
     );
-    const centralDiameterIds = filters.wheelCentralDiameter
-      .map((diameterName) => mapNameToId(String(diameterName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (centralDiameterIds.length > 0) {
       params.wheel_central_diameter = centralDiameterIds;
     }
   }
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(
-      wheels?.fixing_points,
-      wheels?.wheels_fixing_points
+    const fixingPointsIds = filters.wheelFixingPoints.map(
+      (points) => points.id
     );
-    const fixingPointsIds = filters.wheelFixingPoints
-      .map((pointsName) => mapNameToId(String(pointsName), filterArray))
-      .filter((id): id is number => id !== undefined);
     if (fixingPointsIds.length > 0) {
       params.wheel_fixing_points = fixingPointsIds;
     }
   }
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.height, wheels?.wheels_height);
-    const heightIds = filters.wheelHeight
-      .map((heightName) => mapNameToId(String(heightName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const heightIds = filters.wheelHeight.map((height) => height.id);
     if (heightIds.length > 0) {
       params.wheel_height = heightIds;
     }
   }
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.spacing, wheels?.wheels_spacing);
-    const spacingIds = filters.wheelSpacing
-      .map((spacingName) => mapNameToId(String(spacingName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
     if (spacingIds.length > 0) {
       params.wheel_spacing = spacingIds;
     }
   }
   if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(
-      wheels?.tread_depth,
-      wheels?.wheels_tread_depth
-    );
-    const treadDepthIds = filters.wheelTreadDepth
-      .map((depthName) => mapNameToId(String(depthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const treadDepthIds = filters.wheelTreadDepth.map((depth) => depth.id);
     if (treadDepthIds.length > 0) {
       params.wheel_tread_depth = treadDepthIds;
     }
   }
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const wheels = backendFilters?.wheels;
-    const filterArray = getWheelsArray(wheels?.width, wheels?.wheels_width);
-    const widthIds = filters.wheelWidth
-      .map((widthName) => mapNameToId(String(widthName), filterArray))
-      .filter((id): id is number => id !== undefined);
+    const widthIds = filters.wheelWidth.map((width) => width.id);
     if (widthIds.length > 0) {
       params.wheel_width = widthIds;
     }
@@ -457,9 +390,9 @@ export const filterStateToQueryParams = (
     params.stale_months = filters.staleMonths;
   }
 
-  // Warehouse
+  // Warehouse - extract names from FilterOption objects (warehouse might be string[])
   if (filters.warehouse && filters.warehouse.length > 0) {
-    params.warehouse = filters.warehouse;
+    params.warehouse = filters.warehouse.map((w) => w.name);
   }
 
   return params;

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode } from "react";
-import { Part, Order, PartStatus } from "@/types";
+import { Part, PartStatus } from "@/types";
 import { Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -17,7 +17,6 @@ import { getStatusBadgeClass } from "@/theme/utils";
 interface CategoryPartsTableProps {
   parts: Part[];
   categories: Category[];
-  orders: Order[];
   selectedCarId: string;
   backendFilters?: any;
   onSelectionChange?: (
@@ -115,7 +114,6 @@ const getPartStatusClass = (status: PartStatus) => {
 export function CategoryPartsTable({
   parts,
   categories,
-  orders,
   selectedCarId,
   backendFilters,
   onSelectionChange,
@@ -176,23 +174,9 @@ export function CategoryPartsTable({
     return ids;
   };
 
-  // Calculate sold units for a part
+  // Get sold units for a part (from backend)
   const getPartSoldUnits = (part: Part): number => {
-    if (part.analysisStatusCounts) {
-      return part.analysisStatusCounts.sold || 0;
-    }
-
-    let soldCount = 0;
-    orders
-      .filter((o) => o.status === "Delivered")
-      .forEach((order) => {
-        order.items.forEach((item) => {
-          if (item.partId === part.id) {
-            soldCount += item.quantity;
-          }
-        });
-      });
-    return soldCount;
+    return part.analysisStatusCounts?.sold ?? 0;
   };
 
   // Build category tree with parts and sold units

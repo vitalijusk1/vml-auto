@@ -1,12 +1,13 @@
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
+import { FilterOption } from "@/types";
 
 interface BrandFilterProps {
   label?: string;
   required?: boolean;
-  selected: string[];
-  onChange: (selected: string[]) => void;
-  onModelChange?: (models: string[]) => void; // Optional callback to clear models when brand changes
+  selected: FilterOption[];
+  onChange: (selected: FilterOption[]) => void;
+  onModelChange?: (models: FilterOption[]) => void; // Optional callback to clear models when brand changes
 }
 
 export const BrandFilter = ({
@@ -18,7 +19,7 @@ export const BrandFilter = ({
 }: BrandFilterProps) => {
   const { brands } = useBackendFilters();
 
-  const handleChange = (newSelected: string[]) => {
+  const handleChange = (newSelected: FilterOption[]) => {
     // Call onChange to update brands
     onChange(newSelected);
     // Clear models when brands change - only call if onModelChange is provided
@@ -42,6 +43,8 @@ export const BrandFilter = ({
         placeholder="Visi"
         searchable={true}
         searchPlaceholder="Ieškoti gamintojų..."
+        getDisplayValue={(item) => item.name}
+        getValue={(item) => item.id}
       />
     </div>
   );

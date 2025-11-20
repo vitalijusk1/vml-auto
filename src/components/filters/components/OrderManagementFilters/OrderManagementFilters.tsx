@@ -5,11 +5,7 @@ import { BrandFilter } from "../shared/BrandFilter";
 import { ModelFilter } from "../shared/ModelFilter";
 import { FuelTypeFilter } from "../shared/FuelTypeFilter";
 import { YearRangeFilter } from "../shared/YearRangeFilter";
-import {
-  createBrandChangeHandler,
-  createStringArrayHandler,
-  createRangeHandler,
-} from "@/utils/filterHelpers";
+import { brandChangeHandler, rangeHandler } from "@/utils/filterHelpers";
 import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 
 interface OrderManagementFiltersProps {
@@ -43,7 +39,7 @@ export const OrderManagementFilters = ({
         <BrandFilter
           required={true}
           selected={filters.carBrand || []}
-          onChange={createBrandChangeHandler(onFiltersChange)}
+          onChange={brandChangeHandler(onFiltersChange)}
         />
 
         {/* Model */}
@@ -51,14 +47,16 @@ export const OrderManagementFilters = ({
           required={true}
           selected={filters.carModel || []}
           selectedBrands={filters.carBrand || []}
-          onChange={createStringArrayHandler(onFiltersChange, "carModel")}
+          onChange={(selected) =>
+            onFiltersChange({ carModel: selected } as Partial<FilterState>)
+          }
         />
 
         {/* Engine Capacity */}
         <EngineCapacityFilter
           min={filters.engineCapacityRange?.min}
           max={filters.engineCapacityRange?.max}
-          onChange={createRangeHandler(
+          onChange={rangeHandler(
             onFiltersChange,
             "engineCapacityRange",
             filters.engineCapacityRange
@@ -68,7 +66,9 @@ export const OrderManagementFilters = ({
         {/* Fuel Type */}
         <FuelTypeFilter
           selected={filters.fuelType || []}
-          onChange={createStringArrayHandler(onFiltersChange, "fuelType")}
+          onChange={(selected) =>
+            onFiltersChange({ fuelType: selected } as Partial<FilterState>)
+          }
           useBackendOptions={false}
         />
 
@@ -76,7 +76,7 @@ export const OrderManagementFilters = ({
         <YearRangeFilter
           min={filters.yearRange?.min}
           max={filters.yearRange?.max}
-          onChange={createRangeHandler(
+          onChange={rangeHandler(
             onFiltersChange,
             "yearRange",
             filters.yearRange

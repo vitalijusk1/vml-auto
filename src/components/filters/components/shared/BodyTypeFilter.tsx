@@ -1,10 +1,11 @@
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
+import { FilterOption } from "@/types";
 
 interface BodyTypeFilterProps {
   label?: string;
-  selected: string[];
-  onChange: (selected: string[]) => void;
+  selected: FilterOption[];
+  onChange: (selected: FilterOption[]) => void;
 }
 
 export const BodyTypeFilter = ({
@@ -24,6 +25,8 @@ export const BodyTypeFilter = ({
         placeholder="Visi"
         searchable={true}
         searchPlaceholder="Ieškoti kėbulo tipų..."
+        getDisplayValue={(item) => item.name}
+        getValue={(item) => item.id}
       />
     </div>
   );

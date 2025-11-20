@@ -102,7 +102,10 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     id: apiCar.id,
     photo: apiCar.photo,
     photo_gallery: apiCar.car_photo_gallery || [],
-    brand: apiCar.car_model.brand.name,
+    brand: {
+      id: apiCar.car_model.brand.id,
+      name: apiCar.car_model.brand.name,
+    },
     model: {
       id: apiCar.car_model.id,
       name: apiCar.car_model.name,
