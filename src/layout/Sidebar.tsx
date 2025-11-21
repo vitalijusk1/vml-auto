@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectMetrics, selectSidebarCollapsed } from "@/store/selectors";
+import { selectSidebarCollapsed } from "@/store/selectors";
 import { toggleSidebar } from "@/store/slices/uiSlice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,6 @@ const navigation = [
 
 export function Sidebar() {
   const dispatch = useAppDispatch();
-  const metrics = useAppSelector(selectMetrics);
   const isCollapsed = useAppSelector(selectSidebarCollapsed);
 
   return (
@@ -56,15 +55,13 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const Icon = item.icon;
-          const showBadge =
-            item.path === "/parts" && metrics.partsOlderThan6Months > 0;
           return (
             <NavLink
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
                 cn(
-                  "w-full flex items-center rounded-md text-sm font-medium transition-colors relative",
+                  "w-full flex items-center rounded-md text-sm font-medium transition-colors",
                   isCollapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
                   isActive
                     ? "bg-primary text-primary-foreground"
@@ -74,19 +71,7 @@ export function Sidebar() {
               title={isCollapsed ? item.name : undefined}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <>
-                  <span>{item.name}</span>
-                  {showBadge && (
-                    <span className="ml-auto bg-destructive text-destructive-foreground text-xs px-2 py-0.5 rounded-full">
-                      {metrics.partsOlderThan6Months}
-                    </span>
-                  )}
-                </>
-              )}
-              {isCollapsed && showBadge && (
-                <span className="absolute -right-1 -top-1 h-3 w-3 bg-destructive rounded-full border-2 border-card" />
-              )}
+              {!isCollapsed && <span>{item.name}</span>}
             </NavLink>
           );
         })}
