@@ -11,7 +11,7 @@ import {
   PaginationState,
 } from "@tanstack/react-table";
 import { useState, useMemo, useCallback, useEffect, Fragment } from "react";
-import { Car, Part, Order, Return } from "@/types";
+import { Car, Part, Order, Return, TopDetailsFilter } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters, selectOrders } from "@/store/selectors";
 import {
@@ -47,7 +47,7 @@ interface TableProps<T extends Car | Part | Order | Return> {
   serverPagination?: ServerPagination;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  topDetailsFilter?: string;
+  topDetailsFilter?: TopDetailsFilter;
   // Expandable row support
   expandedRows?: Set<string>;
   onToggleExpand?: (id: string) => void;

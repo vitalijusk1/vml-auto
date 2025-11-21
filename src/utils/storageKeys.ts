@@ -8,6 +8,7 @@ export const StorageKeys = {
   ORDERS_FILTERS: "ordersFilters",
   RETURNS_FILTERS: "returnsFilters",
   ORDER_CONTROL_STATE: "orderControlState",
+  ANALYTICS_FILTERS: "analyticsFilters",
 } as const;
 
 /**

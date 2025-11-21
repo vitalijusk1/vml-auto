@@ -12,14 +12,12 @@ interface OrderManagementFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
-  cars?: unknown[];
 }
 
 export const OrderManagementFilters = ({
   filters,
   onFiltersChange,
   onReset: _onReset,
-  cars: _cars = [],
 }: OrderManagementFiltersProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
 

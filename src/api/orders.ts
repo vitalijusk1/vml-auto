@@ -21,7 +21,7 @@ export const filterStateToOrdersQueryParams = (
   // Status filters (orders use string status, not IDs)
   if (filters.status && filters.status !== "All") {
     if (Array.isArray(filters.status)) {
-      params.status = filters.status;
+      params.status = filters.status.map((s) => s.name);
     } else {
       params.status = [filters.status];
     }

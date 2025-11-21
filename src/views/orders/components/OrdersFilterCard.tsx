@@ -10,7 +10,6 @@ import { startTransition } from "react";
 import { LayoutType } from "@/components/filters/type";
 
 interface OrdersFilterCardProps {
-  onOrdersUpdate: () => void;
   onPaginationUpdate: (pagination: {
     current_page: number;
     per_page: number;
@@ -29,7 +28,6 @@ interface OrdersFilterCardProps {
 // Separate component that manages local filter state and fetching - this isolates re-renders
 // Only this component re-renders when filters change, not OrdersView
 export const OrdersFilterCard = memo(function OrdersFilterCard({
-  onOrdersUpdate,
   onPaginationUpdate,
   pagination,
   backendFilters,
@@ -74,7 +72,6 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
 
         const response = await getOrders(queryParams);
         dispatch(setOrders(response.orders));
-        onOrdersUpdate();
 
         // Use startTransition to batch pagination update
         startTransition(() => {
@@ -86,19 +83,11 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
       } catch (error) {
         console.error("Error fetching orders:", error);
         dispatch(setOrders([]));
-        onOrdersUpdate();
       } finally {
         setIsLoading(false);
       }
     },
-    [
-      filters,
-      pagination,
-      backendFilters,
-      dispatch,
-      onOrdersUpdate,
-      onPaginationUpdate,
-    ]
+    [filters, pagination, backendFilters, dispatch, onPaginationUpdate]
   );
 
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -138,7 +127,6 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
       type={LayoutType.PARTS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      cars={[]}
       onFilter={handleFilter}
       isLoading={isLoading}
       hideCategoriesAndWheels={true}

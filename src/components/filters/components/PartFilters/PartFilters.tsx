@@ -1,5 +1,5 @@
 import { CardContent } from "@/components/ui/card";
-import { FilterState, PartStatus, Car } from "@/types";
+import { FilterState } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { BrandFilter } from "../shared/BrandFilter";
@@ -12,23 +12,15 @@ import { PositionFilter } from "../shared/PositionFilter";
 import { StatusFilter } from "../shared/StatusFilter";
 import { PriceRangeFilter } from "../shared/PriceRangeFilter";
 import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
-import {
-  brandChangeHandler,
-  rangeHandler,
-} from "@/utils/filterHelpers";
+import { brandChangeHandler, rangeHandler } from "@/utils/filterHelpers";
 
 interface PartFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
   onReset: () => void;
-  cars?: Car[];
 }
 
-export const PartFilters = ({
-  filters,
-  onFiltersChange,
-  cars: _cars = [],
-}: PartFiltersProps) => {
+export const PartFilters = ({ filters, onFiltersChange }: PartFiltersProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
 
   if (backendFilters === null) {

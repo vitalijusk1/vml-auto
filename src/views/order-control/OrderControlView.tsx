@@ -8,7 +8,7 @@ import {
   clearOrderControlSelectedCarId,
 } from "@/store/slices/uiSlice";
 import { getPreorderAnalysis } from "@/api/preorder";
-import { useEffect, useState, useMemo, useRef, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
@@ -18,17 +18,8 @@ import { CategoryPartsTable } from "../../components/tables/components/CategoryP
 import { Category } from "@/utils/backendFilters";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { LoadingState } from "@/components/ui/LoadingState";
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
 import { OrderControlFilterCard } from "./components/OrderControlFilterCard";
-import { loadPersistedFilters } from "@/utils/storageHelpers";
-import { StorageKeys } from "@/utils/storageKeys";
-import type { FilterState } from "@/types";
-
-// Initialize pdfMake with fonts
-if (pdfFonts && (pdfFonts as any).pdfMake && (pdfFonts as any).pdfMake.vfs) {
-  pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
-}
+import { usePDFExport } from "@/hooks/usePDFExport";
 
 export function OrderControlView() {
   const dispatch = useAppDispatch();
@@ -40,17 +31,9 @@ export function OrderControlView() {
   // Categories are fetched but not displayed in the table (kept for potential future use)
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoadingParts, setIsLoadingParts] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<Set<number>>(
-    new Set()
-  );
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
 
-  // Ref to track latest filters for fetchPreorderAnalysis (needed for engine capacity range)
-  const filtersRef = useRef<FilterState>(
-    loadPersistedFilters(StorageKeys.ORDER_CONTROL_STATE)
-  );
-
-  // Update filters ref when cars are updated (filters are managed by filter card)
+  // Update filters when cars are updated (filters are managed by filter card)
   const handleCarsUpdate = useCallback(
     (newCars: Car[]) => {
       setCars(newCars);
@@ -62,26 +45,17 @@ export function OrderControlView() {
     [dispatch]
   );
 
-  // Note: Orders are fetched in OrdersView and stored in Redux
-  // We just use them from Redux here - no need to fetch again
-
-  // Sync filters ref when filter card updates filters (needed for fetchPreorderAnalysis)
-  const handleFiltersChange = useCallback((newFilters: FilterState) => {
-    filtersRef.current = newFilters;
-  }, []);
-
-  // Initial sync from sessionStorage
-  useEffect(() => {
-    filtersRef.current = loadPersistedFilters(StorageKeys.ORDER_CONTROL_STATE);
-  }, []);
-
   // Generate car options for dropdown
   const carOptions = useMemo(() => {
     return [
       { value: "", label: "Visi" },
       ...cars.map((car) => {
         // Build a descriptive label with key distinguishing features
-        const parts: string[] = [car.brand.name, car.model.name, `(${car.year})`];
+        const parts: string[] = [
+          car.brand.name,
+          car.model.name,
+          `(${car.year})`,
+        ];
 
         // Add fuel type if available
         if (car.fuel?.name) {
@@ -154,49 +128,14 @@ export function OrderControlView() {
         year: selectedCar.year,
       };
 
-      // Add fuel ID if available (prefer from car, fallback to filters)
+      // Add fuel ID if available from car
       if (selectedCar.fuel?.id) {
         params.fuel_id = selectedCar.fuel.id;
-      } else if (
-        filtersRef.current.fuelType &&
-        filtersRef.current.fuelType.length > 0
-      ) {
-        const fuelTypeName = filtersRef.current.fuelType[0];
-        const backendFiltersData = backendFilters as any;
-        if (
-          backendFiltersData?.car?.fuels &&
-          Array.isArray(backendFiltersData.car.fuels)
-        ) {
-          for (const fuel of backendFiltersData.car.fuels) {
-            const name =
-              typeof fuel === "string"
-                ? fuel
-                : fuel.languages?.en ||
-                  fuel.languages?.name ||
-                  fuel.name ||
-                  fuel;
-            if (name === fuelTypeName) {
-              const fuelId =
-                typeof fuel === "string" ? undefined : fuel.id || fuel.rrr_id;
-              if (fuelId) {
-                params.fuel_id = fuelId;
-              }
-              break;
-            }
-          }
-        }
       }
 
-      // Add engine volume if available
+      // Add engine volume if available from car
       if (selectedCar.engine?.capacity) {
         params.engine_volume = selectedCar.engine.capacity.toString();
-      } else if (filtersRef.current.engineCapacityRange) {
-        if (filtersRef.current.engineCapacityRange.min !== undefined) {
-          params.engine_volume_min = filtersRef.current.engineCapacityRange.min;
-        }
-        if (filtersRef.current.engineCapacityRange.max !== undefined) {
-          params.engine_volume_max = filtersRef.current.engineCapacityRange.max;
-        }
       }
 
       // Add default date range (last year)
@@ -248,137 +187,18 @@ export function OrderControlView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCarId, cars.length, backendFilters]);
 
-  // Collect all parts to export (selected parts, or all parts if none selected)
-  const getPartsToExport = (): Part[] => {
-    if (selectedParts.size > 0) {
-      // Return only selected parts
-      return parts.filter((part) => selectedParts.has(part.id));
-    }
-    // If no parts selected, export all parts
-    return parts;
-  };
+  // Get selected car for PDF export
+  const selectedCar = useMemo(
+    () => cars.find((c) => c.id.toString() === selectedCarId),
+    [cars, selectedCarId]
+  );
 
-  const handleDownloadPDF = () => {
-    const partsToExport = getPartsToExport();
-
-    if (partsToExport.length === 0) {
-      alert("Nėra dalių eksportui");
-      return;
-    }
-
-    // Build parts table data
-    const tableBody = partsToExport.map((part) => {
-      const soldCount = part.analysisStatusCounts?.sold ?? 0;
-
-      return [
-        part.category || "-",
-        part.name || "-",
-        part.code || "-",
-        part.manufacturerCode || "-",
-        part.status || "-",
-        part.status === "In Stock" ? "1" : "0",
-        soldCount.toString(),
-        `${part.priceEUR} €`,
-        part.warehouse || "-",
-      ];
-    });
-
-    // Selected car info
-    const selectedCar = cars.find((c) => c.id.toString() === selectedCarId);
-    const carInfo = selectedCar
-      ? `${selectedCar.brand.name} ${selectedCar.model.name} (${selectedCar.year})`
-      : "";
-
-    // Build PDF document definition
-    const docDefinition: any = {
-      content: [
-        {
-          text: "Detalių ataskaita",
-          style: "header",
-          margin: [0, 0, 0, 10],
-        },
-        ...(carInfo
-          ? [
-              {
-                text: `Automobilis: ${carInfo}`,
-                fontSize: 12,
-                margin: [0, 0, 0, 5],
-              },
-            ]
-          : []),
-        {
-          text: `Eksportuota: ${new Date().toLocaleString("lt-LT")}`,
-          fontSize: 10,
-          italics: true,
-          margin: [0, 0, 0, 15],
-        },
-        ...(tableBody.length > 0
-          ? [
-              {
-                text: "Detalės",
-                style: "subheader",
-                margin: [0, 10, 0, 5],
-              },
-              {
-                table: {
-                  headerRows: 1,
-                  widths: [
-                    "*",
-                    "*",
-                    "auto",
-                    "auto",
-                    "auto",
-                    "auto",
-                    "auto",
-                    "auto",
-                    "auto",
-                  ],
-                  body: [
-                    [
-                      "Kategorija",
-                      "Pavadinimas",
-                      "Kodas",
-                      "Gamintojo kodas",
-                      "Statusas",
-                      "Likutis",
-                      "Parduota",
-                      "Kaina",
-                      "Sandėlys",
-                    ],
-                    ...tableBody,
-                  ],
-                },
-                layout: {
-                  fillColor: (rowIndex: number) => {
-                    if (rowIndex === 0) return "#c8c8c8";
-                    return rowIndex % 2 === 0 ? "#f5f5f5" : null;
-                  },
-                },
-                fontSize: 9,
-              },
-            ]
-          : []),
-      ],
-      styles: {
-        header: {
-          fontSize: 16,
-          bold: true,
-        },
-        subheader: {
-          fontSize: 14,
-          bold: true,
-        },
-      },
-      defaultStyle: {
-        font: "Roboto",
-      },
-    };
-
-    // Generate and download PDF
-    pdfMake
-      .createPdf(docDefinition)
-      .download(`ataskaita_${new Date().toISOString().split("T")[0]}.pdf`);
-  };
+  // PDF export hook
+  const { handleDownloadPDF } = usePDFExport({
+    parts,
+    selectedParts,
+    selectedCar: selectedCar || null,
+  });
 
   return (
     <div className="space-y-6">
@@ -390,7 +210,6 @@ export function OrderControlView() {
       {backendFilters && (
         <OrderControlFilterCard
           onCarsUpdate={handleCarsUpdate}
-          onFiltersChange={handleFiltersChange}
           backendFilters={backendFilters}
         />
       )}
@@ -473,8 +292,7 @@ export function OrderControlView() {
                   categories={categories}
                   selectedCarId={selectedCarId || ""}
                   backendFilters={backendFilters}
-                  onSelectionChange={(selectedCats, selectedPts) => {
-                    setSelectedCategories(selectedCats);
+                  onSelectionChange={(_selectedCats, selectedPts) => {
                     setSelectedParts(selectedPts);
                   }}
                 />

@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilterState, Car, FilterOption } from "@/types";
+import { FilterState, FilterOption, TopDetailsFilter } from "@/types";
 import { Filter, RotateCcw } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -22,8 +22,7 @@ interface FilterPanelProps<T extends FilterState> {
   type: LayoutType;
   filters: T;
   onFiltersChange: (filters: T) => void;
-  cars?: Car[];
-  onTopDetailsFilterChange?: (value: string) => void;
+  onTopDetailsFilterChange?: (value: TopDetailsFilter) => void;
   onFilter?: () => void;
   isLoading?: boolean;
   hideCategoriesAndWheels?: boolean;
@@ -34,8 +33,7 @@ const getFilter = (
   type: LayoutType,
   filters: FilterState,
   onFiltersChange: (updates: Partial<FilterState>) => void,
-  onReset: () => void,
-  cars: Car[] = []
+  onReset: () => void
 ) => {
   switch (type) {
     case LayoutType.PARTS:
@@ -46,7 +44,6 @@ const getFilter = (
             onFiltersChange as (updates: Partial<FilterState>) => void
           }
           onReset={onReset}
-          cars={cars}
         />
       );
     case LayoutType.ANALYTICS:
@@ -57,7 +54,6 @@ const getFilter = (
             onFiltersChange as (updates: Partial<FilterState>) => void
           }
           onReset={onReset}
-          cars={cars}
         />
       );
     case LayoutType.ORDER_CONTROL:
@@ -68,7 +64,6 @@ const getFilter = (
             onFiltersChange as (updates: Partial<FilterState>) => void
           }
           onReset={onReset}
-          cars={cars}
         />
       );
     default:
@@ -80,7 +75,6 @@ export function FilterPanel<T extends FilterState>({
   type,
   filters,
   onFiltersChange,
-  cars = [],
   onTopDetailsFilterChange,
   onFilter,
   isLoading = false,
@@ -112,9 +106,11 @@ export function FilterPanel<T extends FilterState>({
   const title = "Filtrai";
   const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
     useState(true);
-  const [topDetailsFilter, setTopDetailsFilter] = useState<string>("be-filtro");
+  const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
+    TopDetailsFilter.NONE
+  );
 
-  const handleTopDetailsFilterChange = (value: string) => {
+  const handleTopDetailsFilterChange = (value: TopDetailsFilter) => {
     setTopDetailsFilter(value);
     if (onTopDetailsFilterChange) {
       onTopDetailsFilterChange(value);
@@ -131,20 +127,20 @@ export function FilterPanel<T extends FilterState>({
     return getLocalizedText(category.languages, category.name);
   };
 
-  // Helper to recursively find category by ID
-  const findCategoryById = (
-    categories: Category[],
-    id: number
-  ): Category | undefined => {
-    for (const category of categories) {
-      if (category.id === id) return category;
-      if (category.subcategories && category.subcategories.length > 0) {
-        const found = findCategoryById(category.subcategories, id);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
+  // Create a lookup map for O(1) category access instead of searching tree each time
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    const addToMap = (cats: Category[]) => {
+      cats.forEach((cat) => {
+        map.set(cat.id, cat);
+        if (cat.subcategories && cat.subcategories.length > 0) {
+          addToMap(cat.subcategories);
+        }
+      });
+    };
+    addToMap(categories);
+    return map;
+  }, [categories]);
 
   // Convert FilterOption[] to IDs for CategorySection
   const selectedCategoryIds = useMemo(() => {
@@ -176,11 +172,15 @@ export function FilterPanel<T extends FilterState>({
   // Handle category toggle
   const handleCategoryToggle = (categoryId: number) => {
     if (!partsFilters) return;
-    const category = findCategoryById(categories, categoryId);
+    const category = categoryMap.get(categoryId);
     if (!category) return;
 
     const currentCategories = partsFilters.partCategory || [];
-    const categoryOption: FilterOption = {
+    // Get category name from current selection if available, otherwise from category object
+    const existingCategory = currentCategories.find(
+      (cat) => cat.id === categoryId
+    );
+    const categoryOption: FilterOption = existingCategory || {
       id: category.id,
       name: getCategoryName(category),
     };
@@ -344,12 +344,15 @@ export function FilterPanel<T extends FilterState>({
               <div className="w-full xs:w-auto">
                 <SingleSelectDropdown
                   options={[
-                    { value: "top-detales", label: "Top parduodamas prekes" },
                     {
-                      value: "reciausiai-parduodamos",
+                      value: TopDetailsFilter.TOP_SELLING,
+                      label: "Top parduodamas prekes",
+                    },
+                    {
+                      value: TopDetailsFilter.LEAST_SELLING,
                       label: "Nepopuliarios",
                     },
-                    { value: "be-filtro", label: "Be filtro" },
+                    { value: TopDetailsFilter.NONE, label: "Be filtro" },
                   ]}
                   value={topDetailsFilter}
                   onChange={handleTopDetailsFilterChange}
@@ -403,7 +406,7 @@ export function FilterPanel<T extends FilterState>({
           hasSelection={hasDefaultFiltersSelection}
           selectionCount={defaultFiltersCount}
         >
-          {getFilter(type, filters, updateFilters, resetFilters, cars)}
+          {getFilter(type, filters, updateFilters, resetFilters)}
         </FilterSection>
 
         {/* Filter Button */}

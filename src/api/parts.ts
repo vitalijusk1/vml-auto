@@ -143,11 +143,6 @@ function mapQuality(quality: number): PartQuality | undefined {
   return "Used"; // Default fallback
 }
 
-// Helper function to get category name
-function getCategoryName(category: Category): string {
-  return getLocalizedText(category.languages, category.name);
-}
-
 // Map position number to PartPosition
 // Note: Position values from API (0, 80, 90) don't directly map to Left/Right/Front/Rear/Set
 // This might need adjustment based on actual API documentation

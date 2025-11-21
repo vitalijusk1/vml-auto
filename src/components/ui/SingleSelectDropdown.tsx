@@ -3,23 +3,23 @@ import { Button } from "./button";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface SingleSelectDropdownProps {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
+interface SingleSelectDropdownProps<T extends string> {
+  options: { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
 }
 
-export function SingleSelectDropdown({
+export function SingleSelectDropdown<T extends string>({
   options,
   value,
   onChange,
   placeholder = "Select option...",
   className,
   disabled = false,
-}: SingleSelectDropdownProps) {
+}: SingleSelectDropdownProps<T>) {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 

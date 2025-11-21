@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { getParts, filterStateToQueryParams } from "@/api/parts";
-import { Part, FilterState } from "@/types";
+import { FilterState, TopDetailsFilter } from "@/types";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { StorageKeys } from "@/utils/storageKeys";
 import { loadPersistedFilters } from "@/utils/storageHelpers";
@@ -22,8 +22,7 @@ interface PartsFilterCardProps {
     last_page: number;
   };
   backendFilters: any;
-  cars: never[];
-  onTopDetailsFilterChange: (value: string) => void;
+  onTopDetailsFilterChange: (value: TopDetailsFilter) => void;
 }
 
 // Separate component that manages local filter state and fetching - this isolates re-renders
@@ -32,7 +31,6 @@ export const PartsFilterCard = memo(function PartsFilterCard({
   onPaginationUpdate,
   pagination,
   backendFilters,
-  cars,
   onTopDetailsFilterChange,
 }: PartsFilterCardProps) {
   const dispatch = useAppDispatch();
@@ -116,7 +114,6 @@ export const PartsFilterCard = memo(function PartsFilterCard({
       type={LayoutType.PARTS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      cars={cars}
       onTopDetailsFilterChange={onTopDetailsFilterChange}
       onFilter={handleFilter}
       isLoading={isLoading}
