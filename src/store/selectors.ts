@@ -21,6 +21,10 @@ export const selectCars = (state: RootState) => {
   const cars = state.data.cars;
   return Array.isArray(cars) ? cars : [];
 };
+export const selectAnalyticsOverviewData = (state: RootState) =>
+  state.data.analyticsOverviewData;
+export const selectAnalyticsPartsData = (state: RootState) =>
+  state.data.analyticsPartsData;
 export const selectFilters = (state: RootState) => state.filters;
 export const selectCurrentView = (state: RootState) => state.ui.currentView;
 export const selectSidebarCollapsed = (state: RootState) =>

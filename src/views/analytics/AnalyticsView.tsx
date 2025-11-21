@@ -1,8 +1,8 @@
 import { useAppSelector } from "@/store/hooks";
 import {
-  selectParts,
   selectOrders,
   selectBackendFilters,
+  selectAnalyticsPartsData,
 } from "@/store/selectors";
 import {
   LineChart,
@@ -27,97 +27,46 @@ const COLORS = {
 };
 
 export function AnalyticsView() {
-  const parts = useAppSelector(selectParts);
   const orders = useAppSelector(selectOrders);
-  const backendFilters = useAppSelector(selectBackendFilters);
+
+  const partsData = useAppSelector(selectAnalyticsPartsData);
 
   // Filter orders - only delivered orders
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => order.status === "Delivered");
   }, [orders]);
 
-  // Summary metrics - matching the image
-  const summaryMetrics = useMemo(() => {
-    const partsInStock = parts.filter((p) => p.status === "In Stock").length;
-
-    // Calculate total sold from orders
-    const totalSold = orders
-      .filter((o) => o.status === "Delivered")
-      .reduce((sum, order) => {
-        return (
-          sum +
-          order.items.reduce((itemSum, item) => itemSum + item.quantity, 0)
-        );
-      }, 0);
-
-    const totalPartsAllTime = parts.length;
-
-    // Calculate earnings from delivered orders
-    const earnings = filteredOrders.reduce(
-      (sum, order) => sum + order.totalAmountEUR,
-      0
-    );
-
-    // Active orders (non-delivered, non-cancelled)
-    const activeOrders = orders.filter(
-      (o) => o.status !== "Delivered" && o.status !== "Cancelled"
-    ).length;
-
-    // Parts not sold for 3 months
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const partsNotSold3Months = parts.filter(
-      (p) => p.status === "In Stock" && p.dateAdded <= threeMonthsAgo
-    ).length;
-
-    return {
-      partsInStock,
-      totalSold,
-      totalPartsAllTime,
-      earnings,
-      activeOrders,
-      partsNotSold3Months,
-    };
-  }, [parts, orders, filteredOrders]);
-
-  // Parts Sold by Car Model - from orders
+  // Parts Sold by Car Model - from API
   const partsSoldByModel = useMemo(() => {
-    const modelData: Record<string, number> = {};
+    //Use by model when its available for we're using by positions as a placeholder
+    if (
+      partsData?.parts_by_position &&
+      partsData.parts_by_position.length > 0
+    ) {
+      return partsData.parts_by_position
+        .map((item) => ({ model: item.position, sold: item.value }))
+        .sort((a, b) => b.sold - a.sold)
+        .slice(0, 12);
+    }
 
-    filteredOrders.forEach((order) => {
-      order.items.forEach((item) => {
-        const part = parts.find((p) => p.id === item.partId);
-        if (part && part.carModel) {
-          modelData[part.carModel] =
-            (modelData[part.carModel] || 0) + item.quantity;
-        }
-      });
-    });
+    // Fallback to empty array if no API data
+    return [];
+  }, [partsData]);
 
-    return Object.entries(modelData)
-      .map(([model, count]) => ({ model, sold: count }))
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 12);
-  }, [filteredOrders, parts]);
-
-  // Parts Sold by Category - from orders
+  // Parts Sold by Category - from API
   const partsSoldByCategory = useMemo(() => {
-    const categoryData: Record<string, number> = {};
+    if (
+      partsData?.parts_by_category &&
+      partsData.parts_by_category.length > 0
+    ) {
+      return partsData.parts_by_category
+        .map((item) => ({ category: item.name, units: item.value }))
+        .sort((a, b) => b.units - a.units);
+    }
 
-    filteredOrders.forEach((order) => {
-      order.items.forEach((item) => {
-        const part = parts.find((p) => p.id === item.partId);
-        if (part && part.category) {
-          categoryData[part.category] =
-            (categoryData[part.category] || 0) + item.quantity;
-        }
-      });
-    });
-
-    return Object.entries(categoryData)
-      .map(([category, units]) => ({ category, units }))
-      .sort((a, b) => b.units - a.units);
-  }, [filteredOrders, parts]);
+    // Fallback to empty array if no API data
+    return [];
+  }, [partsData]);
 
   // Sales Trend - units per day
   const salesTrend = useMemo(() => {
@@ -178,21 +127,10 @@ export function AnalyticsView() {
       </div>
 
       {/* Filters Panel */}
-      {backendFilters ? (
-        <AnalyticsFilterCard backendFilters={backendFilters} />
-      ) : (
-        <Card>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
-          </CardContent>
-        </Card>
-      )}
+      <AnalyticsFilterCard />
 
       {/* Summary Metrics Cards - 6 cards in 2 rows */}
-      <SummaryMetricsCards
-        metrics={summaryMetrics}
-        currencyFormatter={currencyFormatter}
-      />
+      <SummaryMetricsCards currencyFormatter={currencyFormatter} />
 
       {/* Charts */}
       <div className="space-y-6">

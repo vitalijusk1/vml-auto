@@ -10,6 +10,19 @@ export interface CarQueryParams {
 }
 
 // Parts query parameters interface
+export interface StatisticsOverviewQueryParams {
+  date_from?: string;
+  date_to?: string;
+  brand_id?: number | number[];
+  model_id?: number | number[];
+  car_id?: number | number[];
+  category_id?: number | number[];
+  quality?: number | number[];
+  status?: number | number[];
+  position?: number | number[];
+}
+
+// Parts query parameters interface
 export interface PartsQueryParams {
   per_page?: number;
   page?: number;
@@ -243,5 +256,17 @@ export const apiEndpoints = {
   }) => {
     const queryString = buildQueryString(params as Record<string, unknown>);
     return `/preorder/analysis${queryString}`;
+  },
+  getStatisticsOverview: (queryParams?: StatisticsOverviewQueryParams) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/statistics/overview${queryString}`;
+  },
+  getStatisticsParts: (queryParams?: StatisticsOverviewQueryParams) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/statistics/parts${queryString}`;
   },
 };
