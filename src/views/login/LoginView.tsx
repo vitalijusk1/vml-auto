@@ -37,14 +37,10 @@ export function LoginView() {
           // Login successful - navigate to parts (default view)
           navigate("/parts");
         } else {
-          setError(response.message || "Login failed. Please try again.");
+          setError("El. paštas arba slaptažodis neteisingas");
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "Login failed. Please try again.";
-        setError(errorMessage);
+        setError("El. paštas arba slaptažodis neteisingas");
         console.error("Login error:", err);
       } finally {
         setIsLoading(false);
@@ -138,6 +134,15 @@ export function LoginView() {
             </form>
 
             {/* Footer */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm text-blue-400 hover:text-blue-300 transition"
+              >
+                Pamiršote slaptažodį?
+              </button>
+            </div>
           </CardContent>
         </Card>
 
