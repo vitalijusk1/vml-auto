@@ -18,7 +18,7 @@ export function TableFilter({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={className || "max-w-sm"}
+      className={className || "w-96"}
     />
   );
 }

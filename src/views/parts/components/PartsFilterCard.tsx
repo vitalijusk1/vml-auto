@@ -102,10 +102,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
 
   // Fetch when pagination changes (from table pagination controls)
   useEffect(() => {
-    // Only fetch if pagination actually changed (not initial render)
-    if (pagination.current_page !== 1 || pagination.per_page !== 15) {
-      fetchParts();
-    }
+    fetchParts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.current_page, pagination.per_page]);
 

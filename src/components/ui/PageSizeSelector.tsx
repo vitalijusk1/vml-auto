@@ -12,7 +12,7 @@ interface PageSizeSelectorProps {
 export function PageSizeSelector({
   pagination,
   onPageSizeChange,
-  options = [10, 25, 50, 100],
+  options = [15, 25, 50, 100],
   className,
 }: PageSizeSelectorProps) {
   return (
