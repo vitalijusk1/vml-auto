@@ -6,12 +6,16 @@ import { ReturnsView } from "./views/returns/ReturnsView";
 import { AnalyticsView } from "./views/analytics/AnalyticsView";
 import { OrderControlView } from "./views/order-control/OrderControlView";
 import { LoginView } from "./views/login/LoginView";
+import { ForgotPasswordView } from "./views/forgot-password/ForgotPasswordView";
+import { ResetPasswordView } from "./views/reset-password/ResetPasswordView";
 
 function App() {
   return (
     <Routes>
       {/* Login route - no MainLayout */}
       <Route path="/login" element={<LoginView />} />
+      <Route path="/forgot-password" element={<ForgotPasswordView />} />
+      <Route path="/reset-password" element={<ResetPasswordView />} />
       {/* Protected routes with MainLayout */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Navigate to="/parts" replace />} />
