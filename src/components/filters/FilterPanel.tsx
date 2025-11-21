@@ -421,9 +421,15 @@ export function FilterPanel<T extends FilterState>({
             </Button>
           </div>
         )}
-        {type === LayoutType.ANALYTICS && (
+        {type === LayoutType.ANALYTICS && onFilter && (
           <div className="flex justify-end pt-2">
-            <Button className="px-6">Filtruoti</Button>
+            <Button
+              className="px-6"
+              onClick={onFilter}
+              disabled={isLoading}
+            >
+              {isLoading ? "Kraunama..." : "Filtruoti"}
+            </Button>
           </div>
         )}
         {type === LayoutType.ORDER_CONTROL && onFilter && (
