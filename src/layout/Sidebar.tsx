@@ -6,27 +6,23 @@ import {
   Menu,
   ClipboardList,
 } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  selectCurrentView,
-  selectMetrics,
-  selectSidebarCollapsed,
-} from "@/store/selectors";
-import { setCurrentView, toggleSidebar } from "@/store/slices/uiSlice";
+import { selectMetrics, selectSidebarCollapsed } from "@/store/selectors";
+import { toggleSidebar } from "@/store/slices/uiSlice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const navigation = [
-  { name: "Sandėlys", icon: Package, view: "parts" as const },
-  { name: "Užsakymai", icon: ShoppingCart, view: "orders" as const },
-  { name: "Grąžinimai", icon: RotateCcw, view: "returns" as const },
-  { name: "Užsakymų valdymas", icon: ClipboardList, view: "order-control" as const },
-  { name: "Analitika", icon: BarChart3, view: "analytics" as const },
+  { name: "Sandėlys", icon: Package, path: "/parts" },
+  { name: "Užsakymai", icon: ShoppingCart, path: "/orders" },
+  { name: "Grąžinimai", icon: RotateCcw, path: "/returns" },
+  { name: "Užsakymų valdymas", icon: ClipboardList, path: "/order-control" },
+  { name: "Analitika", icon: BarChart3, path: "/analytics" },
 ];
 
 export function Sidebar() {
   const dispatch = useAppDispatch();
-  const currentView = useAppSelector(selectCurrentView);
   const metrics = useAppSelector(selectMetrics);
   const isCollapsed = useAppSelector(selectSidebarCollapsed);
 
@@ -60,20 +56,21 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navigation.map((item) => {
           const Icon = item.icon;
-          const isActive = currentView === item.view;
           const showBadge =
-            item.view === "parts" && metrics.partsOlderThan6Months > 0;
+            item.path === "/parts" && metrics.partsOlderThan6Months > 0;
           return (
-            <button
+            <NavLink
               key={item.name}
-              onClick={() => dispatch(setCurrentView(item.view))}
-              className={cn(
-                "w-full flex items-center rounded-md text-sm font-medium transition-colors relative",
-                isCollapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              )}
+              to={item.path}
+              className={({ isActive }) =>
+                cn(
+                  "w-full flex items-center rounded-md text-sm font-medium transition-colors relative",
+                  isCollapsed ? "justify-center px-2 py-2" : "gap-3 px-3 py-2",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                )
+              }
               title={isCollapsed ? item.name : undefined}
             >
               <Icon className="h-5 w-5 flex-shrink-0" />
@@ -90,7 +87,7 @@ export function Sidebar() {
               {isCollapsed && showBadge && (
                 <span className="absolute -right-1 -top-1 h-3 w-3 bg-destructive rounded-full border-2 border-card" />
               )}
-            </button>
+            </NavLink>
           );
         })}
       </nav>

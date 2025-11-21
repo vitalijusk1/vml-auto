@@ -14,11 +14,12 @@ import { combineReducers } from "@reduxjs/toolkit";
 import dataSlice from "./slices/dataSlice";
 import filtersSlice from "./slices/filtersSlice";
 import uiSlice from "./slices/uiSlice";
+import authSlice from "./slices/authSlice";
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["ui"], // Only persist UI state (sidebarCollapsed, currentView, orderControlSelectedCarId)
+  whitelist: ["ui", "auth"], // Persist UI state and auth user data
   // Filters are handled per-page with sessionStorage (resets when tab closes)
 };
 
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   data: dataSlice,
   filters: filtersSlice,
   ui: uiSlice,
+  auth: authSlice,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
