@@ -23,6 +23,7 @@ interface PartsFilterCardProps {
   };
   backendFilters: any;
   onTopDetailsFilterChange: (value: TopDetailsFilter) => void;
+  topDetailsFilter: TopDetailsFilter;
 }
 
 // Separate component that manages local filter state and fetching - this isolates re-renders
@@ -32,6 +33,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
   pagination,
   backendFilters,
   onTopDetailsFilterChange,
+  topDetailsFilter,
 }: PartsFilterCardProps) {
   const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<FilterState>(
@@ -65,7 +67,8 @@ export const PartsFilterCard = memo(function PartsFilterCard({
           page: pagination.current_page,
           per_page: pagination.per_page,
         },
-        backendFilters
+        backendFilters,
+        topDetailsFilter
       );
 
       const response = await getParts(queryParams);
@@ -100,7 +103,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendFilters]);
 
-  // Fetch when pagination changes (from table pagination controls)
+  // Fetch when pagination changes
   useEffect(() => {
     fetchParts();
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -61,14 +61,15 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
       setIsLoading(true);
 
       try {
+        const currentPage = resetPage ? 1 : pagination.current_page;
         const queryParams = filterStateToOrdersQueryParams(
           filters,
+          {
+            page: currentPage,
+            per_page: pagination.per_page || 15,
+          },
           backendFilters
         );
-
-        const currentPage = resetPage ? 1 : pagination.current_page;
-        queryParams.page = currentPage;
-        queryParams.per_page = pagination.per_page || 15;
 
         const response = await getOrders(queryParams);
         dispatch(setOrders(response.orders));

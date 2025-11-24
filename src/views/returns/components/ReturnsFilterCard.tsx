@@ -48,6 +48,7 @@ export const ReturnsFilterCard = memo(function ReturnsFilterCard({
     try {
       const queryParams = filterStateToReturnsQueryParams(
         filters,
+        {},
         backendFilters
       );
 
@@ -95,4 +96,3 @@ export const ReturnsFilterCard = memo(function ReturnsFilterCard({
     />
   );
 });
-

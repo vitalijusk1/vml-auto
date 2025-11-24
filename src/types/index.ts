@@ -112,7 +112,8 @@ export interface Part {
   warehouse?: string;
   fuelType?: string;
   engineVolume?: string;
-  quality?: PartQuality;
+  quality?: string;
+  qualityId?: number;
   // Wheel-specific fields (optional)
   wheelDrive?: "AWD" | "RWD" | "FWD";
   wheelSide?: "Left" | "Right";
