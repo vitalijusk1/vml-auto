@@ -43,8 +43,8 @@ export interface PartsQueryParams {
   brand_id?: string | number[];
   model_id?: string | number[];
   category_id?: string | number[];
-  quality?: string | number[];
-  status?: string | number[];
+  quality?: string | (string | number)[];
+  status?: string | (string | number)[];
   position?: string | number[];
   rims_fixing_points_id?: string | number[];
   rims_spacing_id?: string | number[];

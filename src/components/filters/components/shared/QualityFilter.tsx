@@ -26,9 +26,8 @@ export const QualityFilter = ({
         searchable={true}
         searchPlaceholder="Ieškoti kokybių..."
         getDisplayValue={(item) => item.name}
-        getValue={(item) => item.id}
+        getValue={(item) => item.rrr_id ?? item.id}
       />
     </div>
   );
 };
-

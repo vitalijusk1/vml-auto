@@ -273,13 +273,15 @@ export const filterStateToQueryParams = (
     params.search = filters.search.trim();
   }
 
-  // Status - extract IDs directly from FilterOption objects
+  // Status - extract rrr_id from FilterOption objects (fallback to id if rrr_id not available)
   if (
     filters.status !== "All" &&
     Array.isArray(filters.status) &&
     filters.status.length > 0
   ) {
-    const statusIds = filters.status.map((status) => status.id);
+    const statusIds = filters.status.map(
+      (status) => status.rrr_id ?? status.id
+    );
     if (statusIds.length > 0) {
       params.status = statusIds;
     }
@@ -319,7 +321,9 @@ export const filterStateToQueryParams = (
     }
   }
   if (filters.quality && filters.quality.length > 0) {
-    const qualityIds = filters.quality.map((quality) => quality.id);
+    const qualityIds = filters.quality.map(
+      (quality) => quality.rrr_id ?? quality.id
+    );
     if (qualityIds.length > 0) {
       params.quality = qualityIds;
     }
