@@ -82,6 +82,38 @@ const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
   return statusLabels[status] || status;
 };
 
+// Helper to find quality name from backend filters by ID
+const findQualityFromBackend = (
+  qualityId: number | undefined,
+  backendFilters: any
+): string | null => {
+  if (!qualityId) return null;
+  const qualities = backendFilters?.parts?.qualities;
+  if (!Array.isArray(qualities)) return null;
+
+  for (const qualityOption of qualities) {
+    if (qualityOption && typeof qualityOption === "object") {
+      if (qualityOption.id === qualityId) {
+        // Return localized version (prioritizes Lithuanian)
+        return getLocalizedText(qualityOption.languages, qualityOption.name);
+      }
+    }
+  }
+  return null;
+};
+
+const getQualityLabel = (
+  qualityId: number | undefined,
+  backendFilters: any
+): string => {
+  // Try to get from backend filters first (with language support)
+  const backendQuality = findQualityFromBackend(qualityId, backendFilters);
+  if (backendQuality) return backendQuality;
+
+  // Fallback if not found
+  return "-";
+};
+
 interface PartTableColumnsProps {
   onItemClick: (part: Part) => void;
   backendFilters?: any;
@@ -289,7 +321,8 @@ export function PartTableColumns({
     {
       accessorKey: "quality",
       header: "Kokybė",
-      cell: ({ row }) => row.original.quality || "-",
+      cell: ({ row }) =>
+        getQualityLabel(row.original.qualityId, backendFilters),
     },
     {
       accessorKey: "status",

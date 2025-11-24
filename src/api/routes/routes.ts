@@ -24,43 +24,57 @@ export interface StatisticsOverviewQueryParams {
 
 // Parts query parameters interface
 export interface PartsQueryParams {
+  // Pagination
   per_page?: number;
   page?: number;
+
   // Search
   search?: string;
-  // Status filters
-  status?: number | number[]; // IDs
-  // Car filters
-  car_brand?: number | number[]; // IDs
-  car_model?: number | number[]; // IDs
-  car_year?: number | number[];
-  year_min?: number;
-  year_max?: number;
-  // Part filters
-  category?: number | number[]; // IDs
-  part_type?: string | string[];
-  quality?: number | number[]; // IDs
-  position?: number | number[]; // IDs
-  body_type?: number | number[]; // IDs
-  // Price range
-  price_min?: number;
-  price_max?: number;
-  // Engine volume range
-  engine_volume_min?: number;
-  engine_volume_max?: number;
-  // Wheel filters - all are IDs now
-  wheel_drive?: number | number[]; // IDs
-  wheel_side?: number | number[]; // IDs
-  wheel_central_diameter?: number | number[]; // IDs
-  wheel_fixing_points?: number | number[]; // IDs
-  wheel_height?: number | number[]; // IDs
-  wheel_spacing?: number | number[]; // IDs
-  wheel_tread_depth?: number | number[]; // IDs
-  wheel_width?: number | number[]; // IDs
-  // Stale inventory
-  stale_months?: number;
-  // Warehouse
-  warehouse?: string | string[];
+
+  // Sorting
+  sort_by?:
+    | "sold_most"
+    | "sold_least"
+    | "never_sold"
+    | "price_asc"
+    | "price_desc";
+
+  // Filters - all accept comma-separated IDs
+  brand_id?: string | number[];
+  model_id?: string | number[];
+  category_id?: string | number[];
+  quality?: string | number[];
+  status?: string | number[];
+  position?: string | number[];
+  rims_fixing_points_id?: string | number[];
+  rims_spacing_id?: string | number[];
+  rims_central_diameter_id?: string | number[];
+  tires_width_id?: string | number[];
+  tires_height_id?: string | number[];
+  fuel_id?: string | number[];
+  body_type_id?: string | number[];
+  gearbox_type_id?: string | number[];
+  wheel_drive_id?: string | number[];
+  color_id?: string | number[];
+
+  // Ranges
+  engine_volume?: number;
+  engine_volume_from?: number;
+  engine_volume_to?: number;
+  year_from?: number;
+  year_to?: number;
+  price_from?: number;
+  price_to?: number;
+  mileage_from?: number;
+  mileage_to?: number;
+  engine_power_from?: number;
+  engine_power_to?: number;
+
+  // Date ranges
+  date_from?: string;
+  date_to?: string;
+  create_date_from?: string;
+  create_date_to?: string;
 }
 
 // Orders query parameters interface
@@ -70,43 +84,45 @@ export interface OrdersQueryParams {
   // Search
   search?: string;
   // Status filters
-  status?: string | string[];
+  status?: string | number[];
   // Date range
   date_from?: string;
   date_to?: string;
   // Car filters
-  car_brand?: number | number[];
-  car_model?: number | number[];
-  car_year?: number | number[];
-  year_min?: number;
-  year_max?: number;
+  brand_id?: number | number[];
+  model_id?: number | number[];
   // Part filters
-  category?: number | number[]; // IDs
-  part_type?: string | string[];
-  quality?: number | number[]; // IDs
-  position?: number | number[]; // IDs
-  body_type?: number | number[]; // IDs
+  category_id?: number | number[];
+  quality?: number | number[];
+  position?: number | number[];
+  body_type_id?: number | number[];
   // Price range
-  price_min?: number;
-  price_max?: number;
+  price_from?: number;
+  price_to?: number;
   // Fuel and engine
   fuel_id?: number | number[];
-  engine_volume?: string | string[];
-  engine_volume_min?: number;
-  engine_volume_max?: number;
-  // Wheel filters - all are IDs now
-  wheel_drive?: number | number[]; // IDs
-  wheel_side?: number | number[]; // IDs
-  wheel_central_diameter?: number | number[]; // IDs
-  wheel_fixing_points?: number | number[]; // IDs
-  wheel_height?: number | number[]; // IDs
-  wheel_spacing?: number | number[]; // IDs
-  wheel_tread_depth?: number | number[]; // IDs
-  wheel_width?: number | number[]; // IDs
-  // Stale inventory
-  stale_months?: number;
-  // Warehouse
-  warehouse?: string | string[];
+  engine_volume?: number;
+  engine_volume_from?: number;
+  engine_volume_to?: number;
+  // Year range
+  year_from?: number;
+  year_to?: number;
+  // Mileage range
+  mileage_from?: number;
+  mileage_to?: number;
+  // Engine power range
+  engine_power_from?: number;
+  engine_power_to?: number;
+  // Wheel filters
+  wheel_drive_id?: number | number[];
+  rims_fixing_points_id?: number | number[];
+  rims_spacing_id?: number | number[];
+  rims_central_diameter_id?: number | number[];
+  tires_width_id?: number | number[];
+  tires_height_id?: number | number[];
+  // Date ranges
+  create_date_from?: string;
+  create_date_to?: string;
 }
 
 // Returns query parameters interface
@@ -116,40 +132,45 @@ export interface ReturnsQueryParams {
   // Search
   search?: string;
   // Status filters
-  status?: number | number[]; // IDs
+  status?: number | number[];
+  // Date range
+  date_from?: string;
+  date_to?: string;
   // Car filters
-  car_brand?: number | number[];
-  car_model?: number | number[];
-  car_year?: number | number[];
-  year_min?: number;
-  year_max?: number;
+  brand_id?: number | number[];
+  model_id?: number | number[];
   // Part filters
-  category?: number | number[]; // IDs
-  part_type?: string | string[];
-  quality?: number | number[]; // IDs
-  position?: number | number[]; // IDs
-  body_type?: number | number[]; // IDs
+  category_id?: number | number[];
+  quality?: number | number[];
+  position?: number | number[];
+  body_type_id?: number | number[];
   // Price range
-  price_min?: number;
-  price_max?: number;
+  price_from?: number;
+  price_to?: number;
   // Fuel and engine
   fuel_id?: number | number[];
-  engine_volume?: string | string[];
-  engine_volume_min?: number;
-  engine_volume_max?: number;
-  // Wheel filters - all are IDs now
-  wheel_drive?: number | number[]; // IDs
-  wheel_side?: number | number[]; // IDs
-  wheel_central_diameter?: number | number[]; // IDs
-  wheel_fixing_points?: number | number[]; // IDs
-  wheel_height?: number | number[]; // IDs
-  wheel_spacing?: number | number[]; // IDs
-  wheel_tread_depth?: number | number[]; // IDs
-  wheel_width?: number | number[]; // IDs
-  // Stale inventory
-  stale_months?: number;
-  // Warehouse
-  warehouse?: string | string[];
+  engine_volume?: number;
+  engine_volume_from?: number;
+  engine_volume_to?: number;
+  // Year range
+  year_from?: number;
+  year_to?: number;
+  // Mileage range
+  mileage_from?: number;
+  mileage_to?: number;
+  // Engine power range
+  engine_power_from?: number;
+  engine_power_to?: number;
+  // Wheel filters
+  wheel_drive_id?: number | number[];
+  rims_fixing_points_id?: number | number[];
+  rims_spacing_id?: number | number[];
+  rims_central_diameter_id?: number | number[];
+  tires_width_id?: number | number[];
+  tires_height_id?: number | number[];
+  // Date ranges
+  create_date_from?: string;
+  create_date_to?: string;
 }
 
 // Helper function to build query string from parameters

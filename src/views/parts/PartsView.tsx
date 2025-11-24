@@ -40,6 +40,7 @@ export function PartsView() {
         pagination={pagination}
         backendFilters={backendFilters}
         onTopDetailsFilterChange={handleTopDetailsFilterChange}
+        topDetailsFilter={topDetailsFilter}
       />
 
       <Table

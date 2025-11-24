@@ -270,9 +270,12 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
  */
 export const filterStateToReturnsQueryParams = (
   filters: FilterState,
+  pagination?: { page?: number; per_page?: number },
   backendFilters?: any
 ): ReturnsQueryParams => {
-  const params: ReturnsQueryParams = {};
+  const params: ReturnsQueryParams = {
+    ...pagination,
+  };
 
   // Search
   if (filters.search && filters.search.trim()) {
@@ -291,30 +294,35 @@ export const filterStateToReturnsQueryParams = (
     }
   }
 
+  // Date range
+  if (filters.dateRange?.from) {
+    params.date_from = filters.dateRange.from.toISOString().split("T")[0];
+  }
+  if (filters.dateRange?.to) {
+    params.date_to = filters.dateRange.to.toISOString().split("T")[0];
+  }
+
   // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
     const brandIds = filters.carBrand.map((brand) => brand.id);
     if (brandIds.length > 0) {
-      params.car_brand = brandIds;
+      params.brand_id = brandIds;
     }
   }
 
   if (filters.carModel && filters.carModel.length > 0) {
     const modelIds = filters.carModel.map((model) => model.id);
     if (modelIds.length > 0) {
-      params.car_model = modelIds;
+      params.model_id = modelIds;
     }
-  }
-  if (filters.carYear && filters.carYear.length > 0) {
-    params.car_year = filters.carYear;
   }
 
   // Year range
   if (filters.yearRange?.min !== undefined) {
-    params.year_min = filters.yearRange.min;
+    params.year_from = filters.yearRange.min;
   }
   if (filters.yearRange?.max !== undefined) {
-    params.year_max = filters.yearRange.max;
+    params.year_to = filters.yearRange.max;
   }
 
   // Part filters - extract IDs directly from FilterOption objects
@@ -325,11 +333,8 @@ export const filterStateToReturnsQueryParams = (
       backendFilters
     );
     if (categoryIds.length > 0) {
-      params.category = categoryIds;
+      params.category_id = categoryIds;
     }
-  }
-  if (filters.partType && filters.partType.length > 0) {
-    params.part_type = filters.partType.map((type) => type.name);
   }
   if (filters.quality && filters.quality.length > 0) {
     const qualityIds = filters.quality.map((quality) => quality.id);
@@ -349,16 +354,16 @@ export const filterStateToReturnsQueryParams = (
   if (filters.bodyType && filters.bodyType.length > 0) {
     const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
     if (bodyTypeIds.length > 0) {
-      params.body_type = bodyTypeIds;
+      params.body_type_id = bodyTypeIds;
     }
   }
 
   // Price range
   if (filters.priceRange?.min !== undefined) {
-    params.price_min = filters.priceRange.min;
+    params.price_from = filters.priceRange.min;
   }
   if (filters.priceRange?.max !== undefined) {
-    params.price_max = filters.priceRange.max;
+    params.price_to = filters.priceRange.max;
   }
 
   // Fuel type - extract IDs directly from FilterOption objects
@@ -371,41 +376,33 @@ export const filterStateToReturnsQueryParams = (
 
   // Engine capacity range
   if (filters.engineCapacityRange?.min !== undefined) {
-    params.engine_volume_min = filters.engineCapacityRange.min;
+    params.engine_volume_from = filters.engineCapacityRange.min;
   }
   if (filters.engineCapacityRange?.max !== undefined) {
-    params.engine_volume_max = filters.engineCapacityRange.max;
+    params.engine_volume_to = filters.engineCapacityRange.max;
   }
 
   // Wheel filters - extract IDs directly from FilterOption objects
-  if (filters.wheelSide && filters.wheelSide.length > 0) {
-    const sideIds = filters.wheelSide.map((side) => side.id);
-    if (sideIds.length > 0) {
-      params.wheel_side = sideIds;
-    }
-  }
-
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
     const driveIds = filters.wheelDrive.map((drive) => drive.id);
     if (driveIds.length > 0) {
-      params.wheel_drive = driveIds;
+      params.wheel_drive_id = driveIds;
     }
   }
 
-  // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
     const fixingPointsIds = filters.wheelFixingPoints.map(
       (points) => points.id
     );
     if (fixingPointsIds.length > 0) {
-      params.wheel_fixing_points = fixingPointsIds;
+      params.rims_fixing_points_id = fixingPointsIds;
     }
   }
 
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
     const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
     if (spacingIds.length > 0) {
-      params.wheel_spacing = spacingIds;
+      params.rims_spacing_id = spacingIds;
     }
   }
 
@@ -414,39 +411,22 @@ export const filterStateToReturnsQueryParams = (
       (diameter) => diameter.id
     );
     if (diameterIds.length > 0) {
-      params.wheel_central_diameter = diameterIds;
+      params.rims_central_diameter_id = diameterIds;
     }
   }
 
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
     const heightIds = filters.wheelHeight.map((height) => height.id);
     if (heightIds.length > 0) {
-      params.wheel_height = heightIds;
-    }
-  }
-
-  if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
-    const treadDepthIds = filters.wheelTreadDepth.map((depth) => depth.id);
-    if (treadDepthIds.length > 0) {
-      params.wheel_tread_depth = treadDepthIds;
+      params.tires_height_id = heightIds;
     }
   }
 
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
     const widthIds = filters.wheelWidth.map((width) => width.id);
     if (widthIds.length > 0) {
-      params.wheel_width = widthIds;
+      params.tires_width_id = widthIds;
     }
-  }
-
-  // Stale inventory
-  if (filters.staleMonths !== undefined) {
-    params.stale_months = filters.staleMonths;
-  }
-
-  // Warehouse - extract names from FilterOption objects (warehouse might be string[])
-  if (filters.warehouse && filters.warehouse.length > 0) {
-    params.warehouse = filters.warehouse.map((w) => w.name);
   }
 
   return params;

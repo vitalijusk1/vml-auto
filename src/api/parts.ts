@@ -1,11 +1,5 @@
 import authInstance from "./axios";
-import {
-  Part,
-  PartStatus,
-  PartPosition,
-  PartQuality,
-  FilterState,
-} from "@/types";
+import { Part, PartStatus, PartPosition, FilterState } from "@/types";
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
 import { BackendFilters, Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
@@ -82,6 +76,11 @@ interface ApiPartResponse {
         name: string;
       };
     };
+    car_fuel?: {
+      id: number;
+      rrr_id: string;
+      name: string;
+    } | null;
     category?: {
       id: number;
       rrr_id: string;
@@ -134,13 +133,11 @@ function mapStatus(status: number): PartStatus {
   }
 }
 
-// Map quality number to PartQuality (this is a placeholder - adjust based on actual API mapping)
-function mapQuality(quality: number): PartQuality | undefined {
-  // TODO: Map quality number to PartQuality based on actual API response
-  // For now, return undefined if quality is 0 or invalid
+// Store quality ID for later mapping with backend filters
+function getQualityId(quality: number): number | undefined {
+  // Return undefined if quality is 0 or invalid
   if (!quality || quality === 0) return undefined;
-  // This is a placeholder - adjust based on actual quality mapping from backend
-  return "Used"; // Default fallback
+  return quality;
 }
 
 // Map position number to PartPosition
@@ -205,9 +202,9 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
         : undefined,
     photos,
     warehouse: undefined, // TODO: Get warehouse from API if available
-    fuelType: apiPart.car?.car_engine_type || undefined,
+    fuelType: apiPart.car?.car_fuel?.name || undefined,
     engineVolume: apiPart.car?.car_engine_cubic_capacity || undefined,
-    quality: mapQuality(apiPart.quality),
+    qualityId: getQualityId(apiPart.quality),
     // Wheel-specific fields
     wheelDrive: undefined, // TODO: Map from car data if available
     wheelSide: undefined, // TODO: Map from API if available
@@ -253,25 +250,22 @@ export const filterStateToQueryParams = (
   if (filters.carBrand && filters.carBrand.length > 0) {
     const brandIds = filters.carBrand.map((brand) => brand.id);
     if (brandIds.length > 0) {
-      params.car_brand = brandIds;
+      params.brand_id = brandIds;
     }
   }
   if (filters.carModel && filters.carModel.length > 0) {
     const modelIds = filters.carModel.map((model) => model.id);
     if (modelIds.length > 0) {
-      params.car_model = modelIds;
+      params.model_id = modelIds;
     }
-  }
-  if (filters.carYear && filters.carYear.length > 0) {
-    params.car_year = filters.carYear;
   }
 
   // Year range
   if (filters.yearRange?.min !== undefined) {
-    params.year_min = filters.yearRange.min;
+    params.year_from = filters.yearRange.min;
   }
   if (filters.yearRange?.max !== undefined) {
-    params.year_max = filters.yearRange.max;
+    params.year_to = filters.yearRange.max;
   }
 
   // Part filters - extract IDs directly from FilterOption objects
@@ -282,11 +276,8 @@ export const filterStateToQueryParams = (
       backendFilters
     );
     if (categoryIds.length > 0) {
-      params.category = categoryIds;
+      params.category_id = categoryIds;
     }
-  }
-  if (filters.partType && filters.partType.length > 0) {
-    params.part_type = filters.partType.map((type) => type.name);
   }
   if (filters.quality && filters.quality.length > 0) {
     const qualityIds = filters.quality.map((quality) => quality.id);
@@ -305,89 +296,60 @@ export const filterStateToQueryParams = (
   if (filters.bodyType && filters.bodyType.length > 0) {
     const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
     if (bodyTypeIds.length > 0) {
-      params.body_type = bodyTypeIds;
+      params.body_type_id = bodyTypeIds;
     }
   }
 
   // Price range
   if (filters.priceRange?.min !== undefined) {
-    params.price_min = filters.priceRange.min;
+    params.price_from = filters.priceRange.min;
   }
   if (filters.priceRange?.max !== undefined) {
-    params.price_max = filters.priceRange.max;
+    params.price_to = filters.priceRange.max;
   }
 
   // Engine capacity range
   if (filters.engineCapacityRange?.min !== undefined) {
-    params.engine_volume_min = filters.engineCapacityRange.min;
+    params.engine_volume_from = filters.engineCapacityRange.min;
   }
   if (filters.engineCapacityRange?.max !== undefined) {
-    params.engine_volume_max = filters.engineCapacityRange.max;
+    params.engine_volume_to = filters.engineCapacityRange.max;
   }
 
   // Wheel filters - extract IDs directly from FilterOption objects
-  if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const wheelDriveIds = filters.wheelDrive.map((drive) => drive.id);
-    if (wheelDriveIds.length > 0) {
-      params.wheel_drive = wheelDriveIds;
-    }
-  }
-  if (filters.wheelSide && filters.wheelSide.length > 0) {
-    const wheelSideIds = filters.wheelSide.map((side) => side.id);
-    if (wheelSideIds.length > 0) {
-      params.wheel_side = wheelSideIds;
-    }
-  }
-  // Wheel filters - extract IDs directly from FilterOption objects
-  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const centralDiameterIds = filters.wheelCentralDiameter.map(
-      (diameter) => diameter.id
-    );
-    if (centralDiameterIds.length > 0) {
-      params.wheel_central_diameter = centralDiameterIds;
-    }
-  }
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
     const fixingPointsIds = filters.wheelFixingPoints.map(
       (points) => points.id
     );
     if (fixingPointsIds.length > 0) {
-      params.wheel_fixing_points = fixingPointsIds;
-    }
-  }
-  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const heightIds = filters.wheelHeight.map((height) => height.id);
-    if (heightIds.length > 0) {
-      params.wheel_height = heightIds;
+      params.rims_fixing_points_id = fixingPointsIds;
     }
   }
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
     const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
     if (spacingIds.length > 0) {
-      params.wheel_spacing = spacingIds;
+      params.rims_spacing_id = spacingIds;
     }
   }
-  if (filters.wheelTreadDepth && filters.wheelTreadDepth.length > 0) {
-    const treadDepthIds = filters.wheelTreadDepth.map((depth) => depth.id);
-    if (treadDepthIds.length > 0) {
-      params.wheel_tread_depth = treadDepthIds;
+  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
+    const centralDiameterIds = filters.wheelCentralDiameter.map(
+      (diameter) => diameter.id
+    );
+    if (centralDiameterIds.length > 0) {
+      params.rims_central_diameter_id = centralDiameterIds;
+    }
+  }
+  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
+    const heightIds = filters.wheelHeight.map((height) => height.id);
+    if (heightIds.length > 0) {
+      params.tires_height_id = heightIds;
     }
   }
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
     const widthIds = filters.wheelWidth.map((width) => width.id);
     if (widthIds.length > 0) {
-      params.wheel_width = widthIds;
+      params.tires_width_id = widthIds;
     }
-  }
-
-  // Stale inventory
-  if (filters.staleMonths !== undefined) {
-    params.stale_months = filters.staleMonths;
-  }
-
-  // Warehouse - extract names from FilterOption objects (warehouse might be string[])
-  if (filters.warehouse && filters.warehouse.length > 0) {
-    params.warehouse = filters.warehouse.map((w) => w.name);
   }
 
   return params;
