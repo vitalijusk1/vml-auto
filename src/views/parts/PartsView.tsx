@@ -6,8 +6,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { PartsFilterCard } from "./components/PartsFilterCard";
 import { TopDetailsFilter } from "@/types";
 import { useTablePagination } from "@/hooks/useTablePagination";
-import { getPartsFilter } from "@/utils/tableFilters";
 import { useExpandableParts } from "@/hooks/useExpandableParts";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function PartsView() {
   const parts = useAppSelector(selectParts);
@@ -22,6 +22,8 @@ export function PartsView() {
     TopDetailsFilter.NONE
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearchQuery = useDebounce(searchQuery, 800);
 
   // Expandable parts functionality
   const { expandedRows, processedParts, toggleExpand } = useExpandableParts(
@@ -37,8 +39,10 @@ export function PartsView() {
     []
   );
 
-  // Unified parts filter function
-  const partsFilterFn = useCallback(getPartsFilter(), []);
+  // Handle search change from table
+  const handleSearchChange = useCallback((search: string) => {
+    setSearchQuery(search);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -53,6 +57,7 @@ export function PartsView() {
         backendFilters={backendFilters}
         onTopDetailsFilterChange={handleTopDetailsFilterChange}
         onLoadingChange={setIsLoading}
+        searchQuery={debouncedSearchQuery}
       />
 
       <Table
@@ -61,8 +66,8 @@ export function PartsView() {
         serverPagination={pagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onSearchChange={handleSearchChange}
         topDetailsFilter={topDetailsFilter}
-        customFilterFn={partsFilterFn}
         filterPlaceholder="Filtruoti dalis..."
         expandedRows={expandedRows}
         onToggleExpand={toggleExpand}

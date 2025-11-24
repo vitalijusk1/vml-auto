@@ -10,7 +10,8 @@ import { renderReturnExpandedContent } from "@/components/tables/components/Retu
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { ReturnsFilterCard } from "./components/ReturnsFilterCard";
-import { getReturnsFilter } from "@/utils/tableFilters";
+import { useTablePagination } from "@/hooks/useTablePagination";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function ReturnsView() {
   const returns = useAppSelector(selectReturns);
@@ -24,12 +25,15 @@ export function ReturnsView() {
     title: string;
   } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-
-  // Callback for ReturnsFilterCard to update returns
-  // Returns are stored in Redux, so this callback is mainly for future extensibility
-  const handleReturnsUpdate = useCallback(() => {
-    // Returns are stored in Redux via dispatch in ReturnsFilterCard
-  }, []);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 800);
+  const {
+    pagination,
+    handlePaginationUpdate,
+    handlePageChange,
+    handlePageSizeChange,
+  } = useTablePagination();
 
   // Check if we're on mobile screen size
   useEffect(() => {
@@ -71,8 +75,10 @@ export function ReturnsView() {
     [handlePhotoClick, isMobile]
   );
 
-  // Unified returns filter function
-  const returnFilterFn = useCallback(getReturnsFilter(), []);
+  // Handle search change from table
+  const handleSearchChange = useCallback((search: string) => {
+    setSearchQuery(search);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -83,8 +89,11 @@ export function ReturnsView() {
 
       {backendFilters && (
         <ReturnsFilterCard
-          onReturnsUpdate={handleReturnsUpdate}
+          onPaginationUpdate={handlePaginationUpdate}
+          pagination={pagination}
           backendFilters={backendFilters}
+          searchQuery={debouncedSearchQuery}
+          onLoadingChange={setIsLoading}
         />
       )}
       {!backendFilters && <FilterLoadingCard />}
@@ -94,12 +103,16 @@ export function ReturnsView() {
           <Table<Return>
             type={LayoutType.RETURNS}
             data={returns}
+            serverPagination={pagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
             expandedRows={expandedReturns}
             onToggleExpand={toggleReturnExpansion}
+            onSearchChange={handleSearchChange}
             renderExpandedRow={renderExpandedRow}
             filterColumnKey="id"
             filterPlaceholder="Filtruoti grąžinimus..."
-            customFilterFn={returnFilterFn}
+            isLoading={isLoading}
           />
         </CardContent>
       </Card>
