@@ -24,6 +24,7 @@ interface PartsFilterCardProps {
   backendFilters: any;
   onTopDetailsFilterChange: (value: TopDetailsFilter) => void;
   onLoadingChange?: (isLoading: boolean) => void;
+  searchQuery?: string;
 }
 
 // Separate component that manages local filter state and fetching - this isolates re-renders
@@ -34,6 +35,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
   backendFilters,
   onTopDetailsFilterChange,
   onLoadingChange,
+  searchQuery,
 }: PartsFilterCardProps) {
   const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<FilterState>(
@@ -79,6 +81,14 @@ export const PartsFilterCard = memo(function PartsFilterCard({
         topDetailsFilter
       );
 
+      // Only add search query if it's not empty
+      if (searchQuery && searchQuery.trim()) {
+        queryParams.search = searchQuery.trim();
+      } else {
+        // Explicitly remove search parameter if query is empty
+        delete queryParams.search;
+      }
+
       const response = await getParts(queryParams);
       dispatch(setParts(response.parts));
       onPaginationUpdate(response.pagination);
@@ -92,6 +102,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     pagination,
     backendFilters,
     topDetailsFilter,
+    searchQuery,
     dispatch,
     onPaginationUpdate,
   ]);
@@ -132,6 +143,14 @@ export const PartsFilterCard = memo(function PartsFilterCard({
         topDetailsFilter
       );
 
+      // Only add search query if it's not empty
+      if (searchQuery && searchQuery.trim()) {
+        queryParams.search = searchQuery.trim();
+      } else {
+        // Explicitly remove search parameter if query is empty
+        delete queryParams.search;
+      }
+
       const response = await getParts(queryParams);
       dispatch(setParts(response.parts));
       onPaginationUpdate(response.pagination);
@@ -147,6 +166,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     onTopDetailsFilterChange,
     filters,
     backendFilters,
+    searchQuery,
     dispatch,
   ]);
 
@@ -158,11 +178,11 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendFilters]);
 
-  // Fetch when pagination changes
+  // Fetch when pagination or search changes
   useEffect(() => {
     fetchParts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current_page, pagination.per_page]);
+  }, [pagination.current_page, pagination.per_page, searchQuery]);
 
   return (
     <FilterPanel

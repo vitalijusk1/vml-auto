@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { OrdersFilterCard } from "./components/OrdersFilterCard";
 import { useTablePagination } from "@/hooks/useTablePagination";
-import { getOrdersFilter } from "@/utils/tableFilters";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function OrdersView() {
   const orders = useAppSelector(selectOrders);
@@ -22,6 +22,9 @@ export function OrdersView() {
     title: string;
   } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 800);
   const {
     pagination,
     handlePaginationUpdate,
@@ -69,8 +72,10 @@ export function OrdersView() {
     [handlePhotoClick, isMobile]
   );
 
-  // Unified orders filter function
-  const orderFilterFn = useCallback(getOrdersFilter(), []);
+  // Handle search change from table
+  const handleSearchChange = useCallback((search: string) => {
+    setSearchQuery(search);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -84,6 +89,8 @@ export function OrdersView() {
           onPaginationUpdate={handlePaginationUpdate}
           pagination={pagination}
           backendFilters={backendFilters}
+          searchQuery={debouncedSearchQuery}
+          onLoadingChange={setIsLoading}
         />
       )}
       {!backendFilters && <FilterLoadingCard />}
@@ -94,12 +101,13 @@ export function OrdersView() {
         serverPagination={pagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onSearchChange={handleSearchChange}
         expandedRows={expandedOrders}
         onToggleExpand={toggleOrderExpansion}
         renderExpandedRow={renderExpandedRow}
         filterColumnKey="id"
         filterPlaceholder="Filtruoti užsakymus..."
-        customFilterFn={orderFilterFn}
+        isLoading={isLoading}
       />
 
       {/* Photo Gallery Modal */}

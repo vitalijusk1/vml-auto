@@ -432,35 +432,70 @@ export const filterStateToReturnsQueryParams = (
   return params;
 };
 
+export interface ReturnsResponse {
+  returns: Return[];
+  pagination?: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+  };
+}
+
 // Get all returns
 export const getReturns = async (
   queryParams?: ReturnsQueryParams
-): Promise<Return[]> => {
+): Promise<ReturnsResponse> => {
   const response = await authInstance.get<ApiReturnsResponse>(
     apiEndpoints.getReturns(queryParams)
   );
 
-  // Handle response structure: { success: true, data: [...] }
+  // Default pagination for responses without pagination
+  const defaultPagination = {
+    total: 0,
+    per_page: 15,
+    current_page: 1,
+    last_page: 1,
+  };
+
+  // Handle response structure: { success: true, data: [...], meta: {...} }
   if (
     response.data &&
     response.data.success &&
     Array.isArray(response.data.data)
   ) {
-    return response.data.data.map(transformReturn);
+    const returns = response.data.data.map(transformReturn);
+    const pagination = response.data.meta
+      ? {
+          total: response.data.meta.total,
+          per_page: response.data.meta.per_page,
+          current_page: response.data.meta.current_page,
+          last_page: response.data.meta.last_page,
+        }
+      : { ...defaultPagination, total: returns.length };
+    return { returns, pagination };
   }
 
   // Fallback: if data is directly an array
   if (Array.isArray(response.data)) {
-    return response.data.map(transformReturn);
+    const returns = response.data.map(transformReturn);
+    return {
+      returns,
+      pagination: { ...defaultPagination, total: returns.length },
+    };
   }
 
   // Fallback: if data.data exists
   if (response.data && Array.isArray((response.data as any).data)) {
-    return (response.data as any).data.map(transformReturn);
+    const returns = (response.data as any).data.map(transformReturn);
+    return {
+      returns,
+      pagination: { ...defaultPagination, total: returns.length },
+    };
   }
 
   console.warn("Unexpected returns API response structure:", response.data);
-  return [];
+  return { returns: [], pagination: defaultPagination };
 };
 
 // Get a single return by ID

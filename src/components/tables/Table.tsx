@@ -53,6 +53,7 @@ interface TableProps<T extends Car | Part | Order | Return> {
   serverPagination?: ServerPagination;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onSearchChange?: (search: string) => void;
   topDetailsFilter?: TopDetailsFilter;
   // Expandable row support
   expandedRows?: Set<string>;
@@ -76,6 +77,7 @@ export function Table<T extends Car | Part | Order | Return>({
   serverPagination,
   onPageChange,
   onPageSizeChange,
+  onSearchChange,
   topDetailsFilter,
   expandedRows,
   onToggleExpand,
@@ -288,14 +290,19 @@ export function Table<T extends Car | Part | Order | Return>({
               }
             }}
             filterValue={
-              customFilterFn
+              isServerSide && onSearchChange
+                ? globalFilter
+                : customFilterFn
                 ? globalFilter
                 : (table
                     .getColumn(filterColumnKey)
                     ?.getFilterValue() as string) ?? ""
             }
             onFilterChange={(value: string) => {
-              if (customFilterFn) {
+              if (isServerSide && onSearchChange) {
+                setGlobalFilter(value);
+                onSearchChange(value);
+              } else if (customFilterFn) {
                 setGlobalFilter(value);
               } else {
                 table.getColumn(filterColumnKey)?.setFilterValue(value);
@@ -407,14 +414,19 @@ export function Table<T extends Car | Part | Order | Return>({
               }
             }}
             filterValue={
-              customFilterFn
+              isServerSide && onSearchChange
+                ? globalFilter
+                : customFilterFn
                 ? globalFilter
                 : (table
                     .getColumn(filterColumnKey)
                     ?.getFilterValue() as string) ?? ""
             }
             onFilterChange={(value: string) => {
-              if (customFilterFn) {
+              if (isServerSide && onSearchChange) {
+                setGlobalFilter(value);
+                onSearchChange(value);
+              } else if (customFilterFn) {
                 setGlobalFilter(value);
               } else {
                 table.getColumn(filterColumnKey)?.setFilterValue(value);

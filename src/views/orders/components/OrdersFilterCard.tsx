@@ -23,6 +23,8 @@ interface OrdersFilterCardProps {
     last_page: number;
   };
   backendFilters: any;
+  searchQuery?: string;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 // Separate component that manages local filter state and fetching - this isolates re-renders
@@ -31,6 +33,8 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
   onPaginationUpdate,
   pagination,
   backendFilters,
+  searchQuery,
+  onLoadingChange,
 }: OrdersFilterCardProps) {
   const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<FilterState>(
@@ -38,6 +42,11 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [hasInitialFetched, setHasInitialFetched] = useState(false);
+
+  // Notify parent when loading state changes
+  useEffect(() => {
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
   // Persist filters to sessionStorage whenever they change
   useEffect(() => {
@@ -71,6 +80,14 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
           backendFilters
         );
 
+        // Only add search query if it's not empty
+        if (searchQuery && searchQuery.trim()) {
+          queryParams.search = searchQuery.trim();
+        } else {
+          // Explicitly remove search parameter if query is empty
+          delete queryParams.search;
+        }
+
         const response = await getOrders(queryParams);
         dispatch(setOrders(response.orders));
 
@@ -88,7 +105,14 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
         setIsLoading(false);
       }
     },
-    [filters, pagination, backendFilters, dispatch, onPaginationUpdate]
+    [
+      filters,
+      pagination,
+      backendFilters,
+      searchQuery,
+      dispatch,
+      onPaginationUpdate,
+    ]
   );
 
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
@@ -114,14 +138,14 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backendFilters]);
 
-  // Fetch when pagination changes (from table pagination controls)
+  // Fetch when pagination or search changes (from table pagination controls)
   useEffect(() => {
     // Only fetch if we've done initial fetch and pagination changed
     if (hasInitialFetched) {
       fetchOrders(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current_page, pagination.per_page]);
+  }, [pagination.current_page, pagination.per_page, searchQuery]);
 
   return (
     <FilterPanel
