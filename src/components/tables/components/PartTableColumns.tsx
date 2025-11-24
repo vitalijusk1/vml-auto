@@ -237,17 +237,13 @@ export function PartTableColumns({
   return [
     {
       accessorKey: "code",
-      header: "Detalės id/gamintojo kodas",
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.code}</div>
-          {row.original.manufacturerCode && (
-            <div className="text-xs text-muted-foreground">
-              {row.original.manufacturerCode}
-            </div>
-          )}
-        </div>
-      ),
+      header: "Detalės id",
+      cell: ({ row }) => <div className="font-medium">{row.original.code}</div>,
+    },
+    {
+      accessorKey: "manufacturerCode",
+      header: "Gamintojo kodas",
+      cell: ({ row }) => <div>{row.original.manufacturerCode || "-"}</div>,
     },
     {
       accessorKey: "photos",
