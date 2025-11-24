@@ -268,10 +268,11 @@ const transformOrder = (order: any): any => {
             : undefined,
           bodyType:
             carData.body_type || carData.car_body_type?.name || undefined,
-          engineCapacity:
-            carData.engine_capacity || carData.car_engine_cubic_capacity
-              ? parseInt(carData.car_engine_cubic_capacity)
-              : undefined,
+          engineCapacity: carData.engine_volume
+            ? parseInt(carData.engine_volume)
+            : carData.car_engine_cubic_capacity
+            ? parseInt(carData.car_engine_cubic_capacity)
+            : undefined,
           fuelType: carData.fuel || carData.car_fuel?.name || undefined,
         }),
       };

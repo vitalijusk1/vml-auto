@@ -7,7 +7,7 @@ import {
   Settings,
   Info,
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatDateTimeLithuanian } from "@/utils/dateFormatting";
 import { PhotoGallery } from "./PhotoGallery";
 
 interface CarDetailContentProps {
@@ -222,7 +222,7 @@ export function CarDetailContent({ car }: CarDetailContentProps) {
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               <strong>Last Synced:</strong>{" "}
-              {format(new Date(car.last_synced_at), "MMM dd, yyyy HH:mm")}
+              {formatDateTimeLithuanian(car.last_synced_at)}
             </span>
           </div>
         </div>

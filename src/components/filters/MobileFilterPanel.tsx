@@ -1,7 +1,7 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilterState, FilterOption, TopDetailsFilter } from "@/types";
-import { Filter, RotateCcw } from "lucide-react";
+import { FilterState, TopDetailsFilter } from "@/types";
+import { Filter, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { defaultFilters } from "@/store/slices/filtersSlice";
@@ -15,11 +15,11 @@ import { selectBackendFilters } from "@/store/selectors";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
+import { FilterOption } from "@/types";
 import { Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
-import { MobileFilterPanel } from "./MobileFilterPanel";
 
-interface FilterPanelProps<T extends FilterState> {
+interface MobileFilterPanelProps<T extends FilterState> {
   type: LayoutType;
   filters: T;
   onFiltersChange: (filters: T) => void;
@@ -72,7 +72,7 @@ const getFilter = (
   }
 };
 
-export function FilterPanel<T extends FilterState>({
+export function MobileFilterPanel<T extends FilterState>({
   type,
   filters,
   onFiltersChange,
@@ -81,20 +81,11 @@ export function FilterPanel<T extends FilterState>({
   isLoading = false,
   hideCategoriesAndWheels = false,
   hideTopDetailsFilter = false,
-}: FilterPanelProps<T>) {
+}: MobileFilterPanelProps<T>) {
   const backendFilters = useAppSelector(selectBackendFilters);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
+    useState(false);
 
   // Use ref to always get latest filters value to avoid stale closure issues
   const filtersRef = useRef(filters);
@@ -111,14 +102,9 @@ export function FilterPanel<T extends FilterState>({
   );
 
   const resetFilters = () => {
-    // All filters are now page-specific (local state), no need to dispatch to Redux
     onFiltersChange(defaultFilters as T);
   };
 
-  // Get title based on type
-  const title = "Filtrai";
-  const [isDefaultFiltersExpanded, setIsDefaultFiltersExpanded] =
-    useState(false);
   const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
     TopDetailsFilter.NONE
   );
@@ -189,7 +175,6 @@ export function FilterPanel<T extends FilterState>({
     if (!category) return;
 
     const currentCategories = partsFilters.partCategory || [];
-    // Get category name from current selection if available, otherwise from category object
     const existingCategory = currentCategories.find(
       (cat) => cat.id === categoryId
     );
@@ -215,7 +200,6 @@ export function FilterPanel<T extends FilterState>({
       // Select parent and all children
       const childOptions = getAllChildCategoryOptions(category);
       const optionsToAdd = [categoryOption, ...childOptions];
-      // Add only options that aren't already selected
       const existingIds = new Set(currentCategories.map((cat) => cat.id));
       const newCategories = [
         ...currentCategories,
@@ -294,8 +278,8 @@ export function FilterPanel<T extends FilterState>({
   const hasCategories = categories.length > 0;
   const hasWheels = wheelsFilters && Object.keys(wheelsFilters).length > 0;
 
-  // Calculate selected default filters count (for parts only)
-  const defaultFiltersCount = useMemo(() => {
+  // Calculate active filters count
+  const activeFiltersCount = useMemo(() => {
     if (type !== LayoutType.PARTS || !partsFilters) return 0;
 
     let count = 0;
@@ -311,6 +295,8 @@ export function FilterPanel<T extends FilterState>({
       count += partsFilters.quality.length;
     if (partsFilters.position && partsFilters.position.length > 0)
       count += partsFilters.position.length;
+    if (partsFilters.partCategory && partsFilters.partCategory.length > 0)
+      count += partsFilters.partCategory.length;
 
     // Count status (if not "All")
     if (
@@ -321,7 +307,7 @@ export function FilterPanel<T extends FilterState>({
       count += partsFilters.status.length;
     }
 
-    // Count year range (if either min or max is set, count as 1)
+    // Count ranges
     if (
       partsFilters.yearRange &&
       (partsFilters.yearRange.min !== undefined ||
@@ -330,7 +316,6 @@ export function FilterPanel<T extends FilterState>({
       count += 1;
     }
 
-    // Count price range (if either min or max is set, count as 1)
     if (
       partsFilters.priceRange &&
       (partsFilters.priceRange.min !== undefined ||
@@ -342,137 +327,118 @@ export function FilterPanel<T extends FilterState>({
     return count;
   }, [type, partsFilters]);
 
-  const hasDefaultFiltersSelection = defaultFiltersCount > 0;
-
-  // Use mobile filter panel on mobile devices
-  if (isMobile) {
-    return (
-      <MobileFilterPanel
-        type={type}
-        filters={filters}
-        onFiltersChange={onFiltersChange}
-        onTopDetailsFilterChange={onTopDetailsFilterChange}
-        onFilter={onFilter}
-        isLoading={isLoading}
-        hideCategoriesAndWheels={hideCategoriesAndWheels}
-        hideTopDetailsFilter={hideTopDetailsFilter}
-      />
-    );
-  }
-
-  // Desktop filter panel
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {title}
-          </CardTitle>
-          <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2">
-            {type !== LayoutType.ORDER_CONTROL && !hideTopDetailsFilter && (
-              <div className="w-full xs:w-auto">
-                <SingleSelectDropdown
-                  options={[
-                    {
-                      value: TopDetailsFilter.TOP_SELLING,
-                      label: "Top parduodamas prekes",
-                    },
-                    {
-                      value: TopDetailsFilter.LEAST_SELLING,
-                      label: "Nepopuliarios",
-                    },
-                    { value: TopDetailsFilter.NONE, label: "Be filtro" },
-                  ]}
-                  value={topDetailsFilter}
-                  onChange={handleTopDetailsFilterChange}
-                  className="w-full xs:w-[200px]"
-                />
-              </div>
+      <CardContent className="p-4">
+        {/* Mobile Filter Header - Always Visible */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <span className="font-medium">Filtrai</span>
+            {activeFiltersCount > 0 && (
+              <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="h-8 px-2"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </Button>
             )}
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={resetFilters}
-              className="h-8"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-8 px-2"
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Išvalyti
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Categories Section - only for parts */}
-        {type === LayoutType.PARTS &&
-          hasCategories &&
-          !hideCategoriesAndWheels && (
-            <CategorySection
-              categories={categories}
-              selectedCategories={selectedCategoryIds}
-              onCategoryToggle={handleCategoryToggle}
+
+        {/* Top Details Filter - Always visible for parts */}
+        {type === LayoutType.PARTS && !hideTopDetailsFilter && (
+          <div className="mb-3">
+            <SingleSelectDropdown
+              options={[
+                {
+                  value: TopDetailsFilter.TOP_SELLING,
+                  label: "Top parduodamas prekes",
+                },
+                {
+                  value: TopDetailsFilter.LEAST_SELLING,
+                  label: "Nepopuliarios",
+                },
+                { value: TopDetailsFilter.NONE, label: "Be filtro" },
+              ]}
+              value={topDetailsFilter}
+              onChange={handleTopDetailsFilterChange}
+              className="w-full"
             />
-          )}
-
-        {/* Wheels Section - only for parts */}
-        {type === LayoutType.PARTS &&
-          hasWheels &&
-          wheelsFilters &&
-          !hideCategoriesAndWheels && (
-            <WheelsSection
-              wheels={wheelsFilters}
-              selectedFilters={selectedWheelFilters}
-              onFilterChange={handleWheelFilterChange}
-            />
-          )}
-
-        {/* Default Filters Collapsible Section */}
-        <FilterSection
-          title="Pagrindiniai filtrai"
-          isExpanded={isDefaultFiltersExpanded}
-          onToggle={() =>
-            setIsDefaultFiltersExpanded(!isDefaultFiltersExpanded)
-          }
-          hasSelection={hasDefaultFiltersSelection}
-          selectionCount={defaultFiltersCount}
-        >
-          {getFilter(type, filters, updateFilters, resetFilters)}
-        </FilterSection>
-
-        {/* Filter Button */}
-        {type === LayoutType.PARTS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button
-              className="px-6"
-              onClick={onFilter}
-              disabled={isLoading || !backendFilters}
-            >
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
           </div>
         )}
-        {type === LayoutType.ANALYTICS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button className="px-6" onClick={onFilter} disabled={isLoading}>
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
-          </div>
-        )}
-        {type === LayoutType.ORDER_CONTROL && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button
-              className="px-6"
-              onClick={onFilter}
-              disabled={
-                isLoading ||
-                !(filters as FilterState).carBrand ||
-                (filters as FilterState).carBrand?.length === 0 ||
-                !(filters as FilterState).carModel ||
-                (filters as FilterState).carModel?.length === 0
+
+        {/* Expandable Filter Content */}
+        {isExpanded && (
+          <div className="space-y-4">
+            {/* Categories Section - only for parts */}
+            {type === LayoutType.PARTS &&
+              hasCategories &&
+              !hideCategoriesAndWheels && (
+                <CategorySection
+                  categories={categories}
+                  selectedCategories={selectedCategoryIds}
+                  onCategoryToggle={handleCategoryToggle}
+                />
+              )}
+
+            {/* Wheels Section - only for parts */}
+            {type === LayoutType.PARTS &&
+              hasWheels &&
+              wheelsFilters &&
+              !hideCategoriesAndWheels && (
+                <WheelsSection
+                  wheels={wheelsFilters}
+                  selectedFilters={selectedWheelFilters}
+                  onFilterChange={handleWheelFilterChange}
+                />
+              )}
+
+            {/* Main Filters - Collapsible Section */}
+            <FilterSection
+              title="Pagrindiniai filtrai"
+              isExpanded={isDefaultFiltersExpanded}
+              onToggle={() =>
+                setIsDefaultFiltersExpanded(!isDefaultFiltersExpanded)
               }
             >
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
+              {getFilter(type, filters, updateFilters, resetFilters)}
+            </FilterSection>
+
+            {/* Filter Button */}
+            {onFilter && (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  onFilter();
+                  setIsExpanded(false); // Collapse after filtering
+                }}
+                disabled={isLoading || !backendFilters}
+              >
+                {isLoading ? "Kraunama..." : "Filtruoti"}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

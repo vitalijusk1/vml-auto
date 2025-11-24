@@ -6,6 +6,7 @@ interface OrderItemExpandedContentProps {
   onPhotoClick: (photos: string[], title: string) => void;
   showReason?: boolean;
   showQuantity?: boolean;
+  isMobile?: boolean;
 }
 
 export function OrderItemExpandedContent({
@@ -14,7 +15,104 @@ export function OrderItemExpandedContent({
   onPhotoClick,
   showReason = false,
   showQuantity = true,
+  isMobile = false,
 }: OrderItemExpandedContentProps) {
+  // Mobile layout (compact)
+  if (isMobile) {
+    return (
+      <div className="py-4">
+        <h4 className="font-semibold text-xs mb-3">{title}</h4>
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="p-3 bg-muted rounded-lg border border-border"
+            >
+              <div className="flex items-start gap-3">
+                {item.photo && (
+                  <button
+                    onClick={() => {
+                      const photos =
+                        item.photoGallery || (item.photo ? [item.photo] : []);
+                      if (photos.length > 0) {
+                        onPhotoClick(photos, item.partName || "Nuotraukos");
+                      }
+                    }}
+                    className="w-12 h-12 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <img
+                      src={item.photo}
+                      alt={item.partName}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  </button>
+                )}
+
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm mb-1">
+                    {item.partName || "N/A"}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-1">
+                    ID: {item.partId || "N/A"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {item.carBrand && item.carModel
+                      ? `${item.carBrand} ${item.carModel} ${
+                          item.carYear ? `(${item.carYear})` : ""
+                        }`
+                      : "N/A"}
+                  </div>
+                </div>
+
+                <div className="text-right flex-shrink-0">
+                  <div className="text-xs text-muted-foreground">Kaina</div>
+                  <div className="font-medium text-sm">
+                    €
+                    {showReason
+                      ? ((item as any).price || 0).toLocaleString()
+                      : (item.priceEUR || 0).toLocaleString()}
+                  </div>
+                  {showQuantity && item.quantity > 1 && (
+                    <div className="mt-1">
+                      <div className="text-xs text-muted-foreground">
+                        Kiekis
+                      </div>
+                      <div className="text-sm">{item.quantity}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-3 pt-2 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="text-muted-foreground">Gamintojo kodas</div>
+                    <div className="truncate">
+                      {showReason
+                        ? (item as any).manufacturerCode ||
+                          (item as any).partCode ||
+                          "N/A"
+                        : item.manufacturerCode || "N/A"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Kėbulo tipas</div>
+                    <div className="truncate">
+                      {showReason
+                        ? (item as any).carBodyType || "N/A"
+                        : item.bodyType || "N/A"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop layout (original horizontal layout)
   return (
     <div className="py-4">
       <h4 className="font-semibold text-xs mb-3">{title}</h4>
@@ -42,7 +140,6 @@ export function OrderItemExpandedContent({
                 />
               </button>
             )}
-            {/* Part Name */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 {showReason ? "Prekė" : "Pavadinimas"}
@@ -51,14 +148,12 @@ export function OrderItemExpandedContent({
                 {item.partName || "N/A"}
               </div>
             </div>
-            {/* Part ID */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Detalės id
               </div>
               <div className="text-sm">{item.partId || "N/A"}</div>
             </div>
-            {/* Manufacturer Code - shown before car info for returns, after for orders */}
             {showReason && (
               <div className="flex flex-col flex-1">
                 <div className="text-xs text-muted-foreground mb-1">
@@ -71,7 +166,6 @@ export function OrderItemExpandedContent({
                 </div>
               </div>
             )}
-            {/* Car Info */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Automobilis
@@ -93,7 +187,6 @@ export function OrderItemExpandedContent({
                 )}
               </div>
             </div>
-            {/* Body Type */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Kėbulo tipas
@@ -104,7 +197,6 @@ export function OrderItemExpandedContent({
                   : item.bodyType || "N/A"}
               </div>
             </div>
-            {/* Fuel Type */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Kuro tipas
@@ -115,7 +207,6 @@ export function OrderItemExpandedContent({
                   : item.fuelType || "N/A"}
               </div>
             </div>
-            {/* Engine Capacity */}
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Variklio tūris
@@ -130,7 +221,6 @@ export function OrderItemExpandedContent({
                   : "N/A"}
               </div>
             </div>
-            {/* Manufacturer Code - shown after car info for orders */}
             {!showReason && (
               <div className="flex flex-col flex-1">
                 <div className="text-xs text-muted-foreground mb-1">
@@ -139,7 +229,6 @@ export function OrderItemExpandedContent({
                 <div className="text-sm">{item.manufacturerCode || "N/A"}</div>
               </div>
             )}
-            {/* Reason - only for returns */}
             {showReason && (
               <div className="flex flex-col flex-1">
                 <div className="text-xs text-muted-foreground mb-1">

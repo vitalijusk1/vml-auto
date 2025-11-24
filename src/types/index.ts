@@ -19,11 +19,14 @@ export type BodyType =
   | "Van";
 
 // Filter option type for storing filter selections with both name and ID
-export enum TopDetailsFilter {
-  TOP_SELLING = "top-detales",
-  LEAST_SELLING = "reciausiai-parduodamos",
-  NONE = "be-filtro",
-}
+export const TopDetailsFilter = {
+  TOP_SELLING: "top-detales",
+  LEAST_SELLING: "reciausiai-parduodamos",
+  NONE: "be-filtro",
+} as const;
+
+export type TopDetailsFilter =
+  (typeof TopDetailsFilter)[keyof typeof TopDetailsFilter];
 
 export interface FilterOption {
   name: string;
@@ -114,6 +117,21 @@ export interface Part {
   engineVolume?: string;
   quality?: string;
   qualityId?: number;
+  // Expandable parts functionality
+  part_ids?: number[];
+  items_count?: number;
+  qualities?: Record<string, number>;
+  statuses?: Record<string, number>;
+  price_min?: number;
+  price_max?: number;
+  price_avg?: number;
+  total_sold?: number;
+  time_in_warehouse_days?: number;
+  // Child parts for expanded state
+  childParts?: Part[];
+  isExpanded?: boolean;
+  isChildPart?: boolean;
+  parentPartId?: string;
   // Wheel-specific fields (optional)
   wheelDrive?: "AWD" | "RWD" | "FWD";
   wheelSide?: "Left" | "Right";

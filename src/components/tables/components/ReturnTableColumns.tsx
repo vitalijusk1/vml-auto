@@ -1,24 +1,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Return } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
-import { format } from "date-fns";
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { OrderItemExpandedContent } from "./OrderItemExpandedContent";
-
-// Helper function to safely format dates
-const formatReturnDate = (date: Date | string | null | undefined): string => {
-  if (!date) return "N/A";
-  try {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      return "N/A";
-    }
-    return format(dateObj, "MMM dd, yyyy");
-  } catch (error) {
-    console.error("Error formatting date:", error, date);
-    return "N/A";
-  }
-};
+import { formatDateLithuanian } from "@/utils/dateFormatting";
 
 interface ReturnTableColumnsProps {
   onToggleExpand: (returnId: string) => void;
@@ -53,7 +38,7 @@ export function ReturnTableColumns({
       header: "Grąžinimo sukūrimo data",
       cell: ({ row }) => (
         <span className="font-semibold">
-          {formatReturnDate(row.original.dateCreated)}
+          {formatDateLithuanian(row.original.dateCreated)}
         </span>
       ),
     },
@@ -146,11 +131,6 @@ export function ReturnTableColumns({
       ),
     },
     {
-      id: "warehouse",
-      header: "Sandėlys",
-      cell: () => <span className="text-sm text-muted-foreground">N/A</span>,
-    },
-    {
       id: "action",
       header: "Veiksmas",
       cell: ({ row }) => {
@@ -177,7 +157,8 @@ export function ReturnTableColumns({
 // Helper component to render expanded return items
 export function renderReturnExpandedContent(
   returnItem: Return,
-  onPhotoClick: (photos: string[], title: string) => void
+  onPhotoClick: (photos: string[], title: string) => void,
+  isMobile?: boolean
 ) {
   return (
     <OrderItemExpandedContent
@@ -186,6 +167,7 @@ export function renderReturnExpandedContent(
       onPhotoClick={onPhotoClick}
       showReason={true}
       showQuantity={false}
+      isMobile={isMobile}
     />
   );
 }

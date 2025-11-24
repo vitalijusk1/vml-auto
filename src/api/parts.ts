@@ -1,7 +1,7 @@
 import authInstance from "./axios";
 import { Part, PartStatus, PartPosition, FilterState } from "@/types";
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
-import { BackendFilters, Category } from "@/utils/backendFilters";
+import { BackendFilters } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
 import { extractCategoryIds } from "@/utils/filterHelpers";
 
@@ -43,6 +43,16 @@ interface ApiPartResponse {
   rims_central_diameter_info: string | null;
   tires_width_info: string | null;
   tires_height_info: string | null;
+  // Expandable parts fields
+  part_ids?: number[];
+  items_count?: number;
+  qualities?: Record<string, number>;
+  statuses?: Record<string, number>;
+  price_min?: number;
+  price_max?: number;
+  price_avg?: number;
+  total_sold?: number;
+  time_in_warehouse_days?: number;
   car: {
     id: number;
     rrr_id: number;
@@ -205,6 +215,19 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
     fuelType: apiPart.car?.car_fuel?.name || undefined,
     engineVolume: apiPart.car?.car_engine_cubic_capacity || undefined,
     qualityId: getQualityId(apiPart.quality),
+    // Expandable parts fields
+    part_ids: apiPart.part_ids,
+    items_count: apiPart.items_count,
+    qualities: apiPart.qualities,
+    statuses: apiPart.statuses,
+    price_min: apiPart.price_min,
+    price_max: apiPart.price_max,
+    price_avg: apiPart.price_avg,
+    total_sold: apiPart.total_sold,
+    time_in_warehouse_days: apiPart.time_in_warehouse_days,
+    isExpanded: apiPart.part_ids && apiPart.part_ids.length > 1 ? true : false, // Default expanded if has child parts
+    childParts: [], // Will be populated when fetching child parts
+    isChildPart: false,
     // Wheel-specific fields
     wheelDrive: undefined, // TODO: Map from car data if available
     wheelSide: undefined, // TODO: Map from API if available
@@ -223,11 +246,26 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
 export const filterStateToQueryParams = (
   filters: FilterState,
   pagination?: { page?: number; per_page?: number },
-  backendFilters?: any
+  backendFilters?: any,
+  topDetailsFilter?: string
 ): PartsQueryParams => {
   const params: PartsQueryParams = {
     ...pagination,
   };
+
+  // Top details filter (top selling, least selling, etc.)
+  if (topDetailsFilter && topDetailsFilter !== "be-filtro") {
+    // Map TopDetailsFilter values to sort_by API values
+    const sortByMap: Record<string, "sold_most" | "sold_least" | "never_sold"> =
+      {
+        "top-detales": "sold_most",
+        "reciausiai-parduodamos": "sold_least",
+      };
+    const sortBy = sortByMap[topDetailsFilter];
+    if (sortBy) {
+      params.sort_by = sortBy;
+    }
+  }
 
   // Search
   if (filters.search && filters.search.trim()) {
@@ -373,6 +411,42 @@ export const getParts = async (
 export const getPart = async (id: string): Promise<Part> => {
   const response = await authInstance.get(apiEndpoints.getPartById(id));
   return response.data;
+};
+
+// Get multiple parts by comma-separated IDs
+export const getPartsByIds = async (ids: number[]): Promise<Part[]> => {
+  const idsString = ids.join(",");
+  const endpoint = `/parts/${idsString}`;
+
+  try {
+    const response = await authInstance.get(endpoint);
+
+    if (!response.data.success) {
+      console.log(`API returned success: false for ${endpoint}`);
+      return [];
+    }
+
+    // Handle both single part response (object) and multiple parts response (array)
+    let partsData: ApiPartResponse[] = [];
+
+    if (Array.isArray(response.data.data)) {
+      // Multiple parts response: data is array
+      partsData = response.data.data;
+    } else if (response.data.data && typeof response.data.data === "object") {
+      // Single part response: data is object, wrap in array
+      partsData = [response.data.data];
+    } else {
+      // No data or null
+      console.log(`No parts found for IDs: ${ids}`);
+      return [];
+    }
+
+    const transformedParts = partsData.map(transformApiPart);
+    return transformedParts;
+  } catch (error) {
+    console.error(`API Error for endpoint ${endpoint}:`, error);
+    throw error;
+  }
 };
 
 // Create a new part

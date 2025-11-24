@@ -43,38 +43,48 @@ export function TableToolbar({
   children,
 }: TableToolbarProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between">
-      <div className="text-sm text-muted-foreground sm:mr-3">
-        Rodoma {showing} iš {total} {itemName}
-      </div>
-      <div className="flex items-center gap-3">
-        <PageSizeSelector
-          pagination={pagination}
-          onPageSizeChange={onPageSizeChange}
-          options={pageSizeOptions}
-        />
-        <TableFilter
-          value={filterValue}
-          onChange={onFilterChange}
-          placeholder={filterPlaceholder}
-        />
-        {(onDownloadPDF || onDownloadCSV) && (
+    <div className="flex flex-col gap-3">
+      {/* Item count and controls - responsive layout */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {/* Item count - left side on desktop, top on mobile */}
+        <div className="text-sm text-muted-foreground">
+          Rodoma {showing} iš {total} {itemName}
+        </div>
+
+        {/* Controls - right side on desktop, bottom on mobile */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="flex items-center gap-2">
-            {onDownloadPDF && (
-              <Button variant="outline" size="sm" onClick={onDownloadPDF}>
-                <Download className="h-4 w-4 mr-2" />
-                Atsisiųsti .pdf
-              </Button>
-            )}
-            {onDownloadCSV && (
-              <Button variant="outline" size="sm" onClick={onDownloadCSV}>
-                <Download className="h-4 w-4 mr-2" />
-                Atsisiųsti .csv
-              </Button>
-            )}
+            <PageSizeSelector
+              pagination={pagination}
+              onPageSizeChange={onPageSizeChange}
+              options={pageSizeOptions}
+            />
           </div>
-        )}
-        {children}
+          <div className="w-full sm:w-auto min-w-0">
+            <TableFilter
+              value={filterValue}
+              onChange={onFilterChange}
+              placeholder={filterPlaceholder}
+            />
+          </div>
+          {(onDownloadPDF || onDownloadCSV) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {onDownloadPDF && (
+                <Button variant="outline" size="sm" onClick={onDownloadPDF}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Atsisiųsti .pdf
+                </Button>
+              )}
+              {onDownloadCSV && (
+                <Button variant="outline" size="sm" onClick={onDownloadCSV}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Atsisiųsti .csv
+                </Button>
+              )}
+            </div>
+          )}
+          {children}
+        </div>
       </div>
     </div>
   );

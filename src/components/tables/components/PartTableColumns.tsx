@@ -3,6 +3,9 @@ import { Part, PartStatus, Order, TopDetailsFilter } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
+import { ChevronRight, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { hasExpandableChildren } from "@/utils/partHelpers";
 
 const getPartStatusClass = (status: PartStatus) => {
   const statusMap: Record<PartStatus, string> = {
@@ -119,6 +122,9 @@ interface PartTableColumnsProps {
   backendFilters?: any;
   topDetailsFilter?: TopDetailsFilter;
   orders?: Order[];
+  // Expandable row support
+  onToggleExpand?: (id: string) => void;
+  isExpanded?: (id: string) => boolean;
 }
 
 export function PartTableColumns({
@@ -126,8 +132,12 @@ export function PartTableColumns({
   backendFilters,
   topDetailsFilter,
   orders = [],
+  onToggleExpand,
+  isExpanded,
 }: PartTableColumnsProps): ColumnDef<Part>[] {
-  const isTopSellingMode = topDetailsFilter === TopDetailsFilter.TOP_SELLING;
+  const isAnalyticsMode =
+    topDetailsFilter === TopDetailsFilter.TOP_SELLING ||
+    topDetailsFilter === TopDetailsFilter.LEAST_SELLING;
 
   // Calculate sold count and average price for a part
   const getPartSalesData = (part: Part) => {
@@ -153,8 +163,8 @@ export function PartTableColumns({
     return { soldCount, avgPrice, inStock };
   };
 
-  // If top selling mode, return different columns
-  if (isTopSellingMode) {
+  // If analytics mode (top selling or least selling), return different columns without expand functionality
+  if (isAnalyticsMode) {
     return [
       {
         accessorKey: "manufacturerCode",
@@ -217,33 +227,29 @@ export function PartTableColumns({
         accessorKey: "turetaParduota",
         header: "Tureta/Parduota",
         cell: ({ row }) => {
-          const { soldCount } = getPartSalesData(row.original);
           const part = row.original;
-          const hasInStock =
-            part.status === "In Stock" || part.status === "Reserved";
+          // In analytics mode, show items_count/total_sold
+          const itemsCount = part.items_count || 0;
+          const totalSold = part.total_sold || 0;
           return (
-            <div>
-              {hasInStock && <div className="text-sm">Tureta: 1</div>}
-              {soldCount > 0 && (
-                <div
-                  className={`text-sm ${
-                    hasInStock ? "text-xs text-muted-foreground" : ""
-                  }`}
-                >
-                  Parduota: {soldCount}
-                </div>
-              )}
-              {!hasInStock && soldCount === 0 && (
-                <div className="text-sm">Parduota</div>
-              )}
+            <div className="text-sm">
+              <div>Tureta: {itemsCount}</div>
+              <div className="text-xs text-muted-foreground">
+                Parduota: {totalSold}
+              </div>
             </div>
           );
         },
       },
       {
-        accessorKey: "warehouse",
+        accessorKey: "sandely",
         header: "Sandėly",
-        cell: ({ row }) => row.original.warehouse || "-",
+        cell: ({ row }) => {
+          const part = row.original;
+          // Show count of parts with status 0 (in stock)
+          const inStockCount = part.statuses ? part.statuses[0] || 0 : 0;
+          return <div>{inStockCount}</div>;
+        },
       },
       {
         accessorKey: "avgPrice",
@@ -257,16 +263,47 @@ export function PartTableColumns({
           );
         },
       },
-      {
-        accessorKey: "warehouses",
-        header: "Sandėlys",
-        cell: ({ row }) => row.original.warehouse || "-",
-      },
     ];
   }
 
   // Default columns
   return [
+    // Expandable column - fixed width to prevent shifting
+    {
+      id: "expand",
+      header: "",
+      size: 40,
+      cell: ({ row }) => {
+        const part = row.original;
+        const canExpand = hasExpandableChildren(part, isAnalyticsMode);
+        const expanded = isExpanded ? isExpanded(part.id) : false;
+
+        return (
+          <div className="w-10 flex items-center">
+            {part.isChildPart && (
+              <div className="w-4 h-4 border-l border-t border-gray-300 mr-2" />
+            )}
+            {canExpand && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleExpand?.(part.id);
+                }}
+                className="h-6 w-6 p-0"
+              >
+                {expanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "code",
       header: "Detalės id",
@@ -359,11 +396,6 @@ export function PartTableColumns({
           </div>
         </div>
       ),
-    },
-    {
-      accessorKey: "warehouse",
-      header: "Sandėlys",
-      cell: ({ row }) => row.original.warehouse || "-",
     },
   ];
 }

@@ -1,6 +1,6 @@
 import { Part } from "@/types";
-import { format } from "date-fns";
-import { Calendar, DollarSign, Package, Car, Info } from "lucide-react";
+import { Calendar, Package, Info, Car, DollarSign } from "lucide-react";
+import { formatDateLithuanian } from "@/utils/dateFormatting";
 import { PhotoGallery } from "./PhotoGallery";
 
 interface PartDetailContentProps {
@@ -65,7 +65,7 @@ export function PartDetailContent({ part }: PartDetailContentProps) {
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">
-              <strong>Būsena:</strong> {part.status}
+              <strong>Statusas:</strong> {part.status}
             </span>
           </div>
         </div>
@@ -108,22 +108,7 @@ export function PartDetailContent({ part }: PartDetailContentProps) {
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm">
             <strong>Pridėta data:</strong>{" "}
-            {(() => {
-              try {
-                const date = part.dateAdded;
-                if (!date) return "-";
-                const dateObj = date instanceof Date ? date : new Date(date);
-                if (isNaN(dateObj.getTime())) return "-";
-                return format(dateObj, "MMM dd, yyyy");
-              } catch (error) {
-                console.error(
-                  "Error formatting dateAdded:",
-                  error,
-                  part.dateAdded
-                );
-                return "-";
-              }
-            })()}
+            {formatDateLithuanian(part.dateAdded)}
           </span>
         </div>
         <div className="text-sm">
@@ -132,22 +117,7 @@ export function PartDetailContent({ part }: PartDetailContentProps) {
         {part.dateSold && (
           <div className="text-sm mt-2">
             <strong>Pardavimo data:</strong>{" "}
-            {(() => {
-              try {
-                const date = part.dateSold;
-                if (!date) return "-";
-                const dateObj = date instanceof Date ? date : new Date(date);
-                if (isNaN(dateObj.getTime())) return "-";
-                return format(dateObj, "MMM dd, yyyy");
-              } catch (error) {
-                console.error(
-                  "Error formatting dateSold:",
-                  error,
-                  part.dateSold
-                );
-                return "-";
-              }
-            })()}
+            {formatDateLithuanian(part.dateSold)}
           </div>
         )}
       </div>

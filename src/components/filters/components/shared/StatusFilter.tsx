@@ -10,7 +10,7 @@ interface StatusFilterProps {
 }
 
 export const StatusFilter = ({
-  label = "Būsena",
+  label = "Statusas",
   selected,
   onChange,
   placeholder = "Visi",
@@ -33,4 +33,3 @@ export const StatusFilter = ({
     </div>
   );
 };
-

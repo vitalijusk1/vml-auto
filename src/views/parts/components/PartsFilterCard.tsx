@@ -23,7 +23,7 @@ interface PartsFilterCardProps {
   };
   backendFilters: any;
   onTopDetailsFilterChange: (value: TopDetailsFilter) => void;
-  topDetailsFilter: TopDetailsFilter;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 // Separate component that manages local filter state and fetching - this isolates re-renders
@@ -33,13 +33,21 @@ export const PartsFilterCard = memo(function PartsFilterCard({
   pagination,
   backendFilters,
   onTopDetailsFilterChange,
-  topDetailsFilter,
+  onLoadingChange,
 }: PartsFilterCardProps) {
   const dispatch = useAppDispatch();
   const [filters, setFilters] = useState<FilterState>(
     loadPersistedFilters(StorageKeys.PARTS_FILTERS)
   );
+  const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
+    TopDetailsFilter.NONE
+  );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Notify parent when loading state changes
+  useEffect(() => {
+    onLoadingChange?.(isLoading);
+  }, [isLoading, onLoadingChange]);
 
   // Persist filters to sessionStorage whenever they change
   useEffect(() => {
@@ -79,21 +87,68 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     } finally {
       setIsLoading(false);
     }
-  }, [filters, pagination, backendFilters, dispatch, onPaginationUpdate]);
+  }, [
+    filters,
+    pagination,
+    backendFilters,
+    topDetailsFilter,
+    dispatch,
+    onPaginationUpdate,
+  ]);
 
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
   }, []);
 
-  const handleFilter = useCallback(() => {
+  const handleTopDetailsFilterChange = useCallback(
+    (value: TopDetailsFilter) => {
+      // Only update local state, don't notify parent yet
+      setTopDetailsFilter(value);
+    },
+    []
+  );
+
+  const handleFilter = useCallback(async () => {
     // Reset to page 1 when filtering
-    onPaginationUpdate({
+    const newPagination = {
       ...pagination,
       current_page: 1,
-    });
-    // Fetch immediately when filter button is clicked
-    fetchParts();
-  }, [pagination, onPaginationUpdate, fetchParts]);
+    };
+    onPaginationUpdate(newPagination);
+
+    // Notify parent of the applied filter BEFORE fetching
+    onTopDetailsFilterChange(topDetailsFilter);
+
+    // Fetch with page 1 directly to avoid stale closure
+    setIsLoading(true);
+    try {
+      const queryParams = filterStateToQueryParams(
+        filters,
+        {
+          page: 1,
+          per_page: pagination.per_page,
+        },
+        backendFilters,
+        topDetailsFilter
+      );
+
+      const response = await getParts(queryParams);
+      dispatch(setParts(response.parts));
+      onPaginationUpdate(response.pagination);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    pagination,
+    onPaginationUpdate,
+    topDetailsFilter,
+    onTopDetailsFilterChange,
+    filters,
+    backendFilters,
+    dispatch,
+  ]);
 
   // Fetch on initial load when backendFilters become available
   useEffect(() => {
@@ -114,7 +169,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
       type={LayoutType.PARTS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      onTopDetailsFilterChange={onTopDetailsFilterChange}
+      onTopDetailsFilterChange={handleTopDetailsFilterChange}
       onFilter={handleFilter}
       isLoading={isLoading}
     />

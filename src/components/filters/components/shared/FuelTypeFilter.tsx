@@ -1,6 +1,7 @@
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
-import { FilterOption, FuelType } from "@/types";
+import { FilterOption } from "@/types";
+import { getLocalizedText } from "@/utils/i18n";
 
 interface FuelTypeFilterProps {
   label?: string;
@@ -38,7 +39,9 @@ export const FuelTypeFilter = ({
         placeholder="Visi"
         searchable={true}
         searchPlaceholder="Ieškoti kuro tipų..."
-        getDisplayValue={(item) => item.name}
+        getDisplayValue={(item: any) =>
+          item.languages ? getLocalizedText(item.languages, item.name) : item.name
+        }
         getValue={(item) => item.id}
       />
     </div>

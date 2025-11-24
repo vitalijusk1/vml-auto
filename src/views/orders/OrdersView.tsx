@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { OrdersFilterCard } from "./components/OrdersFilterCard";
 import { useTablePagination } from "@/hooks/useTablePagination";
+import { getOrdersFilter } from "@/utils/tableFilters";
 
 export function OrdersView() {
   const orders = useAppSelector(selectOrders);
@@ -20,12 +21,24 @@ export function OrdersView() {
     photos: string[];
     title: string;
   } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const {
     pagination,
     handlePaginationUpdate,
     handlePageChange,
     handlePageSizeChange,
   } = useTablePagination();
+
+  // Check if we're on mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Always expand all orders by default when orders change
   useEffect(() => {
@@ -51,30 +64,13 @@ export function OrdersView() {
   }, []);
 
   const renderExpandedRow = useCallback(
-    (order: Order) => renderOrderExpandedContent(order, handlePhotoClick),
-    [handlePhotoClick]
+    (order: Order) =>
+      renderOrderExpandedContent(order, handlePhotoClick, isMobile),
+    [handlePhotoClick, isMobile]
   );
 
-  // Custom filter function for orders (filters across multiple fields)
-  const orderFilterFn = useCallback(
-    (orders: Order[], filterValue: string): Order[] => {
-      if (!filterValue.trim()) {
-        return orders;
-      }
-      const filterLower = filterValue.toLowerCase();
-      return orders.filter((order) => {
-        return (
-          order.id.toLowerCase().includes(filterLower) ||
-          order.customer?.name?.toLowerCase().includes(filterLower) ||
-          order.customer?.country?.toLowerCase().includes(filterLower) ||
-          order.items.some((item) =>
-            item.partName.toLowerCase().includes(filterLower)
-          )
-        );
-      });
-    },
-    []
-  );
+  // Unified orders filter function
+  const orderFilterFn = useCallback(getOrdersFilter(), []);
 
   return (
     <div className="space-y-6">
