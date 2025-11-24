@@ -172,7 +172,7 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
       : String(apiReturn.return_id),
     itemOrderId: itemOrderId,
     itemId: itemId,
-    dateCreated: new Date(apiReturn.return_date),
+    dateCreated: new Date(apiReturn.return_date).toISOString(),
     customerId: String(apiReturn.return_id),
     customer: customer,
     items: apiReturn.items.map((item) => {

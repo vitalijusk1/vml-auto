@@ -161,16 +161,17 @@ function mapPosition(_position: number): PartPosition | undefined {
 }
 
 // Calculate days in inventory
-function calculateDaysInInventory(dateAdded: Date): number {
+function calculateDaysInInventory(dateAdded: string): number {
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - dateAdded.getTime());
+  const date = new Date(dateAdded);
+  const diffTime = Math.abs(now.getTime() - date.getTime());
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
 }
 
 // Transform API response to Part type
 function transformApiPart(apiPart: ApiPartResponse): Part {
-  const dateAdded = new Date(apiPart.date || apiPart.create_date);
+  const dateAdded = new Date(apiPart.date || apiPart.create_date).toISOString();
   const photos = [
     ...(apiPart.photo ? [apiPart.photo] : []),
     ...(apiPart.part_photo_gallery || []),
@@ -206,7 +207,7 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
     dateAdded,
     dateSold:
       apiPart.status === 2 && apiPart.reserved_date
-        ? new Date(apiPart.reserved_date)
+        ? new Date(apiPart.reserved_date).toISOString()
         : apiPart.status === 2
         ? dateAdded
         : undefined,

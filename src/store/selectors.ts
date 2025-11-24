@@ -59,7 +59,9 @@ export const selectMetrics = createSelector(
     const totalPartsAllTime = parts.length;
 
     const revenueCurrentMonth = orders
-      .filter((o) => o.date >= startOfMonth && o.status === "Delivered")
+      .filter(
+        (o) => new Date(o.date) >= startOfMonth && o.status === "Delivered"
+      )
       .reduce((sum, o) => sum + o.totalAmountEUR, 0);
 
     const categorySales = parts
@@ -76,7 +78,7 @@ export const selectMetrics = createSelector(
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const partsOlderThan6Months = parts.filter(
-      (p) => p.status === "In Stock" && p.dateAdded <= sixMonthsAgo
+      (p) => p.status === "In Stock" && new Date(p.dateAdded) <= sixMonthsAgo
     ).length;
 
     return {
