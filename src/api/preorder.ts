@@ -161,7 +161,7 @@ function transformPart(
       priceEUR: apiPart.avg_price || 0,
       pricePLN: (apiPart.avg_price || 0) * 4.5, // Approximate conversion
       daysInInventory: apiPart.avg_days_to_sell || 0,
-      dateAdded: new Date(),
+      dateAdded: new Date().toISOString(),
       photos: [],
       warehouse: undefined,
       analysisStatusCounts: {

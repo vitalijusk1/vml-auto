@@ -109,8 +109,8 @@ export interface Part {
   pricePLN: number;
   position?: PartPosition;
   daysInInventory: number;
-  dateAdded: Date;
-  dateSold?: Date;
+  dateAdded: string;
+  dateSold?: string;
   photos: string[];
   warehouse?: string;
   fuelType?: string;
@@ -182,7 +182,7 @@ export interface Customer {
 
 export interface Order {
   id: string;
-  date: Date;
+  date: string;
   customerId: string;
   customer: Customer;
   items: OrderItem[];
@@ -202,7 +202,7 @@ export interface Return {
   orderId: string;
   itemOrderId?: string; // order_id from items
   itemId?: string; // id from items
-  dateCreated: Date;
+  dateCreated: string;
   customerId: string;
   customer: Customer;
   items: Array<{
