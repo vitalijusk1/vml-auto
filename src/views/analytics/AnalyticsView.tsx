@@ -1,9 +1,5 @@
 import { useAppSelector } from "@/store/hooks";
-import {
-  selectOrders,
-  selectBackendFilters,
-  selectAnalyticsPartsData,
-} from "@/store/selectors";
+import { selectOrders, selectAnalyticsPartsData } from "@/store/selectors";
 import {
   LineChart,
   Line,
@@ -20,6 +16,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnalyticsFilterCard } from "./components/AnalyticsFilterCard";
 import { SummaryMetricsCards } from "./components/SummaryMetricsCards";
+import { formatDateChartLithuanian } from "@/utils/dateFormatting";
 
 const COLORS = {
   primary: "#000000",
@@ -203,29 +200,33 @@ export function AnalyticsView() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"
-                  tickFormatter={(value) => {
-                    const date = new Date(value);
-                    return date.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }}
+                  tickFormatter={(value) => formatDateChartLithuanian(value)}
                 />
                 <YAxis
                   label={{
-                    value: "Units per Day",
+                    value: "Vienetai per dieną",
                     angle: -90,
                     position: "insideLeft",
                   }}
                 />
                 <Tooltip
                   labelFormatter={(value) => {
-                    const date = new Date(value);
-                    return date.toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    });
+                    const dateObj = new Date(value);
+                    const month = [
+                      "Sau",
+                      "Vas",
+                      "Kov",
+                      "Bal",
+                      "Geg",
+                      "Bir",
+                      "Lie",
+                      "Rugp",
+                      "Rugs",
+                      "Spa",
+                      "Lap",
+                      "Gru",
+                    ][dateObj.getMonth()];
+                    return `${month} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
                   }}
                 />
                 <Legend />

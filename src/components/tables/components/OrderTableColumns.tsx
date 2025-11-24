@@ -1,9 +1,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Order, OrderStatus } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
-import { format } from "date-fns";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { OrderItemExpandedContent } from "./OrderItemExpandedContent";
+import { formatDateLithuanian } from "@/utils/dateFormatting";
 
 // Get status badge class for order statuses
 const getOrderStatusClass = (status: OrderStatus) => {
@@ -29,21 +29,6 @@ const getOrderStatusLabel = (status: OrderStatus): string => {
   return statusLabels[status] || status;
 };
 
-// Helper function to safely format dates
-const formatOrderDate = (date: Date | string | null | undefined): string => {
-  if (!date) return "N/A";
-  try {
-    const dateObj = date instanceof Date ? date : new Date(date);
-    if (isNaN(dateObj.getTime())) {
-      return "N/A";
-    }
-    return format(dateObj, "MMM dd, yyyy");
-  } catch (error) {
-    console.error("Error formatting date:", error, date);
-    return "N/A";
-  }
-};
-
 interface OrderTableColumnsProps {
   onToggleExpand: (orderId: string) => void;
   isExpanded: (orderId: string) => boolean;
@@ -66,7 +51,7 @@ export function OrderTableColumns({
       header: "Data",
       cell: ({ row }) => (
         <span className="font-semibold">
-          {formatOrderDate(row.original.date)}
+          {formatDateLithuanian(row.original.date)}
         </span>
       ),
     },
@@ -147,18 +132,14 @@ export function OrderTableColumns({
         </span>
       ),
     },
-    {
-      id: "warehouse",
-      header: "Sandėlys",
-      cell: () => <span className="text-sm text-muted-foreground">N/A</span>,
-    },
   ];
 }
 
 // Helper component to render expanded order items
 export function renderOrderExpandedContent(
   order: Order,
-  onPhotoClick: (photos: string[], title: string) => void
+  onPhotoClick: (photos: string[], title: string) => void,
+  isMobile?: boolean
 ) {
   return (
     <OrderItemExpandedContent
@@ -167,6 +148,7 @@ export function renderOrderExpandedContent(
       onPhotoClick={onPhotoClick}
       showReason={false}
       showQuantity={true}
+      isMobile={isMobile}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { Bell, User, LogOut } from "lucide-react";
+import { Bell, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -10,11 +10,29 @@ import { useNavigate } from "react-router-dom";
 import { RootState } from "@/store";
 import { clearUser } from "@/store/slices/authSlice";
 import { logout } from "@/api/auth";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { selectSidebarCollapsed } from "@/store/selectors";
+import { toggleSidebar } from "@/store/slices/uiSlice";
+import { useState, useEffect } from "react";
 
 export function Header() {
   const user = useSelector((state: RootState) => state.auth.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const appDispatch = useAppDispatch();
+  const isSidebarCollapsed = useAppSelector(selectSidebarCollapsed);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if we're on mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -23,8 +41,27 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-16 items-center justify-end border-b bg-card px-6">
-      <div className="flex items-center gap-4">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
+      {/* Mobile menu button - only show on mobile when sidebar is collapsed */}
+      {isMobile && isSidebarCollapsed && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => appDispatch(toggleSidebar())}
+          className="md:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
+
+      {/* App title on mobile when sidebar is collapsed */}
+      {isMobile && isSidebarCollapsed && (
+        <h1 className="text-lg font-bold text-center flex-1 md:hidden">
+          VML AUTO
+        </h1>
+      )}
+
+      <div className="flex items-center gap-4 ml-auto">
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>

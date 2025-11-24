@@ -10,6 +10,7 @@ import { renderReturnExpandedContent } from "@/components/tables/components/Retu
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { ReturnsFilterCard } from "./components/ReturnsFilterCard";
+import { getReturnsFilter } from "@/utils/tableFilters";
 
 export function ReturnsView() {
   const returns = useAppSelector(selectReturns);
@@ -22,11 +23,23 @@ export function ReturnsView() {
     photos: string[];
     title: string;
   } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Callback for ReturnsFilterCard to update returns
   // Returns are stored in Redux, so this callback is mainly for future extensibility
   const handleReturnsUpdate = useCallback(() => {
     // Returns are stored in Redux via dispatch in ReturnsFilterCard
+  }, []);
+
+  // Check if we're on mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Always expand all returns by default when returns change
@@ -54,31 +67,12 @@ export function ReturnsView() {
 
   const renderExpandedRow = useCallback(
     (returnItem: Return) =>
-      renderReturnExpandedContent(returnItem, handlePhotoClick),
-    [handlePhotoClick]
+      renderReturnExpandedContent(returnItem, handlePhotoClick, isMobile),
+    [handlePhotoClick, isMobile]
   );
 
-  // Custom filter function for returns (filters across multiple fields)
-  const returnFilterFn = useCallback(
-    (returns: Return[], filterValue: string): Return[] => {
-      if (!filterValue.trim()) {
-        return returns;
-      }
-      const filterLower = filterValue.toLowerCase();
-      return returns.filter((returnItem) => {
-        return (
-          returnItem.id.toLowerCase().includes(filterLower) ||
-          returnItem.orderId.toLowerCase().includes(filterLower) ||
-          returnItem.customer?.name?.toLowerCase().includes(filterLower) ||
-          returnItem.customer?.country?.toLowerCase().includes(filterLower) ||
-          returnItem.items.some((item) =>
-            item.partName.toLowerCase().includes(filterLower)
-          )
-        );
-      });
-    },
-    []
-  );
+  // Unified returns filter function
+  const returnFilterFn = useCallback(getReturnsFilter(), []);
 
   return (
     <div className="space-y-6">

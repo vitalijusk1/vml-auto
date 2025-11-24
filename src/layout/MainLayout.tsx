@@ -3,17 +3,12 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import {
-  selectSidebarCollapsed,
-  selectBackendFilters,
-} from "@/store/selectors";
+import { selectBackendFilters } from "@/store/selectors";
 import { setBackendFilters } from "@/store/slices/dataSlice";
 import { getFilters } from "@/api/parts";
-import { cn } from "@/lib/utils";
 
 export function MainLayout() {
   const dispatch = useAppDispatch();
-  const isSidebarCollapsed = useAppSelector(selectSidebarCollapsed);
   const backendFilters = useAppSelector(selectBackendFilters);
   const filtersFetchedRef = useRef(false);
 
@@ -44,21 +39,11 @@ export function MainLayout() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-y-hidden overflow-x-auto md:overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <div
-        className={cn(
-          "flex flex-1 flex-col overflow-hidden",
-          !isSidebarCollapsed ? "md:min-w-0 min-w-[512px]" : "min-w-0"
-        )}
-      >
+      <div className="flex flex-1 flex-col overflow-hidden w-full min-w-0">
         <Header />
-        <main
-          className={cn(
-            "flex-1 overflow-y-auto p-6",
-            !isSidebarCollapsed ? "md:min-w-0 min-w-[512px]" : "min-w-0"
-          )}
-        >
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

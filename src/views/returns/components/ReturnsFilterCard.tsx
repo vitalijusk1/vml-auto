@@ -88,7 +88,6 @@ export const ReturnsFilterCard = memo(function ReturnsFilterCard({
       type={LayoutType.PARTS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
-      cars={[]}
       onFilter={handleFilter}
       isLoading={isLoading}
       hideCategoriesAndWheels={true}

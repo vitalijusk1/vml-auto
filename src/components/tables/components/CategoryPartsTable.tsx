@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { getStatusBadgeClass } from "@/theme/utils";
+import { getPartsByIds } from "@/api/parts";
 
 interface CategoryPartsTableProps {
   parts: Part[];
   categories: Category[];
   selectedCarId: string;
-  backendFilters?: any;
   onSelectionChange?: (
     selectedCategories: Set<number>,
     selectedParts: Set<string>
@@ -33,72 +33,9 @@ interface CategoryData {
   subcategories: CategoryData[];
 }
 
-// Helper to find status from backend filters by matching English name
-const findStatusFromBackend = (
-  status: PartStatus,
-  backendFilters: any
-): string | null => {
-  const statuses = backendFilters?.parts?.statuses;
-  if (!Array.isArray(statuses)) return null;
-
-  // Map English status to find matching FilterOption
-  const statusNameMap: Record<PartStatus, string> = {
-    "In Stock": "In Stock",
-    Reserved: "Reserved",
-    Sold: "Sold",
-    Returned: "Returned",
-  };
-  const englishName = statusNameMap[status];
-
-  // Map to Lithuanian names for matching
-  const lithuanianNameMap: Record<PartStatus, string> = {
-    "In Stock": "Sandėlyje",
-    Reserved: "Rezervuota",
-    Sold: "Parduota",
-    Returned: "Grąžinta",
-  };
-  const lithuanianName = lithuanianNameMap[status];
-
-  for (const statusOption of statuses) {
-    if (typeof statusOption === "string") {
-      // Try matching both English and Lithuanian
-      if (statusOption === englishName || statusOption === lithuanianName) {
-        return statusOption;
-      }
-    } else if (statusOption && typeof statusOption === "object") {
-      // Check if this FilterOption matches by Lithuanian or English name
-      const ltName = statusOption.languages?.lt;
-      const enName = statusOption.languages?.en;
-      const optionName = statusOption.languages?.name || statusOption.name;
-
-      // Match by Lithuanian first, then English, then fallback name
-      if (
-        ltName === lithuanianName ||
-        ltName === englishName ||
-        enName === englishName ||
-        optionName === englishName
-      ) {
-        // Return localized version (prioritizes Lithuanian)
-        return getLocalizedText(statusOption.languages, statusOption.name);
-      }
-    }
-  }
-  return null;
-};
-
-const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
-  // Try to get from backend filters first (with language support)
-  const backendStatus = findStatusFromBackend(status, backendFilters);
-  if (backendStatus) return backendStatus;
-
-  // Fallback to hardcoded translations
-  const statusLabels: Record<PartStatus, string> = {
-    "In Stock": "Sandėlyje",
-    Reserved: "Rezervuota",
-    Sold: "Parduota",
-    Returned: "Grąžinta",
-  };
-  return statusLabels[status] || status;
+const getStatusLabel = (status: PartStatus): string => {
+  // Return status as-is from backend
+  return status;
 };
 
 const getPartStatusClass = (status: PartStatus) => {
@@ -115,7 +52,6 @@ export function CategoryPartsTable({
   parts,
   categories,
   selectedCarId,
-  backendFilters,
   onSelectionChange,
 }: CategoryPartsTableProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
@@ -125,6 +61,9 @@ export function CategoryPartsTable({
     new Set()
   );
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
+  const [childPartsCache, setChildPartsCache] = useState<
+    Record<string, Part[]>
+  >({});
 
   // Helper function to collect all category IDs recursively from CategoryData
   const getAllCategoryIdsFromData = (
@@ -250,6 +189,38 @@ export function CategoryPartsTable({
       setExpandedCategories(new Set(allCategoryIds));
     }
   }, [categoryData]);
+
+  // Fetch child parts for parts that have part_list
+  useEffect(() => {
+    const fetchChildParts = async () => {
+      const partsWithChildren = (parts as any[]).filter(
+        (part) =>
+          part.part_list &&
+          Array.isArray(part.part_list) &&
+          part.part_list.length > 0
+      );
+
+      for (const part of partsWithChildren) {
+        const partKey = part.manufactories_id || part.id;
+        // Skip if already cached
+        if (childPartsCache[partKey]) continue;
+
+        try {
+          const childParts = await getPartsByIds(part.part_list);
+          setChildPartsCache((prev) => ({
+            ...prev,
+            [partKey]: childParts,
+          }));
+        } catch (error) {
+          console.error(`Error fetching child parts for ${partKey}:`, error);
+        }
+      }
+    };
+
+    if (parts.length > 0) {
+      fetchChildParts();
+    }
+  }, [parts, childPartsCache]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((prev) => {
@@ -384,9 +355,13 @@ export function CategoryPartsTable({
     // Expanded: show parts and subcategories
     if (isExpanded) {
       // Show parts in this category
-      parts.forEach((part) => {
+      parts.forEach((part: any) => {
         const partSoldUnits = getPartSoldUnits(part);
         const isPartSelected = selectedParts.has(part.id);
+        const partKey = part.manufactories_id || part.id;
+        const childParts = childPartsCache[partKey] || [];
+
+        // Render parent part
         rows.push(
           <TableRow
             key={`part-${part.id}`}
@@ -416,7 +391,7 @@ export function CategoryPartsTable({
                   part.status as PartStatus
                 )}`}
               >
-                {getStatusLabel(part.status as PartStatus, backendFilters)}
+                {getStatusLabel(part.status as PartStatus)}
               </span>
             </TableCell>
             <TableCell className="text-center">
@@ -432,6 +407,61 @@ export function CategoryPartsTable({
             </TableCell>
           </TableRow>
         );
+
+        // Render child parts if they exist
+        childParts.forEach((childPart) => {
+          const childSoldUnits = getPartSoldUnits(childPart);
+          const isChildSelected = selectedParts.has(childPart.id);
+          rows.push(
+            <TableRow
+              key={`child-part-${childPart.id}`}
+              className={cn("bg-muted/50", isChildSelected && "bg-accent")}
+            >
+              <TableCell style={{ paddingLeft: `${64 + level * 24}px` }}>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`child-part-${childPart.id}`}
+                    checked={isChildSelected}
+                    onChange={() => togglePartSelection(childPart.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-shrink-0"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {childPart.name}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell className="text-center text-sm">
+                {childPart.code}{" "}
+                {childPart.manufacturerCode
+                  ? `/ ${childPart.manufacturerCode}`
+                  : ""}
+              </TableCell>
+              <TableCell className="text-center">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${getPartStatusClass(
+                    childPart.status as PartStatus
+                  )}`}
+                >
+                  {getStatusLabel(childPart.status as PartStatus)}
+                </span>
+              </TableCell>
+              <TableCell className="text-center">
+                {childPart.daysInInventory}
+              </TableCell>
+              <TableCell className="text-center">
+                {childPart.status === "In Stock" ? "1" : "0"}
+              </TableCell>
+              <TableCell className="text-center">{childSoldUnits}</TableCell>
+              <TableCell className="text-center">
+                {childPart.priceEUR} €
+              </TableCell>
+              <TableCell className="text-center">
+                {childPart.warehouse || "-"}
+              </TableCell>
+            </TableRow>
+          );
+        });
       });
 
       // Show subcategories

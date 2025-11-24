@@ -35,21 +35,6 @@ const extractFilterOptions = (items: any[]): FilterOption[] => {
     .filter((item): item is FilterOption => item !== null);
 };
 
-// Helper function to extract names from FilterOption arrays or string arrays (for statuses and wheels)
-const extractNames = (items: any[]): string[] => {
-  return items.map((item) => {
-    if (typeof item === "string") return item;
-    if (item && typeof item === "object") {
-      // Check if it's a FilterOption with languages - prioritize Lithuanian, fallback to English
-      if (item.languages?.lt) return item.languages.lt;
-      if (item.languages?.en) return item.languages.en;
-      if (item.languages?.name) return item.languages.name;
-      if (item.name) return item.name;
-    }
-    return String(item);
-  });
-};
-
 interface WheelsFilters {
   wheels?: FilterOption[];
   wheel_drives?: FilterOption[];
@@ -99,13 +84,17 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
 
   const bodyTypes = useMemo(() => {
     const bodyTypesData = backendFilters?.car?.body_types;
-    return Array.isArray(bodyTypesData) ? extractFilterOptions(bodyTypesData) : [];
+    return Array.isArray(bodyTypesData)
+      ? extractFilterOptions(bodyTypesData)
+      : [];
   }, [backendFilters]);
 
   const fuelTypes = useMemo(() => {
     const fuelTypesData =
       backendFilters?.car?.fuel_types || backendFilters?.car?.fuels;
-    return Array.isArray(fuelTypesData) ? extractFilterOptions(fuelTypesData) : [];
+    return Array.isArray(fuelTypesData)
+      ? extractFilterOptions(fuelTypesData)
+      : [];
   }, [backendFilters]);
 
   // Extract parts filters
@@ -120,12 +109,16 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
 
   const qualities = useMemo(() => {
     const qualitiesData = backendFilters?.parts?.qualities;
-    return Array.isArray(qualitiesData) ? extractFilterOptions(qualitiesData) : [];
+    return Array.isArray(qualitiesData)
+      ? extractFilterOptions(qualitiesData)
+      : [];
   }, [backendFilters]);
 
   const positions = useMemo(() => {
     const positionsData = backendFilters?.parts?.positions;
-    return Array.isArray(positionsData) ? extractFilterOptions(positionsData) : [];
+    return Array.isArray(positionsData)
+      ? extractFilterOptions(positionsData)
+      : [];
   }, [backendFilters]);
 
   // Extract categories
@@ -180,7 +173,9 @@ export const useBackendFilters = (): UseBackendFiltersReturn => {
           )
         : undefined,
       wheels_width: getWheelsArray(wheels.width, wheels.wheels_width)
-        ? extractFilterOptions(getWheelsArray(wheels.width, wheels.wheels_width)!)
+        ? extractFilterOptions(
+            getWheelsArray(wheels.width, wheels.wheels_width)!
+          )
         : undefined,
       wheels_height: getWheelsArray(wheels.height, wheels.wheels_height)
         ? extractFilterOptions(
