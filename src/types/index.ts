@@ -31,6 +31,7 @@ export type TopDetailsFilter =
 export interface FilterOption {
   name: string;
   id: number;
+  rrr_id?: string | number;
 }
 
 // Range filter field names in FilterState

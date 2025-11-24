@@ -28,7 +28,7 @@ export const StatusFilter = ({
         searchable={true}
         searchPlaceholder="Ieškoti būsenų..."
         getDisplayValue={(item) => item.name}
-        getValue={(item) => item.id}
+        getValue={(item) => item.rrr_id ?? item.id}
       />
     </div>
   );

@@ -28,7 +28,11 @@ const extractFilterOptions = (items: any[]): FilterOption[] => {
           // Fallback to string representation if no name found
           name = String(item.id);
         }
-        return { name, id: item.id };
+        const filterOption: FilterOption = { name, id: item.id };
+        if (item.rrr_id !== undefined) {
+          filterOption.rrr_id = item.rrr_id;
+        }
+        return filterOption;
       }
       return null;
     })
