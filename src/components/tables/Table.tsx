@@ -13,6 +13,7 @@ import {
 import { useState, useMemo, useCallback, useEffect, Fragment } from "react";
 import { Car, Part, Order, Return, TopDetailsFilter } from "@/types";
 import { useAppSelector } from "@/store/hooks";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { selectBackendFilters, selectOrders } from "@/store/selectors";
 import {
   Table as BaseTable,
@@ -91,7 +92,7 @@ export function Table<T extends Car | Part | Order | Return>({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
 
   // Use server-side pagination if provided, otherwise use client-side
   const isServerSide = !!serverPagination;
@@ -125,17 +126,6 @@ export function Table<T extends Car | Part | Order | Return>({
 
   const [selectedItem, setSelectedItem] = useState<T | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   // Sync pagination state when serverPagination changes
   useEffect(() => {

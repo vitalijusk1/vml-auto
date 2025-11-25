@@ -1,9 +1,9 @@
 import authInstance from "./axios";
-import { Part, PartStatus, PartPosition, FilterState } from "@/types";
+import { Part, PartPosition, FilterState } from "@/types";
 import { apiEndpoints, PartsQueryParams } from "./routes/routes";
 import { BackendFilters } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
-import { extractCategoryIds } from "@/utils/filterHelpers";
+import { buildPartsQueryParams } from "@/utils/queryParamsBuilder";
 
 // API Response types
 interface ApiPartResponse {
@@ -128,8 +128,9 @@ export interface PartsResponse {
   };
 }
 
-// Map status number to PartStatus
-function mapStatus(status: number): PartStatus {
+// Map status number to string - used as fallback when backend filters unavailable
+// The actual status name should come from backend filters via getLocalizedStatus
+function mapStatus(status: number): string {
   switch (status) {
     case 0:
       return "In Stock";
@@ -290,162 +291,12 @@ export const filterStateToQueryParams = (
   backendFilters?: any,
   topDetailsFilter?: string
 ): PartsQueryParams => {
-  const params: PartsQueryParams = {
-    ...pagination,
-  };
-
-  // Top details filter (top selling, least selling, etc.)
-  if (topDetailsFilter && topDetailsFilter !== "be-filtro") {
-    // Map TopDetailsFilter values to sort_by API values
-    const sortByMap: Record<string, "sold_most" | "sold_least" | "never_sold"> =
-      {
-        "top-detales": "sold_most",
-        "reciausiai-parduodamos": "sold_least",
-      };
-    const sortBy = sortByMap[topDetailsFilter];
-    if (sortBy) {
-      params.sort_by = sortBy;
-    }
-  }
-
-  // Search
-  if (filters.search && filters.search.trim()) {
-    params.search = filters.search.trim();
-  }
-
-  // Status - extract rrr_id from FilterOption objects (fallback to id if rrr_id not available)
-  if (
-    filters.status !== "All" &&
-    Array.isArray(filters.status) &&
-    filters.status.length > 0
-  ) {
-    const statusIds = filters.status.map(
-      (status) => status.rrr_id ?? status.id
-    );
-    if (statusIds.length > 0) {
-      params.status = statusIds;
-    }
-  }
-
-  // Car filters - extract IDs directly from FilterOption objects
-  if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand.map((brand) => brand.rrr_id ?? brand.id);
-    if (brandIds.length > 0) {
-      params.brand_id = brandIds;
-    }
-  }
-  if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel.map((model) => model.rrr_id ?? model.id);
-    if (modelIds.length > 0) {
-      params.model_id = modelIds;
-    }
-  }
-
-  // Year range
-  if (filters.yearRange?.min !== undefined) {
-    params.year_from = filters.yearRange.min;
-  }
-  if (filters.yearRange?.max !== undefined) {
-    params.year_to = filters.yearRange.max;
-  }
-
-  // Part filters - extract IDs directly from FilterOption objects
-  // Only pass parent IDs when parent is selected with all children
-  if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = extractCategoryIds(
-      filters.partCategory,
-      backendFilters
-    );
-    if (categoryIds.length > 0) {
-      params.category_id = categoryIds;
-    }
-  }
-  if (filters.quality && filters.quality.length > 0) {
-    const qualityIds = filters.quality.map(
-      (quality) => quality.rrr_id ?? quality.id
-    );
-    if (qualityIds.length > 0) {
-      params.quality = qualityIds;
-    }
-  }
-  if (filters.position && filters.position.length > 0) {
-    const positionIds = filters.position.map(
-      (position) => position.rrr_id ?? position.id
-    );
-    if (positionIds.length > 0) {
-      params.position = positionIds;
-    }
-  }
-
-  // Body type - extract IDs directly from FilterOption objects
-  if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType.map(
-      (bodyType) => bodyType.rrr_id ?? bodyType.id
-    );
-    if (bodyTypeIds.length > 0) {
-      params.body_type_id = bodyTypeIds;
-    }
-  }
-
-  // Price range
-  if (filters.priceRange?.min !== undefined) {
-    params.price_from = filters.priceRange.min;
-  }
-  if (filters.priceRange?.max !== undefined) {
-    params.price_to = filters.priceRange.max;
-  }
-
-  // Engine capacity range
-  if (filters.engineCapacityRange?.min !== undefined) {
-    params.engine_volume_from = filters.engineCapacityRange.min;
-  }
-  if (filters.engineCapacityRange?.max !== undefined) {
-    params.engine_volume_to = filters.engineCapacityRange.max;
-  }
-
-  // Wheel filters - extract IDs directly from FilterOption objects
-  if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
-    const fixingPointsIds = filters.wheelFixingPoints.map(
-      (points) => points.rrr_id ?? points.id
-    );
-    if (fixingPointsIds.length > 0) {
-      params.rims_fixing_points_id = fixingPointsIds;
-    }
-  }
-  if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const spacingIds = filters.wheelSpacing.map(
-      (spacing) => spacing.rrr_id ?? spacing.id
-    );
-    if (spacingIds.length > 0) {
-      params.rims_spacing_id = spacingIds;
-    }
-  }
-  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const centralDiameterIds = filters.wheelCentralDiameter.map(
-      (diameter) => diameter.rrr_id ?? diameter.id
-    );
-    if (centralDiameterIds.length > 0) {
-      params.rims_central_diameter_id = centralDiameterIds;
-    }
-  }
-  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const heightIds = filters.wheelHeight.map(
-      (height) => height.rrr_id ?? height.id
-    );
-    if (heightIds.length > 0) {
-      params.tires_height_id = heightIds;
-    }
-  }
-  if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const widthIds = filters.wheelWidth.map(
-      (width) => width.rrr_id ?? width.id
-    );
-    if (widthIds.length > 0) {
-      params.tires_width_id = widthIds;
-    }
-  }
-
-  return params;
+  return buildPartsQueryParams(
+    filters,
+    pagination,
+    backendFilters,
+    topDetailsFilter
+  );
 };
 
 // Get all parts
@@ -463,12 +314,6 @@ export const getParts = async (
     pagination: response.data.pagination,
   };
   return result;
-};
-
-// Get a single part by ID
-export const getPart = async (id: string): Promise<Part> => {
-  const response = await authInstance.get(apiEndpoints.getPartById(id));
-  return response.data;
 };
 
 // Get multiple parts by comma-separated IDs
@@ -510,26 +355,6 @@ export const getPartsByIds = async (
     console.error(`API Error for endpoint ${endpoint}:`, error);
     throw error;
   }
-};
-
-// Create a new part
-export const createPart = async (part: Omit<Part, "id">): Promise<Part> => {
-  const response = await authInstance.post(apiEndpoints.createPart(), part);
-  return response.data;
-};
-
-// Update a part
-export const updatePart = async (
-  id: string,
-  part: Partial<Part>
-): Promise<Part> => {
-  const response = await authInstance.put(apiEndpoints.updatePart(id), part);
-  return response.data;
-};
-
-// Delete a part
-export const deletePart = async (id: string): Promise<void> => {
-  await authInstance.delete(apiEndpoints.deletePart(id));
 };
 
 // Get filters for parts (using same endpoint as cars, which includes categories)

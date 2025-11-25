@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "@/store/hooks";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { selectOrders, selectBackendFilters } from "@/store/selectors";
 import { Order } from "@/types";
 import { LayoutType } from "@/components/filters/type";
@@ -21,7 +22,7 @@ export function OrdersView() {
     photos: string[];
     title: string;
   } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 800);
@@ -31,17 +32,6 @@ export function OrdersView() {
     handlePageChange,
     handlePageSizeChange,
   } = useTablePagination();
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   // Always expand all orders by default when orders change
   useEffect(() => {

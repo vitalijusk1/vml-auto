@@ -1,31 +1,8 @@
 import { Part, Order, Return } from "@/types";
-
-// Status translations to Lithuanian
-const statusTranslations: Record<string, string> = {
-  "In Stock": "Sandėlyje",
-  "In stock": "Sandėlyje",
-  Reserved: "Rezervuota",
-  Sold: "Parduota",
-  Returned: "Grąžinta",
-  // Order statuses
-  Pending: "Laukiama",
-  Processing: "Vykdoma",
-  Shipped: "Išsiųsta",
-  Delivered: "Pristatyta",
-  Cancelled: "Atšaukta",
-  // Return statuses
-  Requested: "Pateikta",
-  Approved: "Patvirtinta",
-  Refunded: "Grąžinta",
-  Rejected: "Atmesta",
-};
-
-/**
- * Translate status value to Lithuanian if available
- */
-function translateStatus(value: string): string {
-  return statusTranslations[value] || value;
-}
+import {
+  translateStatus,
+  STATUS_TRANSLATIONS,
+} from "@/utils/statusTranslation";
 
 /**
  * Convert data to CSV format and trigger download
@@ -67,7 +44,7 @@ export function exportToCSV<T extends Record<string, any>>(
         // Translate status values to Lithuanian
         if (
           String(key).toLowerCase().includes("status") ||
-          statusTranslations[stringValue]
+          STATUS_TRANSLATIONS[stringValue]
         ) {
           stringValue = translateStatus(stringValue);
         }

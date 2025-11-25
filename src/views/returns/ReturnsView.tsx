@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAppSelector } from "@/store/hooks";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { selectReturns, selectBackendFilters } from "@/store/selectors";
 import { Return } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +25,7 @@ export function ReturnsView() {
     photos: string[];
     title: string;
   } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 800);
@@ -34,17 +35,6 @@ export function ReturnsView() {
     handlePageChange,
     handlePageSizeChange,
   } = useTablePagination();
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   // Always expand all returns by default when returns change
   useEffect(() => {

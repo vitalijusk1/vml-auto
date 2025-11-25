@@ -223,39 +223,10 @@ export const getCars = async (
   return result;
 };
 
-// Get a single car by ID
-export const getCar = async (id: number): Promise<Car> => {
-  const response = await authInstance.get<{
-    success: boolean;
-    data: ApiCarResponse;
-  }>(apiEndpoints.getCarById(id));
-  return transformApiCar(response.data.data);
-};
-
 // Get filters for cars (same endpoint returns all filters: car, parts, wheels, categories)
 export const getFilters = async (): Promise<BackendFilters> => {
   const response = await authInstance.get<BackendFilters>(
     apiEndpoints.getFilters()
   );
   return response.data;
-};
-
-// Create a new car
-export const createCar = async (car: Omit<Car, "id">): Promise<Car> => {
-  const response = await authInstance.post(apiEndpoints.createCar(), car);
-  return response.data;
-};
-
-// Update a car
-export const updateCar = async (
-  id: number,
-  car: Partial<Car>
-): Promise<Car> => {
-  const response = await authInstance.put(apiEndpoints.updateCar(id), car);
-  return response.data;
-};
-
-// Delete a car
-export const deleteCar = async (id: number): Promise<void> => {
-  await authInstance.delete(apiEndpoints.deleteCar(id));
 };
