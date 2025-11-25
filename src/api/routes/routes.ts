@@ -290,4 +290,12 @@ export const apiEndpoints = {
       : "";
     return `/statistics/parts${queryString}`;
   },
+  getStatisticsOrders: (
+    queryParams?: StatisticsOverviewQueryParams & { group_by?: string }
+  ) => {
+    const queryString = queryParams
+      ? buildQueryString(queryParams as Record<string, unknown>)
+      : "";
+    return `/statistics/orders${queryString}`;
+  },
 };
