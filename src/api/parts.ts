@@ -223,6 +223,7 @@ function transformApiPart(
 
   return {
     id: apiPart.id.toString(),
+    part_id: apiPart.part_id,
     code: apiPart.part_id.toString(),
     name: apiPart.name,
     category: categoryName,

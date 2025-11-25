@@ -105,6 +105,7 @@ export interface Car {
 
 export interface Part {
   id: string;
+  part_id?: number;
   code: string;
   name: string;
   category: string;
