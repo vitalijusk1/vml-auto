@@ -1,7 +1,8 @@
 import authInstance from "./axios";
-import { Return, ReturnStatus, Customer, FilterState } from "@/types";
+import { Return, Customer, FilterState } from "@/types";
 import { apiEndpoints, ReturnsQueryParams } from "./routes/routes";
-import { extractCategoryIds } from "@/utils/filterHelpers";
+import { buildReturnsQueryParams } from "@/utils/queryParamsBuilder";
+import { mapReturnStatus } from "@/utils/statusTranslation";
 
 // API response types
 interface ApiReturnResponse {
@@ -99,24 +100,7 @@ interface ApiReturnsResponse {
   };
 }
 
-// Map API return status to ReturnStatus type
-const mapReturnStatus = (status: string): ReturnStatus => {
-  const statusLower = status.toLowerCase();
-  if (
-    statusLower.includes("returned") ||
-    statusLower.includes("refunded") ||
-    statusLower === "paid_out"
-  ) {
-    return "Refunded";
-  }
-  if (statusLower.includes("approved")) {
-    return "Approved";
-  }
-  if (statusLower.includes("rejected")) {
-    return "Rejected";
-  }
-  return "Requested";
-};
+// Use imported mapReturnStatus from statusTranslation.ts
 
 // Transform API return data to Return type
 const transformReturn = (apiReturn: ApiReturnResponse): Return => {
@@ -197,15 +181,11 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
       const partDetails = item.part_details;
       const carData = partDetails?.car;
 
-      // Map status number to string (0=In Stock, 2=Reserved, 4=Sold, etc.)
-      const statusMap: Record<number, string> = {
-        0: "In Stock",
-        2: "Reserved",
-        4: "Sold",
-      };
+      // Part status - just store the numeric ID, display logic is in frontend
+      // The actual status name should come from backend filters if available
       const partStatus =
         partDetails?.status !== undefined
-          ? statusMap[partDetails.status] || `Status ${partDetails.status}`
+          ? String(partDetails.status)
           : undefined;
 
       // Use manufacturer_code, visible_code, or other_code as part code
@@ -273,179 +253,7 @@ export const filterStateToReturnsQueryParams = (
   pagination?: { page?: number; per_page?: number },
   backendFilters?: any
 ): ReturnsQueryParams => {
-  const params: ReturnsQueryParams = {
-    ...pagination,
-  };
-
-  // Search
-  if (filters.search && filters.search.trim()) {
-    params.search = filters.search.trim();
-  }
-
-  // Status - convert "All" to undefined, otherwise convert names to IDs
-  if (
-    filters.status !== "All" &&
-    Array.isArray(filters.status) &&
-    filters.status.length > 0
-  ) {
-    const statusIds = filters.status.map(
-      (status) => status.rrr_id ?? status.id
-    );
-    if (statusIds.length > 0) {
-      params.status = statusIds;
-    }
-  }
-
-  // Date range
-  if (filters.dateRange?.from) {
-    params.date_from = filters.dateRange.from.toISOString().split("T")[0];
-  }
-  if (filters.dateRange?.to) {
-    params.date_to = filters.dateRange.to.toISOString().split("T")[0];
-  }
-
-  // Car filters - extract IDs directly from FilterOption objects
-  if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand.map((brand) => brand.rrr_id ?? brand.id);
-    if (brandIds.length > 0) {
-      params.brand_id = brandIds;
-    }
-  }
-
-  if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel.map((model) => model.rrr_id ?? model.id);
-    if (modelIds.length > 0) {
-      params.model_id = modelIds;
-    }
-  }
-
-  // Year range
-  if (filters.yearRange?.min !== undefined) {
-    params.year_from = filters.yearRange.min;
-  }
-  if (filters.yearRange?.max !== undefined) {
-    params.year_to = filters.yearRange.max;
-  }
-
-  // Part filters - extract IDs directly from FilterOption objects
-  // Only pass parent IDs when parent is selected with all children
-  if (filters.partCategory && filters.partCategory.length > 0) {
-    const categoryIds = extractCategoryIds(
-      filters.partCategory,
-      backendFilters
-    );
-    if (categoryIds.length > 0) {
-      params.category_id = categoryIds;
-    }
-  }
-  if (filters.quality && filters.quality.length > 0) {
-    const qualityIds = filters.quality.map(
-      (quality) => quality.rrr_id ?? quality.id
-    );
-    if (qualityIds.length > 0) {
-      params.quality = qualityIds;
-    }
-  }
-
-  if (filters.position && filters.position.length > 0) {
-    const positionIds = filters.position.map(
-      (position) => position.rrr_id ?? position.id
-    );
-    if (positionIds.length > 0) {
-      params.position = positionIds;
-    }
-  }
-
-  // Body type - extract IDs directly from FilterOption objects
-  if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType.map(
-      (bodyType) => bodyType.rrr_id ?? bodyType.id
-    );
-    if (bodyTypeIds.length > 0) {
-      params.body_type_id = bodyTypeIds;
-    }
-  }
-
-  // Price range
-  if (filters.priceRange?.min !== undefined) {
-    params.price_from = filters.priceRange.min;
-  }
-  if (filters.priceRange?.max !== undefined) {
-    params.price_to = filters.priceRange.max;
-  }
-
-  // Fuel type - extract IDs directly from FilterOption objects
-  if (filters.fuelType && filters.fuelType.length > 0) {
-    const fuelIds = filters.fuelType.map((fuel) => fuel.rrr_id ?? fuel.id);
-    if (fuelIds.length > 0) {
-      params.fuel_id = fuelIds;
-    }
-  }
-
-  // Engine capacity range
-  if (filters.engineCapacityRange?.min !== undefined) {
-    params.engine_volume_from = filters.engineCapacityRange.min;
-  }
-  if (filters.engineCapacityRange?.max !== undefined) {
-    params.engine_volume_to = filters.engineCapacityRange.max;
-  }
-
-  // Wheel filters - extract IDs directly from FilterOption objects
-  if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const driveIds = filters.wheelDrive.map(
-      (drive) => drive.rrr_id ?? drive.id
-    );
-    if (driveIds.length > 0) {
-      params.wheel_drive_id = driveIds;
-    }
-  }
-
-  if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
-    const fixingPointsIds = filters.wheelFixingPoints.map(
-      (points) => points.rrr_id ?? points.id
-    );
-    if (fixingPointsIds.length > 0) {
-      params.rims_fixing_points_id = fixingPointsIds;
-    }
-  }
-
-  if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const spacingIds = filters.wheelSpacing.map(
-      (spacing) => spacing.rrr_id ?? spacing.id
-    );
-    if (spacingIds.length > 0) {
-      params.rims_spacing_id = spacingIds;
-    }
-  }
-
-  if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
-    const diameterIds = filters.wheelCentralDiameter.map(
-      (diameter) => diameter.rrr_id ?? diameter.id
-    );
-    if (diameterIds.length > 0) {
-      params.rims_central_diameter_id = diameterIds;
-    }
-  }
-
-  if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const heightIds = filters.wheelHeight.map(
-      (height) => height.rrr_id ?? height.id
-    );
-    if (heightIds.length > 0) {
-      params.tires_height_id = heightIds;
-    }
-  }
-
-  if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const widthIds = filters.wheelWidth.map(
-      (width) => width.rrr_id ?? width.id
-    );
-    if (widthIds.length > 0) {
-      params.tires_width_id = widthIds;
-    }
-  }
-
-  return params;
+  return buildReturnsQueryParams(filters, pagination, backendFilters);
 };
 
 export interface ReturnsResponse {
@@ -512,38 +320,4 @@ export const getReturns = async (
 
   console.warn("Unexpected returns API response structure:", response.data);
   return { returns: [], pagination: defaultPagination };
-};
-
-// Get a single return by ID
-export const getReturn = async (id: string): Promise<Return> => {
-  const response = await authInstance.get(apiEndpoints.getReturnById(id));
-  return response.data;
-};
-
-// Create a new return
-export const createReturn = async (
-  returnItem: Omit<Return, "id">
-): Promise<Return> => {
-  const response = await authInstance.post(
-    apiEndpoints.createReturn(),
-    returnItem
-  );
-  return response.data;
-};
-
-// Update a return
-export const updateReturn = async (
-  id: string,
-  returnItem: Partial<Return>
-): Promise<Return> => {
-  const response = await authInstance.put(
-    apiEndpoints.updateReturn(id),
-    returnItem
-  );
-  return response.data;
-};
-
-// Delete a return
-export const deleteReturn = async (id: string): Promise<void> => {
-  await authInstance.delete(apiEndpoints.deleteReturn(id));
 };

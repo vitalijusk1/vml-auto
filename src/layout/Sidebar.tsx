@@ -13,7 +13,8 @@ import { selectSidebarCollapsed } from "@/store/selectors";
 import { toggleSidebar } from "@/store/slices/uiSlice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const navigation = [
   { name: "Sandėlys", icon: Package, path: "/parts" },
@@ -26,18 +27,7 @@ const navigation = [
 export function Sidebar() {
   const dispatch = useAppDispatch();
   const isCollapsed = useAppSelector(selectSidebarCollapsed);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   // Auto-collapse sidebar on mobile - only on initial load
   useEffect(() => {

@@ -7,6 +7,6 @@ export * from "./routes/routes";
 // Export API functions
 export * from "./cars";
 export { getFilters as getPartsFilters } from "./parts";
-export { getParts, getPart, createPart, updatePart, deletePart, filterStateToQueryParams } from "./parts";
+export { getParts, getPartsByIds, filterStateToQueryParams } from "./parts";
 export * from "./orders";
 export * from "./returns";

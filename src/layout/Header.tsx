@@ -13,7 +13,7 @@ import { logout } from "@/api/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectSidebarCollapsed } from "@/store/selectors";
 import { toggleSidebar } from "@/store/slices/uiSlice";
-import { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export function Header() {
   const user = useSelector((state: RootState) => state.auth.user);
@@ -21,18 +21,7 @@ export function Header() {
   const navigate = useNavigate();
   const appDispatch = useAppDispatch();
   const isSidebarCollapsed = useAppSelector(selectSidebarCollapsed);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Check if we're on mobile screen size
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     await logout();

@@ -60,50 +60,25 @@ export function rangeHandler(
 }
 
 /**
- * Get all child category IDs recursively for a given category
- */
-function getAllChildCategoryIds(category: any): number[] {
-  const ids: number[] = [];
-  if (category.subcategories && Array.isArray(category.subcategories)) {
-    for (const subcat of category.subcategories) {
-      if (typeof subcat.id === "number") {
-        ids.push(subcat.id);
-      }
-      // Recursively get grandchildren
-      ids.push(...getAllChildCategoryIds(subcat));
-    }
-  }
-  return ids;
-}
-
-/**
  * Find a category by ID in the categories tree
- * Generic function that works with any tree structure that has `id` and `subcategories` properties
  */
 export function findCategoryById<T extends { id: number; subcategories?: T[] }>(
   cats: T[],
   id: number
 ): T | undefined {
   for (const category of cats) {
-    if (category.id === id) {
-      return category;
-    }
-    // Recursively search subcategories
-    if (category.subcategories && Array.isArray(category.subcategories)) {
+    if (category.id === id) return category;
+    if (category.subcategories) {
       const found = findCategoryById(category.subcategories, id);
-      if (found !== undefined) {
-        return found;
-      }
+      if (found) return found;
     }
   }
   return undefined;
 }
 
 /**
- * Extract category IDs from FilterOption[], applying parent/child optimization logic.
- * Only returns parent IDs when parent is selected with all children.
- * This ensures that when a parent category is selected, we only send the parent ID to the API,
- * not all child IDs, even though the UI shows all children as selected.
+ * Extract category IDs from FilterOption[], applying parent/child optimization.
+ * When a parent is selected with all children, only the parent ID is sent to API.
  */
 export function extractCategoryIds(
   categoryOptions: Array<{ name: string; id: number }>,
@@ -114,93 +89,54 @@ export function extractCategoryIds(
     return [];
   }
 
-  // Create a lookup map for O(1) category access
-  const categoryMap = new Map<number, any>();
-  const addToMap = (cats: any[]) => {
-    cats.forEach((cat) => {
-      categoryMap.set(cat.id, cat);
-      if (cat.subcategories && Array.isArray(cat.subcategories)) {
-        addToMap(cat.subcategories);
-      }
-    });
+  // Build category map with pre-computed child IDs
+  const categoryMap = new Map<number, { category: any; childIds: number[] }>();
+
+  const getChildIds = (cat: any): number[] => {
+    if (!cat.subcategories?.length) return [];
+    const ids: number[] = [];
+    for (const sub of cat.subcategories) {
+      ids.push(sub.id, ...getChildIds(sub));
+    }
+    return ids;
   };
-  addToMap(categories);
 
-  const selectedIds = new Set(categoryOptions.map((cat) => cat.id));
+  const buildMap = (cats: any[]) => {
+    for (const cat of cats) {
+      categoryMap.set(cat.id, { category: cat, childIds: getChildIds(cat) });
+      if (cat.subcategories?.length) buildMap(cat.subcategories);
+    }
+  };
+  buildMap(categories);
+
+  const selectedIds = new Set(categoryOptions.map((c) => c.id));
   const resultIds: (string | number)[] = [];
-  const coveredByParent = new Set<number>(); // Children covered by a selected parent
+  const handled = new Set<number>();
 
-  // First pass: identify parent categories that have all children selected
-  // and mark their children as covered
-  for (const categoryOption of categoryOptions) {
-    const category = categoryMap.get(categoryOption.id);
-    if (!category) {
+  for (const { id } of categoryOptions) {
+    if (handled.has(id)) continue;
+
+    const entry = categoryMap.get(id);
+    if (!entry) {
+      // Category not in backend - use raw ID
+      resultIds.push(id);
+      handled.add(id);
       continue;
     }
 
-    // Check if this category has children
-    const childIds = getAllChildCategoryIds(category);
-    if (childIds.length > 0) {
-      // Check if all children are selected
-      const allChildrenSelected = childIds.every((childId) =>
-        selectedIds.has(childId)
-      );
+    const { category, childIds } = entry;
+    const hasAllChildren =
+      childIds.length > 0 && childIds.every((cid) => selectedIds.has(cid));
 
-      if (allChildrenSelected && selectedIds.has(categoryOption.id)) {
-        // Parent is selected with all children - mark children as covered
-        childIds.forEach((childId) => coveredByParent.add(childId));
-      }
-    }
-  }
-
-  // Second pass: process categories, skipping children covered by parents
-  const processedIds = new Set<number>();
-  for (const categoryOption of categoryOptions) {
-    if (processedIds.has(categoryOption.id)) {
-      continue;
-    }
-
-    // Skip if this child is covered by a parent
-    if (coveredByParent.has(categoryOption.id)) {
-      continue;
-    }
-
-    const category = categoryMap.get(categoryOption.id);
-    if (!category) {
-      // Category not found in backend, use the ID from FilterOption
-      resultIds.push(categoryOption.id);
-      processedIds.add(categoryOption.id);
-      continue;
-    }
-
-    // Check if this category has children
-    const childIds = getAllChildCategoryIds(category);
-    if (childIds.length > 0) {
-      // Check if all children are selected
-      const allChildrenSelected = childIds.every((childId) =>
-        selectedIds.has(childId)
-      );
-
-      if (allChildrenSelected && selectedIds.has(categoryOption.id)) {
-        // Parent is selected with all children - only add parent ID
-        resultIds.push(category.rrr_id ?? category.id);
-        processedIds.add(categoryOption.id);
-        // Mark all children as processed so we don't add them
-        childIds.forEach((childId) => processedIds.add(childId));
-      } else {
-        // Not all children are selected, or parent is not selected
-        // Add this category ID if it's selected
-        if (selectedIds.has(categoryOption.id)) {
-          resultIds.push(category.rrr_id ?? category.id);
-          processedIds.add(categoryOption.id);
-        }
-      }
+    if (hasAllChildren) {
+      // Parent with all children selected - add parent only, skip children
+      resultIds.push(category.rrr_id ?? category.id);
+      handled.add(id);
+      childIds.forEach((cid) => handled.add(cid));
     } else {
-      // Leaf category (no children) - add it if selected
-      if (selectedIds.has(categoryOption.id)) {
-        resultIds.push(category.rrr_id ?? category.id);
-        processedIds.add(categoryOption.id);
-      }
+      // Add this category
+      resultIds.push(category.rrr_id ?? category.id);
+      handled.add(id);
     }
   }
 
