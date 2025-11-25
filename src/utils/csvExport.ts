@@ -1,6 +1,4 @@
-import { Part, Order, Return, Car } from "@/types";
-
-type TableData = Part | Order | Return | Car;
+import { Part, Order, Return } from "@/types";
 
 // Status translations to Lithuanian
 const statusTranslations: Record<string, string> = {
@@ -9,6 +7,17 @@ const statusTranslations: Record<string, string> = {
   Reserved: "Rezervuota",
   Sold: "Parduota",
   Returned: "Grąžinta",
+  // Order statuses
+  Pending: "Laukiama",
+  Processing: "Vykdoma",
+  Shipped: "Išsiųsta",
+  Delivered: "Pristatyta",
+  Cancelled: "Atšaukta",
+  // Return statuses
+  Requested: "Pateikta",
+  Approved: "Patvirtinta",
+  Refunded: "Grąžinta",
+  Rejected: "Atmesta",
 };
 
 /**
@@ -21,7 +30,7 @@ function translateStatus(value: string): string {
 /**
  * Convert data to CSV format and trigger download
  */
-export function exportToCSV<T extends TableData>(
+export function exportToCSV<T extends Record<string, any>>(
   data: T[],
   filename: string,
   columns?: (keyof T)[],
@@ -56,7 +65,10 @@ export function exportToCSV<T extends TableData>(
         let stringValue = String(value);
 
         // Translate status values to Lithuanian
-        if (String(key) === "status") {
+        if (
+          String(key).toLowerCase().includes("status") ||
+          statusTranslations[stringValue]
+        ) {
           stringValue = translateStatus(stringValue);
         }
 
@@ -125,15 +137,61 @@ export function exportPartsToCSV(parts: Part[]) {
  * Export orders data to CSV with selected columns
  */
 export function exportOrdersToCSV(orders: Order[]) {
-  const columns: (keyof Order)[] = ["id", "status"];
+  const flatOrders = orders.map((order) => ({
+    id: order.id,
+    date: order.date ? new Date(order.date).toLocaleDateString("lt-LT") : "",
+    customerName: order.customer?.name || "",
+    customerEmail: order.customer?.email || "",
+    customerPhone: order.customer?.phone || "",
+    city: order.customer?.city || "",
+    country: order.customer?.country || "",
+    itemsCount: order.items?.length || 0,
+    itemsSummary: order.items
+      ?.map((i) => `${i.partName} (${i.quantity})`)
+      .join("; "),
+    totalAmountEUR: order.totalAmountEUR,
+    shippingCostEUR: order.shippingCostEUR,
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    shippingStatus: order.shippingStatus,
+  }));
+
+  const columns = [
+    "id",
+    "date",
+    "customerName",
+    "customerEmail",
+    "customerPhone",
+    "city",
+    "country",
+    "itemsCount",
+    "itemsSummary",
+    "totalAmountEUR",
+    "shippingCostEUR",
+    "status",
+    "paymentMethod",
+    "shippingStatus",
+  ] as (keyof (typeof flatOrders)[0])[];
 
   const columnLabels: Record<string, string> = {
     id: "Užsakymo ID",
+    date: "Data",
+    customerName: "Klientas",
+    customerEmail: "El. paštas",
+    customerPhone: "Telefonas",
+    city: "Miestas",
+    country: "Šalis",
+    itemsCount: "Prekių kiekis",
+    itemsSummary: "Prekės",
+    totalAmountEUR: "Suma (EUR)",
+    shippingCostEUR: "Siuntimas (EUR)",
     status: "Statusas",
+    paymentMethod: "Mokėjimo būdas",
+    shippingStatus: "Siuntimo statusas",
   };
 
   exportToCSV(
-    orders,
+    flatOrders,
     `orders_${new Date().toISOString().split("T")[0]}.csv`,
     columns,
     columnLabels
@@ -144,15 +202,49 @@ export function exportOrdersToCSV(orders: Order[]) {
  * Export returns data to CSV with selected columns
  */
 export function exportReturnsToCSV(returns: Return[]) {
-  const columns: (keyof Return)[] = ["id", "status"];
+  const flatReturns = returns.map((ret) => ({
+    id: ret.id,
+    orderId: ret.orderId,
+    dateCreated: ret.dateCreated
+      ? new Date(ret.dateCreated).toLocaleDateString("lt-LT")
+      : "",
+    customerName: ret.customer?.name || "",
+    itemsCount: ret.items?.length || 0,
+    itemsSummary: ret.items?.map((i) => i.partName).join("; "),
+    reasons: [...new Set(ret.items?.map((i) => i.reason))].join("; "),
+    refundableAmountEUR: ret.refundableAmountEUR,
+    returnStatus: ret.returnStatus,
+    refundStatus: ret.refundStatus,
+  }));
+
+  const columns = [
+    "id",
+    "orderId",
+    "dateCreated",
+    "customerName",
+    "itemsCount",
+    "itemsSummary",
+    "reasons",
+    "refundableAmountEUR",
+    "returnStatus",
+    "refundStatus",
+  ] as (keyof (typeof flatReturns)[0])[];
 
   const columnLabels: Record<string, string> = {
     id: "Grąžinimo ID",
-    status: "Statusas",
+    orderId: "Užsakymo ID",
+    dateCreated: "Sukurta",
+    customerName: "Klientas",
+    itemsCount: "Prekių kiekis",
+    itemsSummary: "Prekės",
+    reasons: "Priežastys",
+    refundableAmountEUR: "Grąžintina suma (EUR)",
+    returnStatus: "Grąžinimo būsena",
+    refundStatus: "Pinigų grąžinimo būsena",
   };
 
   exportToCSV(
-    returns,
+    flatReturns,
     `returns_${new Date().toISOString().split("T")[0]}.csv`,
     columns,
     columnLabels
