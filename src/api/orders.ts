@@ -171,16 +171,18 @@ export const filterStateToOrdersQueryParams = (
   return params;
 };
 
-// Map API order_status to OrderStatus enum
+// Map API order_status to OrderStatus enum - now just returns raw status
 const mapOrderStatus = (status: string): OrderStatus => {
-  const statusMap: Record<string, OrderStatus> = {
-    NEW: "Pending",
-    PREPARED: "Processing",
-    SENT: "Shipped",
-    DELIVERED: "Delivered",
-    CANCELLED: "Cancelled",
-  };
-  return statusMap[status] || "Pending";
+  const validStatuses: OrderStatus[] = [
+    "NEW",
+    "PREPARED",
+    "SENT",
+    "DELIVERED",
+    "CANCELLED",
+  ];
+  return (
+    validStatuses.includes(status as OrderStatus) ? status : "NEW"
+  ) as OrderStatus;
 };
 
 // Parse VIES VAT check result if available

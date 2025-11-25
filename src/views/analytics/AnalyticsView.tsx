@@ -41,7 +41,7 @@ export function AnalyticsView() {
       partsData.parts_by_position.length > 0
     ) {
       return partsData.parts_by_position
-        .map((item) => ({ model: item.position, sold: item.value }))
+        .map((item) => ({ model: item.name, sold: item.value }))
         .sort((a, b) => b.sold - a.sold)
         .slice(0, 12);
     }
@@ -134,7 +134,7 @@ export function AnalyticsView() {
         {/* Parts Sold by Car Model - Full width */}
         <Card>
           <CardHeader>
-            <CardTitle>Parts Sold by Car Model</CardTitle>
+            <CardTitle>Detales pagal gamintoja</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -158,7 +158,7 @@ export function AnalyticsView() {
         {/* Parts Sold by Category - Full width */}
         <Card>
           <CardHeader>
-            <CardTitle>Parts Sold by Category</CardTitle>
+            <CardTitle>Detales parduotos pagal kategorija</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -183,7 +183,7 @@ export function AnalyticsView() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Sales Trend</CardTitle>
+              <CardTitle>Pardavimų tendencija</CardTitle>
               <div className="flex gap-2">
                 <select className="text-sm border rounded px-2 py-1">
                   <option>This Year</option>

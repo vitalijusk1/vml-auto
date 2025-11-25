@@ -1,6 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Return } from "@/types";
-import { getStatusBadgeClass } from "@/theme/utils";
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { OrderItemExpandedContent } from "./OrderItemExpandedContent";
 import { formatDateLithuanian } from "@/utils/dateFormatting";
@@ -103,25 +102,6 @@ export function ReturnTableColumns({
           )}
         </div>
       ),
-    },
-    {
-      accessorKey: "returnStatus",
-      header: "Grąžinimo statusas",
-      cell: ({ row }) => {
-        // Use the mapped status for color, but display the raw returnStatus string
-        const status = row.original.status || "Requested";
-        const displayStatus = row.original.returnStatus || "N/A";
-        return (
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(
-              "return",
-              status
-            )}`}
-          >
-            {displayStatus}
-          </span>
-        );
-      },
     },
     {
       accessorKey: "refundStatus",

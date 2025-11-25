@@ -50,17 +50,17 @@ export function OrderItemExpandedContent({
 
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm mb-1">
-                    {item.partName || "N/A"}
+                    {item.partName || "-"}
                   </div>
                   <div className="text-xs text-muted-foreground mb-1">
-                    ID: {item.partId || "N/A"}
+                    ID: {item.partId || "-"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {item.carBrand && item.carModel
                       ? `${item.carBrand} ${item.carModel} ${
                           item.carYear ? `(${item.carYear})` : ""
                         }`
-                      : "N/A"}
+                      : "-"}
                   </div>
                 </div>
 
@@ -92,15 +92,15 @@ export function OrderItemExpandedContent({
                         ? (item as any).manufacturerCode ||
                           (item as any).partCode ||
                           "N/A"
-                        : item.manufacturerCode || "N/A"}
+                        : item.manufacturerCode || "-"}
                     </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Kėbulo tipas</div>
                     <div className="truncate">
                       {showReason
-                        ? (item as any).carBodyType || "N/A"
-                        : item.bodyType || "N/A"}
+                        ? (item as any).carBodyType || "-"
+                        : item.bodyType || "-"}
                     </div>
                   </div>
                 </div>
@@ -145,14 +145,14 @@ export function OrderItemExpandedContent({
                 {showReason ? "Prekė" : "Pavadinimas"}
               </div>
               <div className={`text-sm ${showReason ? "font-semibold" : ""}`}>
-                {item.partName || "N/A"}
+                {item.partName || "-"}
               </div>
             </div>
             <div className="flex flex-col flex-1">
               <div className="text-xs text-muted-foreground mb-1">
                 Detalės id
               </div>
-              <div className="text-sm">{item.partId || "N/A"}</div>
+              <div className="text-sm">{item.partId || "-"}</div>
             </div>
             {showReason && (
               <div className="flex flex-col flex-1">
@@ -162,7 +162,7 @@ export function OrderItemExpandedContent({
                 <div className="text-sm">
                   {(item as any).manufacturerCode ||
                     (item as any).partCode ||
-                    "N/A"}
+                    "-"}
                 </div>
               </div>
             )}
@@ -183,7 +183,7 @@ export function OrderItemExpandedContent({
                     )}
                   </>
                 ) : (
-                  <div>N/A</div>
+                  <div>-</div>
                 )}
               </div>
             </div>
@@ -193,8 +193,8 @@ export function OrderItemExpandedContent({
               </div>
               <div className="text-sm">
                 {showReason
-                  ? (item as any).carBodyType || "N/A"
-                  : item.bodyType || "N/A"}
+                  ? (item as any).carBodyType || "-"
+                  : item.bodyType || "-"}
               </div>
             </div>
             <div className="flex flex-col flex-1">
@@ -203,8 +203,8 @@ export function OrderItemExpandedContent({
               </div>
               <div className="text-sm">
                 {showReason
-                  ? (item as any).carFuelType || "N/A"
-                  : item.fuelType || "N/A"}
+                  ? (item as any).carFuelType || "-"
+                  : item.fuelType || "-"}
               </div>
             </div>
             <div className="flex flex-col flex-1">
@@ -214,11 +214,11 @@ export function OrderItemExpandedContent({
               <div className="text-sm">
                 {showReason
                   ? (item as any).carEngineCapacity
-                    ? `${(item as any).carEngineCapacity}L`
-                    : "N/A"
+                    ? `${(item as any).carEngineCapacity}cc`
+                    : "-"
                   : item.engineCapacity
                   ? `${item.engineCapacity}cc`
-                  : "N/A"}
+                  : "-"}
               </div>
             </div>
             {!showReason && (
@@ -226,7 +226,7 @@ export function OrderItemExpandedContent({
                 <div className="text-xs text-muted-foreground mb-1">
                   Gamintojo kodas
                 </div>
-                <div className="text-sm">{item.manufacturerCode || "N/A"}</div>
+                <div className="text-sm">{item.manufacturerCode || "-"}</div>
               </div>
             )}
             {showReason && (
@@ -234,7 +234,7 @@ export function OrderItemExpandedContent({
                 <div className="text-xs text-muted-foreground mb-1">
                   Priežastis
                 </div>
-                <div className="text-sm">{(item as any).reason || "N/A"}</div>
+                <div className="text-sm">{(item as any).reason || "-"}</div>
               </div>
             )}
             <div className="flex flex-col flex-shrink-0 flex-1 text-right">
