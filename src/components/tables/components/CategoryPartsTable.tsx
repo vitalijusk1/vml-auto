@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { getStatusBadgeClass } from "@/theme/utils";
+import { getPartStatusClass } from "@/theme/utils";
 import { getPartsByIds } from "@/api/parts";
 
 interface CategoryPartsTableProps {
@@ -33,21 +33,6 @@ interface CategoryData {
   inStock: number;
   subcategories: CategoryData[];
 }
-
-const getPartStatusClass = (statusId: number | undefined) => {
-  switch (statusId) {
-    case 0:
-      return getStatusBadgeClass("part", "In Stock");
-    case 1:
-      return getStatusBadgeClass("part", "Reserved");
-    case 2:
-      return getStatusBadgeClass("part", "Sold");
-    case 3:
-      return getStatusBadgeClass("part", "Returned");
-    default:
-      return getStatusBadgeClass("part", "Returned");
-  }
-};
 
 export function CategoryPartsTable({
   parts,
