@@ -8,25 +8,18 @@ import { formatDateLithuanian } from "@/utils/dateFormatting";
 // Get status badge class for order statuses
 const getOrderStatusClass = (status: OrderStatus) => {
   const statusMap: Record<OrderStatus, string> = {
-    Pending: getStatusBadgeClass("order", "Pending"),
-    Processing: getStatusBadgeClass("order", "Processing"),
-    Shipped: getStatusBadgeClass("order", "Shipped"),
-    Delivered: getStatusBadgeClass("order", "Delivered"),
-    Cancelled: getStatusBadgeClass("order", "Cancelled"),
+    NEW: getStatusBadgeClass("order", "Pending"),
+    PREPARED: getStatusBadgeClass("order", "Processing"),
+    SENT: getStatusBadgeClass("order", "Shipped"),
+    DELIVERED: getStatusBadgeClass("order", "Delivered"),
+    CANCELLED: getStatusBadgeClass("order", "Cancelled"),
   };
   return statusMap[status] || getStatusBadgeClass("order", "Pending");
 };
 
-// Translate order status to Lithuanian
+// Translate order status to display label
 const getOrderStatusLabel = (status: OrderStatus): string => {
-  const statusLabels: Record<OrderStatus, string> = {
-    Pending: "Laukiama",
-    Processing: "Ruošiama",
-    Shipped: "Išsiųsta",
-    Delivered: "Pristatyta",
-    Cancelled: "Atšaukta",
-  };
-  return statusLabels[status] || status;
+  return status; // Return raw status as-is
 };
 
 interface OrderTableColumnsProps {

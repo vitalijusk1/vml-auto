@@ -221,7 +221,8 @@ export function PartTableColumns({
       {
         accessorKey: "engineVolume",
         header: "Variklio turis",
-        cell: ({ row }) => row.original.engineVolume || "-",
+        cell: ({ row }) =>
+          row.original.engineVolume ? `${row.original.engineVolume}cc` : "-",
       },
       {
         accessorKey: "turetaParduota",
@@ -353,7 +354,8 @@ export function PartTableColumns({
     {
       accessorKey: "engineVolume",
       header: "Variklio tūris",
-      cell: ({ row }) => row.original.engineVolume || "-",
+      cell: ({ row }) =>
+        row.original.engineVolume ? `${row.original.engineVolume}cc` : "-",
     },
     {
       accessorKey: "quality",

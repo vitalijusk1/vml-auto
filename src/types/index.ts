@@ -1,11 +1,11 @@
 export type PartStatus = "In Stock" | "Reserved" | "Sold" | "Returned";
 export type CarStatus = "Purchased" | "For Dismantling" | "Dismantled" | "Sold";
 export type OrderStatus =
-  | "Pending"
-  | "Processing"
-  | "Shipped"
-  | "Delivered"
-  | "Cancelled";
+  | "NEW"
+  | "PREPARED"
+  | "SENT"
+  | "DELIVERED"
+  | "CANCELLED";
 export type ReturnStatus = "Requested" | "Approved" | "Refunded" | "Rejected";
 export type PartQuality = "New" | "Used" | "With Defects" | "Restored";
 export type PartPosition = "Left" | "Right" | "Front" | "Rear" | "Set";

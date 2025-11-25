@@ -90,14 +90,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
 
   // Order status labels
   const getOrderStatusLabel = (status: OrderStatus): string => {
-    const statusLabels: Record<OrderStatus, string> = {
-      Pending: "Laukiama",
-      Processing: "Ruošiama",
-      Shipped: "Išsiųsta",
-      Delivered: "Pristatyta",
-      Cancelled: "Atšaukta",
-    };
-    return statusLabels[status] || status;
+    return status; // Return raw status as-is
   };
 
   // Return status labels
@@ -158,19 +151,19 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
               </div>
               <div>
                 <div className="text-muted-foreground">Sandėlis</div>
-                <div className="truncate">{part.warehouse || "N/A"}</div>
+                <div className="truncate">{part.warehouse || "-"}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Kuro tipas</div>
-                <div className="truncate">{part.fuelType || "N/A"}</div>
+                <div className="truncate">{part.fuelType || "-"}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Variklio tūris</div>
-                <div className="truncate">{part.engineVolume || "N/A"}</div>
+                <div className="truncate">{part.engineVolume || "-"}</div>
               </div>
               <div className="col-span-2">
                 <div className="text-muted-foreground">Gamintojo kodas</div>
-                <div className="truncate">{part.manufacturerCode || "N/A"}</div>
+                <div className="truncate">{part.manufacturerCode || "-"}</div>
               </div>
             </div>
           </div>
