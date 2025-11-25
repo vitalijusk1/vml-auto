@@ -8,6 +8,8 @@ import { TopDetailsFilter } from "@/types";
 import { useTablePagination } from "@/hooks/useTablePagination";
 import { useExpandableParts } from "@/hooks/useExpandableParts";
 import { useDebounce } from "@/hooks/useDebounce";
+import { loadPersistedFilters } from "@/utils/storageHelpers";
+import { StorageKeys } from "@/utils/storageKeys";
 
 export function PartsView() {
   const parts = useAppSelector(selectParts);
@@ -19,7 +21,10 @@ export function PartsView() {
     handlePageSizeChange,
   } = useTablePagination();
   const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
-    TopDetailsFilter.NONE
+    () => {
+      const persistedFilters = loadPersistedFilters(StorageKeys.PARTS_FILTERS);
+      return persistedFilters.sortBy || TopDetailsFilter.NONE;
+    }
   );
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

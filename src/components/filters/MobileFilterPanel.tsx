@@ -106,7 +106,7 @@ export function MobileFilterPanel<T extends FilterState>({
   };
 
   const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
-    TopDetailsFilter.NONE
+    () => (filters as FilterState).sortBy || TopDetailsFilter.NONE
   );
 
   const handleTopDetailsFilterChange = (value: TopDetailsFilter) => {
@@ -115,6 +115,14 @@ export function MobileFilterPanel<T extends FilterState>({
       onTopDetailsFilterChange(value);
     }
   };
+
+  // Sync topDetailsFilter when filters change (e.g., from session storage load)
+  useEffect(() => {
+    const persistedSortBy = (filters as FilterState).sortBy;
+    if (persistedSortBy) {
+      setTopDetailsFilter(persistedSortBy);
+    }
+  }, [(filters as FilterState).sortBy]);
 
   // For parts filters, get categories and wheels data
   const { categories, wheelsFilters } = useBackendFilters();

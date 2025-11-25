@@ -31,6 +31,8 @@ export const defaultFilters: FilterState = {
   wheelWidth: undefined,
   // Warehouse filter
   warehouse: undefined,
+  // Sort by filter
+  sortBy: undefined,
 };
 
 const filtersSlice = createSlice({
