@@ -42,7 +42,10 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     loadPersistedFilters(StorageKeys.PARTS_FILTERS)
   );
   const [topDetailsFilter, setTopDetailsFilter] = useState<TopDetailsFilter>(
-    TopDetailsFilter.NONE
+    () => {
+      const persistedFilters = loadPersistedFilters(StorageKeys.PARTS_FILTERS);
+      return persistedFilters.sortBy || TopDetailsFilter.NONE;
+    }
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,12 +59,12 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     try {
       sessionStorage.setItem(
         StorageKeys.PARTS_FILTERS,
-        JSON.stringify(filters)
+        JSON.stringify({ ...filters, sortBy: topDetailsFilter })
       );
     } catch (error) {
       console.error("Error saving filters to sessionStorage:", error);
     }
-  }, [filters]);
+  }, [filters, topDetailsFilter]);
 
   // Fetch parts based on current filters
   const fetchParts = useCallback(async () => {

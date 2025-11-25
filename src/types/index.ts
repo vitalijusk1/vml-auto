@@ -299,4 +299,6 @@ export interface FilterState {
   wheelWidth?: FilterOption[];
   // Warehouse filter
   warehouse?: FilterOption[];
+  // Sort by filter (top selling, least selling, etc.)
+  sortBy?: TopDetailsFilter;
 }
