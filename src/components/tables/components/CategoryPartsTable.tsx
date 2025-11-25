@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode } from "react";
-import { Part, PartStatus } from "@/types";
+import { Part } from "@/types";
 import { Category } from "@/utils/backendFilters";
 import { getLocalizedText } from "@/utils/i18n";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -19,6 +19,7 @@ interface CategoryPartsTableProps {
   parts: Part[];
   categories: Category[];
   selectedCarId: string;
+  backendFilters?: any;
   onSelectionChange?: (
     selectedCategories: Set<number>,
     selectedParts: Set<string>
@@ -33,25 +34,26 @@ interface CategoryData {
   subcategories: CategoryData[];
 }
 
-const getStatusLabel = (status: PartStatus): string => {
-  // Return status as-is from backend
-  return status;
-};
-
-const getPartStatusClass = (status: PartStatus) => {
-  const statusMap: Record<PartStatus, string> = {
-    "In Stock": getStatusBadgeClass("part", "In Stock"),
-    Reserved: getStatusBadgeClass("part", "Reserved"),
-    Sold: getStatusBadgeClass("part", "Sold"),
-    Returned: getStatusBadgeClass("part", "Returned"),
-  };
-  return statusMap[status] || getStatusBadgeClass("part", "Returned");
+const getPartStatusClass = (statusId: number | undefined) => {
+  switch (statusId) {
+    case 0:
+      return getStatusBadgeClass("part", "In Stock");
+    case 1:
+      return getStatusBadgeClass("part", "Reserved");
+    case 2:
+      return getStatusBadgeClass("part", "Sold");
+    case 3:
+      return getStatusBadgeClass("part", "Returned");
+    default:
+      return getStatusBadgeClass("part", "Returned");
+  }
 };
 
 export function CategoryPartsTable({
   parts,
   categories,
   selectedCarId,
+  backendFilters,
   onSelectionChange,
 }: CategoryPartsTableProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
@@ -123,6 +125,22 @@ export function CategoryPartsTable({
     return part.analysisStatusCounts?.sold ?? 0;
   };
 
+  // Helper to get localized status name
+  const getLocalizedStatusName = (part: Part) => {
+    if (!backendFilters?.parts?.statuses || part.statusId === undefined) {
+      return part.status;
+    }
+
+    const statuses = backendFilters.parts.statuses;
+    if (Array.isArray(statuses)) {
+      const statusOption = statuses.find((s: any) => s.rrr_id == part.statusId);
+      if (statusOption) {
+        return getLocalizedText(statusOption.languages, statusOption.name);
+      }
+    }
+    return part.status;
+  };
+
   // Build category tree with parts and sold units
   const buildCategoryTree = (
     categories: Category[],
@@ -142,7 +160,7 @@ export function CategoryPartsTable({
 
       categoryParts.forEach((part) => {
         soldUnits += getPartSoldUnits(part);
-        if (part.status === "In Stock") {
+        if (part.statusId === 0) {
           inStock += 1;
         }
       });
@@ -206,7 +224,10 @@ export function CategoryPartsTable({
         if (childPartsCache[partKey]) continue;
 
         try {
-          const childParts = await getPartsByIds(part.part_list);
+          const childParts = await getPartsByIds(
+            part.part_list,
+            backendFilters
+          );
           setChildPartsCache((prev) => ({
             ...prev,
             [partKey]: childParts,
@@ -220,7 +241,7 @@ export function CategoryPartsTable({
     if (parts.length > 0) {
       fetchChildParts();
     }
-  }, [parts, childPartsCache]);
+  }, [parts, childPartsCache, backendFilters]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((prev) => {
@@ -388,17 +409,17 @@ export function CategoryPartsTable({
             <TableCell className="text-center">
               <span
                 className={`px-2 py-1 rounded-full text-xs font-medium ${getPartStatusClass(
-                  part.status as PartStatus
+                  part.statusId
                 )}`}
               >
-                {getStatusLabel(part.status as PartStatus)}
+                {getLocalizedStatusName(part)}
               </span>
             </TableCell>
             <TableCell className="text-center">
               {part.daysInInventory}
             </TableCell>
             <TableCell className="text-center">
-              {part.status === "In Stock" ? "1" : "0"}
+              {part.statusId === 0 ? "1" : "0"}
             </TableCell>
             <TableCell className="text-center">{partSoldUnits}</TableCell>
             <TableCell className="text-center">{part.priceEUR} €</TableCell>
@@ -440,17 +461,17 @@ export function CategoryPartsTable({
               <TableCell className="text-center">
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${getPartStatusClass(
-                    childPart.status as PartStatus
+                    childPart.statusId
                   )}`}
                 >
-                  {getStatusLabel(childPart.status as PartStatus)}
+                  {getLocalizedStatusName(childPart)}
                 </span>
               </TableCell>
               <TableCell className="text-center">
                 {childPart.daysInInventory}
               </TableCell>
               <TableCell className="text-center">
-                {childPart.status === "In Stock" ? "1" : "0"}
+                {childPart.statusId === 0 ? "1" : "0"}
               </TableCell>
               <TableCell className="text-center">{childSoldUnits}</TableCell>
               <TableCell className="text-center">

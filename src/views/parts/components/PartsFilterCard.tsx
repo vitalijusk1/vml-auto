@@ -92,7 +92,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
         delete queryParams.search;
       }
 
-      const response = await getParts(queryParams);
+      const response = await getParts(queryParams, backendFilters);
       dispatch(setParts(response.parts));
       onPaginationUpdate(response.pagination);
     } catch (error) {
@@ -154,7 +154,7 @@ export const PartsFilterCard = memo(function PartsFilterCard({
         delete queryParams.search;
       }
 
-      const response = await getParts(queryParams);
+      const response = await getParts(queryParams, backendFilters);
       dispatch(setParts(response.parts));
       onPaginationUpdate(response.pagination);
     } catch (error) {

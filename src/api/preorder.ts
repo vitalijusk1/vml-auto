@@ -64,11 +64,13 @@ export interface PreorderAnalysisResponse {
 }
 
 export interface PreorderAnalysisParams {
-  brand_id?: number;
-  model_id?: number;
+  brand_id?: number | string;
+  model_id?: number | string;
   year?: number;
-  fuel_id?: number;
+  fuel_id?: number | string;
   engine_volume?: string;
+  engine_volume_min?: number;
+  engine_volume_max?: number;
   date_from?: string;
   date_to?: string;
 }
@@ -131,19 +133,26 @@ function transformPart(
     // Determine individual part status based on position in the list
     // We assume: first items are available, then reserved, then sold
     let partStatus: PartStatus = "In Stock";
+    let statusId = 0;
     const availableCount = apiPart.statuses.available || 0;
     const reservedCount = apiPart.statuses.reserved || 0;
     const soldCount = apiPart.statuses.sold || 0;
 
     if (index < availableCount) {
       partStatus = "In Stock";
+      statusId = 0;
     } else if (index < availableCount + reservedCount) {
       partStatus = "Reserved";
+      statusId = 1;
     } else if (index < availableCount + reservedCount + soldCount) {
       partStatus = "Sold";
+      statusId = 2;
     } else {
       // Fallback to group status
       partStatus = status;
+      if (status === "Sold") statusId = 2;
+      else if (status === "Reserved") statusId = 1;
+      else statusId = 0;
     }
 
     parts.push({
@@ -158,6 +167,7 @@ function transformPart(
       carYear: carYear,
       manufacturerCode: apiPart.manufactories_id,
       status: partStatus,
+      statusId: statusId,
       priceEUR: apiPart.avg_price || 0,
       pricePLN: (apiPart.avg_price || 0) * 4.5, // Approximate conversion
       daysInInventory: apiPart.avg_days_to_sell || 0,

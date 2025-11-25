@@ -1,13 +1,5 @@
 import { Fragment } from "react";
-import {
-  Car,
-  Part,
-  Order,
-  Return,
-  PartStatus,
-  OrderStatus,
-  ReturnStatus,
-} from "@/types";
+import { Car, Part, Order, Return } from "@/types";
 import { LayoutType } from "../filters/type";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,9 +8,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateLithuanian } from "@/utils/dateFormatting";
 import { getStatusBadgeClass } from "@/theme/utils";
-import { useAppSelector } from "@/store/hooks";
-import { selectBackendFilters } from "@/store/selectors";
-import { getLocalizedText } from "@/utils/i18n";
 
 interface MobileTableViewProps<T extends Car | Part | Order | Return> {
   type: Exclude<LayoutType, "analytics" | "order-control">;
@@ -37,72 +26,6 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
   renderExpandedRow,
   onItemClick,
 }: MobileTableViewProps<T>) {
-  const backendFilters = useAppSelector(selectBackendFilters);
-
-  // Helper to find status from backend filters by matching English name
-  const findStatusFromBackend = (
-    status: PartStatus,
-    backendFilters: any
-  ): string | null => {
-    const statuses = backendFilters?.parts?.statuses;
-    if (!Array.isArray(statuses)) return null;
-
-    // Map English status to Lithuanian names
-    const lithuanianNameMap: Record<PartStatus, string> = {
-      "In Stock": "Sandėlyje",
-      Reserved: "Rezervuota",
-      Sold: "Parduota",
-      Returned: "Grąžinta",
-    };
-    const lithuanianName = lithuanianNameMap[status];
-
-    for (const statusOption of statuses) {
-      if (typeof statusOption === "string") {
-        if (statusOption === lithuanianName) {
-          return statusOption;
-        }
-      } else if (statusOption && typeof statusOption === "object") {
-        const ltName = statusOption.languages?.lt;
-        const enName = statusOption.languages?.en;
-
-        if (ltName === lithuanianName || enName === status) {
-          return getLocalizedText(statusOption.languages, statusOption.name);
-        }
-      }
-    }
-    return null;
-  };
-
-  const getStatusLabel = (status: PartStatus): string => {
-    // Try to get from backend filters first (with language support)
-    const backendStatus = findStatusFromBackend(status, backendFilters);
-    if (backendStatus) return backendStatus;
-
-    // Fallback to hardcoded Lithuanian translations
-    const statusLabels: Record<PartStatus, string> = {
-      "In Stock": "Sandėlyje",
-      Reserved: "Rezervuota",
-      Sold: "Parduota",
-      Returned: "Grąžinta",
-    };
-    return statusLabels[status] || status;
-  };
-
-  // Order status labels
-  const getOrderStatusLabel = (status: OrderStatus): string => {
-    return status; // Return raw status as-is
-  };
-
-  // Return status labels
-  const getReturnStatusLabel = (status: ReturnStatus): string => {
-    const statusLabels: Record<ReturnStatus, string> = {
-      Requested: "Prašoma",
-      Approved: "Patvirtinta",
-      Refunded: "Grąžinta",
-      Rejected: "Atmesta",
-    };
-    return statusLabels[status] || status;
-  };
   const renderPartCard = (part: Part) => (
     <Card
       key={part.id}
@@ -131,7 +54,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                   getStatusBadgeClass("part", part.status)
                 )}
               >
-                {getStatusLabel(part.status)}
+                {part.status}
               </span>
               <div className="text-right">
                 <div className="font-medium text-sm">
@@ -193,7 +116,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                       getStatusBadgeClass("order", order.status)
                     )}
                   >
-                    {getOrderStatusLabel(order.status)}
+                    {order.status}
                   </span>
                   <div className="text-right">
                     <div className="font-medium text-sm">
@@ -264,7 +187,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                       getStatusBadgeClass("return", returnItem.status)
                     )}
                   >
-                    {getReturnStatusLabel(returnItem.status)}
+                    {returnItem.status}
                   </span>
                   <div className="text-right">
                     <div className="font-medium text-sm">

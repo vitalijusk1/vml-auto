@@ -108,7 +108,7 @@ export function findCategoryById<T extends { id: number; subcategories?: T[] }>(
 export function extractCategoryIds(
   categoryOptions: Array<{ name: string; id: number }>,
   backendFilters: any
-): number[] {
+): (string | number)[] {
   const categories = backendFilters?.categories;
   if (!Array.isArray(categories) || categoryOptions.length === 0) {
     return [];
@@ -127,7 +127,7 @@ export function extractCategoryIds(
   addToMap(categories);
 
   const selectedIds = new Set(categoryOptions.map((cat) => cat.id));
-  const resultIds: number[] = [];
+  const resultIds: (string | number)[] = [];
   const coveredByParent = new Set<number>(); // Children covered by a selected parent
 
   // First pass: identify parent categories that have all children selected
@@ -183,7 +183,7 @@ export function extractCategoryIds(
 
       if (allChildrenSelected && selectedIds.has(categoryOption.id)) {
         // Parent is selected with all children - only add parent ID
-        resultIds.push(categoryOption.id);
+        resultIds.push(category.rrr_id ?? category.id);
         processedIds.add(categoryOption.id);
         // Mark all children as processed so we don't add them
         childIds.forEach((childId) => processedIds.add(childId));
@@ -191,14 +191,14 @@ export function extractCategoryIds(
         // Not all children are selected, or parent is not selected
         // Add this category ID if it's selected
         if (selectedIds.has(categoryOption.id)) {
-          resultIds.push(categoryOption.id);
+          resultIds.push(category.rrr_id ?? category.id);
           processedIds.add(categoryOption.id);
         }
       }
     } else {
       // Leaf category (no children) - add it if selected
       if (selectedIds.has(categoryOption.id)) {
-        resultIds.push(categoryOption.id);
+        resultIds.push(category.rrr_id ?? category.id);
         processedIds.add(categoryOption.id);
       }
     }

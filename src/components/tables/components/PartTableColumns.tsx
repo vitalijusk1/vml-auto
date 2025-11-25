@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Part, PartStatus, Order, TopDetailsFilter } from "@/types";
+import { Part, Order, TopDetailsFilter } from "@/types";
 import { getStatusBadgeClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
@@ -7,82 +7,19 @@ import { ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasExpandableChildren } from "@/utils/partHelpers";
 
-const getPartStatusClass = (status: PartStatus) => {
-  const statusMap: Record<PartStatus, string> = {
-    "In Stock": getStatusBadgeClass("part", "In Stock"),
-    Reserved: getStatusBadgeClass("part", "Reserved"),
-    Sold: getStatusBadgeClass("part", "Sold"),
-    Returned: getStatusBadgeClass("part", "Returned"),
-  };
-  return statusMap[status] || getStatusBadgeClass("part", "Returned");
-};
-
-// Helper to find status from backend filters by matching English name
-const findStatusFromBackend = (
-  status: PartStatus,
-  backendFilters: any
-): string | null => {
-  const statuses = backendFilters?.parts?.statuses;
-  if (!Array.isArray(statuses)) return null;
-
-  // Map English status to find matching FilterOption
-  const statusNameMap: Record<PartStatus, string> = {
-    "In Stock": "In Stock",
-    Reserved: "Reserved",
-    Sold: "Sold",
-    Returned: "Returned",
-  };
-  const englishName = statusNameMap[status];
-
-  // Map to Lithuanian names for matching
-  const lithuanianNameMap: Record<PartStatus, string> = {
-    "In Stock": "Sandėlyje",
-    Reserved: "Rezervuota",
-    Sold: "Parduota",
-    Returned: "Grąžinta",
-  };
-  const lithuanianName = lithuanianNameMap[status];
-
-  for (const statusOption of statuses) {
-    if (typeof statusOption === "string") {
-      // Try matching both English and Lithuanian
-      if (statusOption === englishName || statusOption === lithuanianName) {
-        return statusOption;
-      }
-    } else if (statusOption && typeof statusOption === "object") {
-      // Check if this FilterOption matches by Lithuanian or English name
-      const ltName = statusOption.languages?.lt;
-      const enName = statusOption.languages?.en;
-      const optionName = statusOption.languages?.name || statusOption.name;
-
-      // Match by Lithuanian first, then English, then fallback name
-      if (
-        ltName === lithuanianName ||
-        ltName === englishName ||
-        enName === englishName ||
-        optionName === englishName
-      ) {
-        // Return localized version (prioritizes Lithuanian)
-        return getLocalizedText(statusOption.languages, statusOption.name);
-      }
-    }
+const getPartStatusClass = (statusId: number | undefined) => {
+  switch (statusId) {
+    case 0:
+      return getStatusBadgeClass("part", "In Stock");
+    case 1:
+      return getStatusBadgeClass("part", "Reserved");
+    case 2:
+      return getStatusBadgeClass("part", "Sold");
+    case 3:
+      return getStatusBadgeClass("part", "Returned");
+    default:
+      return getStatusBadgeClass("part", "Returned");
   }
-  return null;
-};
-
-const getStatusLabel = (status: PartStatus, backendFilters: any): string => {
-  // Try to get from backend filters first (with language support)
-  const backendStatus = findStatusFromBackend(status, backendFilters);
-  if (backendStatus) return backendStatus;
-
-  // Fallback to hardcoded translations
-  const statusLabels: Record<PartStatus, string> = {
-    "In Stock": "Sandėlyje",
-    Reserved: "Rezervuota",
-    Sold: "Parduota",
-    Returned: "Grąžinta",
-  };
-  return statusLabels[status] || status;
 };
 
 // Helper to find quality name from backend filters by ID
@@ -146,7 +83,7 @@ export function PartTableColumns({
     let priceCount = 0;
 
     orders
-      .filter((o) => o.status === "Delivered")
+      .filter((o) => o.status === "DELIVERED")
       .forEach((order) => {
         order.items.forEach((item) => {
           if (item.partId === part.id) {
@@ -158,7 +95,7 @@ export function PartTableColumns({
       });
 
     const avgPrice = priceCount > 0 ? totalPrice / priceCount : part.priceEUR;
-    const inStock = part.status === "In Stock" ? 1 : 0;
+    const inStock = part.statusId === 0 ? 1 : 0;
 
     return { soldCount, avgPrice, inStock };
   };
@@ -229,14 +166,16 @@ export function PartTableColumns({
         header: "Tureta/Parduota",
         cell: ({ row }) => {
           const part = row.original;
-          // In analytics mode, show items_count/total_sold
-          const itemsCount = part.items_count || 0;
-          const totalSold = part.total_sold || 0;
+          // Calculate based on statuses: tureta = all items (sum of all statuses), parduota = status 2 (Sold)
+          const inStock = part.statuses?.["0"] || 0;
+          const reserved = part.statuses?.["1"] || 0;
+          const sold = part.statuses?.["2"] || 0;
+          const tureta = inStock + reserved + sold;
           return (
             <div className="text-sm">
-              <div>Tureta: {itemsCount}</div>
+              <div>Tureta: {tureta}</div>
               <div className="text-xs text-muted-foreground">
-                Parduota: {totalSold}
+                Parduota: {sold}
               </div>
             </div>
           );
@@ -369,10 +308,10 @@ export function PartTableColumns({
       cell: ({ row }) => (
         <span
           className={`px-2 py-1 rounded-full text-xs font-medium ${getPartStatusClass(
-            row.original.status
+            row.original.statusId
           )}`}
         >
-          {getStatusLabel(row.original.status, backendFilters)}
+          {row.original.status}
         </span>
       ),
     },

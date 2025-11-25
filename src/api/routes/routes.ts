@@ -1,9 +1,9 @@
 // Car query parameters interface
 export interface CarQueryParams {
-  car_model_id?: number;
-  car_color_id?: number;
-  car_fuel_id?: number;
-  car_body_type_id?: number;
+  car_model_id?: number | string;
+  car_color_id?: number | string;
+  car_fuel_id?: number | string;
+  car_body_type_id?: number | string;
   car_years?: string;
   per_page?: number;
   page?: number;
@@ -13,13 +13,13 @@ export interface CarQueryParams {
 export interface StatisticsOverviewQueryParams {
   date_from?: string;
   date_to?: string;
-  brand_id?: number | number[];
-  model_id?: number | number[];
-  car_id?: number | number[];
-  category_id?: number | number[];
-  quality?: number | number[];
-  status?: number | number[];
-  position?: number | number[];
+  brand_id?: string | number | (string | number)[];
+  model_id?: string | number | (string | number)[];
+  car_id?: string | number | (string | number)[];
+  category_id?: string | number | (string | number)[];
+  quality?: string | number | (string | number)[];
+  status?: string | number | (string | number)[];
+  position?: string | number | (string | number)[];
 }
 
 // Parts query parameters interface
@@ -40,22 +40,22 @@ export interface PartsQueryParams {
     | "price_desc";
 
   // Filters - all accept comma-separated IDs
-  brand_id?: string | number[];
-  model_id?: string | number[];
-  category_id?: string | number[];
+  brand_id?: string | (string | number)[];
+  model_id?: string | (string | number)[];
+  category_id?: string | (string | number)[];
   quality?: string | (string | number)[];
   status?: string | (string | number)[];
-  position?: string | number[];
-  rims_fixing_points_id?: string | number[];
-  rims_spacing_id?: string | number[];
-  rims_central_diameter_id?: string | number[];
-  tires_width_id?: string | number[];
-  tires_height_id?: string | number[];
-  fuel_id?: string | number[];
-  body_type_id?: string | number[];
-  gearbox_type_id?: string | number[];
-  wheel_drive_id?: string | number[];
-  color_id?: string | number[];
+  position?: string | (string | number)[];
+  rims_fixing_points_id?: string | (string | number)[];
+  rims_spacing_id?: string | (string | number)[];
+  rims_central_diameter_id?: string | (string | number)[];
+  tires_width_id?: string | (string | number)[];
+  tires_height_id?: string | (string | number)[];
+  fuel_id?: string | (string | number)[];
+  body_type_id?: string | (string | number)[];
+  gearbox_type_id?: string | (string | number)[];
+  wheel_drive_id?: string | (string | number)[];
+  color_id?: string | (string | number)[];
 
   // Ranges
   engine_volume?: number;
@@ -84,23 +84,23 @@ export interface OrdersQueryParams {
   // Search
   search?: string;
   // Status filters
-  status?: string | number[];
+  status?: string | (string | number)[];
   // Date range
   date_from?: string;
   date_to?: string;
   // Car filters
-  brand_id?: number | number[];
-  model_id?: number | number[];
+  brand_id?: string | (string | number)[];
+  model_id?: string | (string | number)[];
   // Part filters
-  category_id?: number | number[];
-  quality?: number | number[];
-  position?: number | number[];
-  body_type_id?: number | number[];
+  category_id?: string | (string | number)[];
+  quality?: string | (string | number)[];
+  position?: string | (string | number)[];
+  body_type_id?: string | (string | number)[];
   // Price range
   price_from?: number;
   price_to?: number;
   // Fuel and engine
-  fuel_id?: number | number[];
+  fuel_id?: string | (string | number)[];
   engine_volume?: number;
   engine_volume_from?: number;
   engine_volume_to?: number;
@@ -114,12 +114,12 @@ export interface OrdersQueryParams {
   engine_power_from?: number;
   engine_power_to?: number;
   // Wheel filters
-  wheel_drive_id?: number | number[];
-  rims_fixing_points_id?: number | number[];
-  rims_spacing_id?: number | number[];
-  rims_central_diameter_id?: number | number[];
-  tires_width_id?: number | number[];
-  tires_height_id?: number | number[];
+  wheel_drive_id?: string | (string | number)[];
+  rims_fixing_points_id?: string | (string | number)[];
+  rims_spacing_id?: string | (string | number)[];
+  rims_central_diameter_id?: string | (string | number)[];
+  tires_width_id?: string | (string | number)[];
+  tires_height_id?: string | (string | number)[];
   // Date ranges
   create_date_from?: string;
   create_date_to?: string;
@@ -132,23 +132,23 @@ export interface ReturnsQueryParams {
   // Search
   search?: string;
   // Status filters
-  status?: number | number[];
+  status?: string | (string | number)[];
   // Date range
   date_from?: string;
   date_to?: string;
   // Car filters
-  brand_id?: number | number[];
-  model_id?: number | number[];
+  brand_id?: string | (string | number)[];
+  model_id?: string | (string | number)[];
   // Part filters
-  category_id?: number | number[];
-  quality?: number | number[];
-  position?: number | number[];
-  body_type_id?: number | number[];
+  category_id?: string | (string | number)[];
+  quality?: string | (string | number)[];
+  position?: string | (string | number)[];
+  body_type_id?: string | (string | number)[];
   // Price range
   price_from?: number;
   price_to?: number;
   // Fuel and engine
-  fuel_id?: number | number[];
+  fuel_id?: string | (string | number)[];
   engine_volume?: number;
   engine_volume_from?: number;
   engine_volume_to?: number;
@@ -162,12 +162,12 @@ export interface ReturnsQueryParams {
   engine_power_from?: number;
   engine_power_to?: number;
   // Wheel filters
-  wheel_drive_id?: number | number[];
-  rims_fixing_points_id?: number | number[];
-  rims_spacing_id?: number | number[];
-  rims_central_diameter_id?: number | number[];
-  tires_width_id?: number | number[];
-  tires_height_id?: number | number[];
+  wheel_drive_id?: string | (string | number)[];
+  rims_fixing_points_id?: string | (string | number)[];
+  rims_spacing_id?: string | (string | number)[];
+  rims_central_diameter_id?: string | (string | number)[];
+  tires_width_id?: string | (string | number)[];
+  tires_height_id?: string | (string | number)[];
   // Date ranges
   create_date_from?: string;
   create_date_to?: string;
@@ -265,10 +265,10 @@ export const apiEndpoints = {
 
   // Preorder Analysis
   getPreorderAnalysis: (params: {
-    brand_id?: number;
-    model_id?: number;
+    brand_id?: string | number;
+    model_id?: string | number;
     year?: number;
-    fuel_id?: number;
+    fuel_id?: string | number;
     engine_volume?: string;
     engine_volume_min?: number;
     engine_volume_max?: number;

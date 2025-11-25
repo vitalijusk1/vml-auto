@@ -110,13 +110,13 @@ export function OrderControlView() {
       }
 
       // Build API parameters
-      const brandId = selectedCar.brand.id;
+      const brandId = selectedCar.brand.rrr_id ?? selectedCar.brand.id;
 
       const params: {
-        brand_id: number;
-        model_id: number;
+        brand_id: number | string;
+        model_id: number | string;
         year: number;
-        fuel_id?: number;
+        fuel_id?: number | string;
         engine_volume?: string;
         engine_volume_min?: number;
         engine_volume_max?: number;
@@ -124,13 +124,13 @@ export function OrderControlView() {
         date_to?: string;
       } = {
         brand_id: brandId,
-        model_id: selectedCar.model.id,
+        model_id: selectedCar.model.rrr_id ?? selectedCar.model.id,
         year: selectedCar.year,
       };
 
       // Add fuel ID if available from car
-      if (selectedCar.fuel?.id) {
-        params.fuel_id = selectedCar.fuel.id;
+      if (selectedCar.fuel) {
+        params.fuel_id = selectedCar.fuel.rrr_id ?? selectedCar.fuel.id;
       }
 
       // Add engine volume if available from car

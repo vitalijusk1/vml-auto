@@ -288,7 +288,9 @@ export const filterStateToReturnsQueryParams = (
     Array.isArray(filters.status) &&
     filters.status.length > 0
   ) {
-    const statusIds = filters.status.map((status) => status.id);
+    const statusIds = filters.status.map(
+      (status) => status.rrr_id ?? status.id
+    );
     if (statusIds.length > 0) {
       params.status = statusIds;
     }
@@ -304,14 +306,14 @@ export const filterStateToReturnsQueryParams = (
 
   // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand.map((brand) => brand.id);
+    const brandIds = filters.carBrand.map((brand) => brand.rrr_id ?? brand.id);
     if (brandIds.length > 0) {
       params.brand_id = brandIds;
     }
   }
 
   if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel.map((model) => model.id);
+    const modelIds = filters.carModel.map((model) => model.rrr_id ?? model.id);
     if (modelIds.length > 0) {
       params.model_id = modelIds;
     }
@@ -337,14 +339,18 @@ export const filterStateToReturnsQueryParams = (
     }
   }
   if (filters.quality && filters.quality.length > 0) {
-    const qualityIds = filters.quality.map((quality) => quality.id);
+    const qualityIds = filters.quality.map(
+      (quality) => quality.rrr_id ?? quality.id
+    );
     if (qualityIds.length > 0) {
       params.quality = qualityIds;
     }
   }
 
   if (filters.position && filters.position.length > 0) {
-    const positionIds = filters.position.map((position) => position.id);
+    const positionIds = filters.position.map(
+      (position) => position.rrr_id ?? position.id
+    );
     if (positionIds.length > 0) {
       params.position = positionIds;
     }
@@ -352,7 +358,9 @@ export const filterStateToReturnsQueryParams = (
 
   // Body type - extract IDs directly from FilterOption objects
   if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
+    const bodyTypeIds = filters.bodyType.map(
+      (bodyType) => bodyType.rrr_id ?? bodyType.id
+    );
     if (bodyTypeIds.length > 0) {
       params.body_type_id = bodyTypeIds;
     }
@@ -368,7 +376,7 @@ export const filterStateToReturnsQueryParams = (
 
   // Fuel type - extract IDs directly from FilterOption objects
   if (filters.fuelType && filters.fuelType.length > 0) {
-    const fuelIds = filters.fuelType.map((fuel) => fuel.id);
+    const fuelIds = filters.fuelType.map((fuel) => fuel.rrr_id ?? fuel.id);
     if (fuelIds.length > 0) {
       params.fuel_id = fuelIds;
     }
@@ -384,7 +392,9 @@ export const filterStateToReturnsQueryParams = (
 
   // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelDrive && filters.wheelDrive.length > 0) {
-    const driveIds = filters.wheelDrive.map((drive) => drive.id);
+    const driveIds = filters.wheelDrive.map(
+      (drive) => drive.rrr_id ?? drive.id
+    );
     if (driveIds.length > 0) {
       params.wheel_drive_id = driveIds;
     }
@@ -392,7 +402,7 @@ export const filterStateToReturnsQueryParams = (
 
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
     const fixingPointsIds = filters.wheelFixingPoints.map(
-      (points) => points.id
+      (points) => points.rrr_id ?? points.id
     );
     if (fixingPointsIds.length > 0) {
       params.rims_fixing_points_id = fixingPointsIds;
@@ -400,7 +410,9 @@ export const filterStateToReturnsQueryParams = (
   }
 
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
+    const spacingIds = filters.wheelSpacing.map(
+      (spacing) => spacing.rrr_id ?? spacing.id
+    );
     if (spacingIds.length > 0) {
       params.rims_spacing_id = spacingIds;
     }
@@ -408,7 +420,7 @@ export const filterStateToReturnsQueryParams = (
 
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
     const diameterIds = filters.wheelCentralDiameter.map(
-      (diameter) => diameter.id
+      (diameter) => diameter.rrr_id ?? diameter.id
     );
     if (diameterIds.length > 0) {
       params.rims_central_diameter_id = diameterIds;
@@ -416,14 +428,18 @@ export const filterStateToReturnsQueryParams = (
   }
 
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const heightIds = filters.wheelHeight.map((height) => height.id);
+    const heightIds = filters.wheelHeight.map(
+      (height) => height.rrr_id ?? height.id
+    );
     if (heightIds.length > 0) {
       params.tires_height_id = heightIds;
     }
   }
 
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const widthIds = filters.wheelWidth.map((width) => width.id);
+    const widthIds = filters.wheelWidth.map(
+      (width) => width.rrr_id ?? width.id
+    );
     if (widthIds.length > 0) {
       params.tires_width_id = widthIds;
     }
