@@ -1,26 +1,11 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Part, Order, TopDetailsFilter } from "@/types";
-import { getStatusBadgeClass } from "@/theme/utils";
+import { getPartStatusClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasExpandableChildren } from "@/utils/partHelpers";
-
-const getPartStatusClass = (statusId: number | undefined) => {
-  switch (statusId) {
-    case 0:
-      return getStatusBadgeClass("part", "In Stock");
-    case 1:
-      return getStatusBadgeClass("part", "Reserved");
-    case 2:
-      return getStatusBadgeClass("part", "Sold");
-    case 3:
-      return getStatusBadgeClass("part", "Returned");
-    default:
-      return getStatusBadgeClass("part", "Returned");
-  }
-};
 
 // Helper to find quality name from backend filters by ID
 const findQualityFromBackend = (

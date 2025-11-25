@@ -328,7 +328,6 @@ export const getPartsByIds = async (
     const response = await authInstance.get(endpoint);
 
     if (!response.data.success) {
-      console.log(`API returned success: false for ${endpoint}`);
       return [];
     }
 
@@ -343,7 +342,6 @@ export const getPartsByIds = async (
       partsData = [response.data.data];
     } else {
       // No data or null
-      console.log(`No parts found for IDs: ${ids}`);
       return [];
     }
 

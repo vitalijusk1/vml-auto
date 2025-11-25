@@ -149,7 +149,6 @@ export const getOrders = async (
   queryParams?: OrdersQueryParams
 ): Promise<OrdersResponse> => {
   const url = apiEndpoints.getOrders(queryParams);
-  console.log("Orders API URL:", url);
   const response = await authInstance.get(url);
   // Handle different response structures
   const data = response.data;
