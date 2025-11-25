@@ -29,6 +29,7 @@ export interface StatisticsPartsData {
   parts_by_status: Array<{ name: string; value: number; status: number }>;
   parts_by_category: StatisticsPartsCategoryData[];
   parts_by_position: Array<{ name: string; value: number; position: string }>;
+  parts_by_brand: Array<{ name: string; value: number; brand_id: number }>;
 }
 
 interface StatisticsOverviewResponse {
@@ -40,6 +41,60 @@ interface StatisticsPartsResponse {
   success: boolean;
   data: StatisticsPartsData;
 }
+
+export interface DailyStat {
+  name: string;
+  orders_count: number;
+  revenue: number;
+  cost: number;
+  profit: number;
+  profit_margin: number;
+}
+
+export interface ClientStat {
+  client_email: string;
+  client_name: string;
+  orders_count: number;
+  total_revenue: number;
+  total_cost: number;
+  total_profit: number;
+}
+
+export interface StatisticsOrdersData {
+  summary: {
+    total_orders: number;
+    total_revenue: number;
+    total_cost: number;
+    total_profit: number;
+    average_order_value: number;
+    profit_margin_percent: number;
+    date_from: string;
+    date_to: string;
+    group_by: string;
+  };
+  daily_stats: DailyStat[];
+  orders_by_status: Array<{
+    name: string;
+    count: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+  }>;
+  top_clients: ClientStat[];
+}
+
+interface StatisticsOrdersResponse {
+  success: boolean;
+  data: StatisticsOrdersData;
+}
+
+export const getStatisticsOrders = async (
+  queryParams?: StatisticsOverviewQueryParams & { group_by?: string }
+): Promise<StatisticsOrdersData> => {
+  const endpoint = apiEndpoints.getStatisticsOrders(queryParams);
+  const response = await authInstance.get<StatisticsOrdersResponse>(endpoint);
+  return response.data.data;
+};
 
 export const getStatisticsOverview = async (
   queryParams?: StatisticsOverviewQueryParams
