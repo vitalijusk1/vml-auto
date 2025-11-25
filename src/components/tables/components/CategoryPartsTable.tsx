@@ -208,26 +208,29 @@ export function CategoryPartsTable({
     }
   }, [categoryData]);
 
-  // Fetch child parts for parts that have part_list
+  // Fetch child parts for parts that have expandable children
   useEffect(() => {
     const fetchChildParts = async () => {
-      const partsWithChildren = (parts as any[]).filter(
+      // Filter parts that have more than 1 item in part_ids
+      // (single item = the parent itself, no need to fetch)
+      const partsWithChildren = parts.filter(
         (part) =>
-          part.part_list &&
-          Array.isArray(part.part_list) &&
-          part.part_list.length > 0
+          part.part_ids &&
+          Array.isArray(part.part_ids) &&
+          part.part_ids.length > 1
       );
 
       for (const part of partsWithChildren) {
-        const partKey = part.manufactories_id || part.id;
+        const partKey = part.id;
         // Skip if already cached
         if (childPartsCache[partKey]) continue;
 
+        // Get all child IDs except the first one (which is the parent)
+        const childIds = part.part_ids!.slice(1);
+        if (childIds.length === 0) continue;
+
         try {
-          const childParts = await getPartsByIds(
-            part.part_list,
-            backendFilters
-          );
+          const childParts = await getPartsByIds(childIds, backendFilters);
           setChildPartsCache((prev) => ({
             ...prev,
             [partKey]: childParts,
@@ -379,7 +382,7 @@ export function CategoryPartsTable({
       parts.forEach((part: any) => {
         const partSoldUnits = getPartSoldUnits(part);
         const isPartSelected = selectedParts.has(part.id);
-        const partKey = part.manufactories_id || part.id;
+        const partKey = part.id;
         const childParts = childPartsCache[partKey] || [];
 
         // Render parent part
@@ -403,7 +406,7 @@ export function CategoryPartsTable({
               </div>
             </TableCell>
             <TableCell className="text-center text-sm">
-              {part.code}{" "}
+              {part.part_id ?? part.code}{" "}
               {part.manufacturerCode ? `/ ${part.manufacturerCode}` : ""}
             </TableCell>
             <TableCell className="text-center">
@@ -438,7 +441,7 @@ export function CategoryPartsTable({
               key={`child-part-${childPart.id}`}
               className={cn("bg-muted/50", isChildSelected && "bg-accent")}
             >
-              <TableCell style={{ paddingLeft: `${64 + level * 24}px` }}>
+              <TableCell style={{ paddingLeft: `${40 + level * 24}px` }}>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id={`child-part-${childPart.id}`}
@@ -453,7 +456,7 @@ export function CategoryPartsTable({
                 </div>
               </TableCell>
               <TableCell className="text-center text-sm">
-                {childPart.code}{" "}
+                {childPart.part_id ?? childPart.code}{" "}
                 {childPart.manufacturerCode
                   ? `/ ${childPart.manufacturerCode}`
                   : ""}

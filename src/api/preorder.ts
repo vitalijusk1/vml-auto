@@ -8,6 +8,7 @@ export interface PreorderAnalysisPart {
   name: string;
   manufactories_id: string;
   part_list: number[];
+  part_part_ids: number[];
   items: number;
   sold: number;
   in_stock: number;
@@ -126,60 +127,45 @@ function transformPart(
     status = "Reserved";
   }
 
-  // Create one Part entry per item in part_list
-  // Each item in part_list represents an individual part with this manufacturer code
-  // The API groups parts by manufacturer code, so we distribute statuses across the items
-  apiPart.part_list.forEach((partId, index) => {
-    // Determine individual part status based on position in the list
-    // We assume: first items are available, then reserved, then sold
-    let partStatus: PartStatus = "In Stock";
-    let statusId = 0;
-    const availableCount = apiPart.statuses.available || 0;
-    const reservedCount = apiPart.statuses.reserved || 0;
-    const soldCount = apiPart.statuses.sold || 0;
+  // Get the main part ID from part_part_ids (first item is the main part for display)
+  const mainPartId = apiPart.part_part_ids?.[0] || apiPart.part_list[0];
+  const partIdStr = mainPartId?.toString() || "unknown";
 
-    if (index < availableCount) {
-      partStatus = "In Stock";
-      statusId = 0;
-    } else if (index < availableCount + reservedCount) {
-      partStatus = "Reserved";
-      statusId = 1;
-    } else if (index < availableCount + reservedCount + soldCount) {
-      partStatus = "Sold";
-      statusId = 2;
-    } else {
-      // Fallback to group status
-      partStatus = status;
-      if (status === "Sold") statusId = 2;
-      else if (status === "Reserved") statusId = 1;
-      else statusId = 0;
-    }
-
-    parts.push({
-      id: partId.toString(),
-      code: partId.toString(),
-      name: apiPart.name,
-      category: categoryName,
-      partType: "",
-      carId: carId,
-      carBrand: carBrand,
-      carModel: carModel,
-      carYear: carYear,
-      manufacturerCode: apiPart.manufactories_id,
-      status: partStatus,
-      statusId: statusId,
-      priceEUR: apiPart.avg_price || 0,
-      pricePLN: (apiPart.avg_price || 0) * 4.5, // Approximate conversion
-      daysInInventory: apiPart.avg_days_to_sell || 0,
-      dateAdded: new Date().toISOString(),
-      photos: [],
-      warehouse: undefined,
-      analysisStatusCounts: {
-        available: apiPart.statuses.available || 0,
-        reserved: apiPart.statuses.reserved || 0,
-        sold: apiPart.statuses.sold || 0,
-      },
-    });
+  // Create one Part entry representing the group
+  // The individual items will be fetched by the frontend using part_ids (from part_list)
+  parts.push({
+    id: partIdStr,
+    part_id: mainPartId,
+    code: partIdStr,
+    name: apiPart.name,
+    category: categoryName,
+    partType: "",
+    carId: carId,
+    carBrand: carBrand,
+    carModel: carModel,
+    carYear: carYear,
+    manufacturerCode: apiPart.manufactories_id,
+    status: status,
+    statusId:
+      apiPart.statuses.reserved > 0
+        ? 1
+        : apiPart.in_stock === 0 && apiPart.sold > 0
+        ? 2
+        : 0,
+    priceEUR: apiPart.avg_price || 0,
+    pricePLN: (apiPart.avg_price || 0) * 4.5, // Approximate conversion
+    daysInInventory: apiPart.avg_days_to_sell || 0,
+    dateAdded: new Date().toISOString(),
+    photos: [],
+    warehouse: undefined,
+    analysisStatusCounts: {
+      available: apiPart.statuses.available || 0,
+      reserved: apiPart.statuses.reserved || 0,
+      sold: apiPart.statuses.sold || 0,
+    },
+    // Use part_list for fetching children (these are the IDs used by /parts endpoint)
+    part_ids: apiPart.part_list,
+    items_count: apiPart.items,
   });
 
   return parts;
