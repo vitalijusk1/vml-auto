@@ -11,7 +11,8 @@ interface UseExpandablePartsReturn {
 
 export function useExpandableParts(
   parts: Part[],
-  topDetailsFilter?: TopDetailsFilter
+  topDetailsFilter?: TopDetailsFilter,
+  backendFilters?: any
 ): UseExpandablePartsReturn {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [childPartsCache, setChildPartsCache] = useState<
@@ -48,7 +49,7 @@ export function useExpandableParts(
             const childIds = getChildPartIds(part);
 
             if (childIds.length > 0) {
-              getPartsByIds(childIds)
+              getPartsByIds(childIds, backendFilters)
                 .then((childParts) => {
                   // Mark child parts and set parent reference
                   const processedChildParts = childParts.map((childPart) => ({
@@ -78,7 +79,7 @@ export function useExpandableParts(
         return newSet;
       });
     },
-    [parts, childPartsCache, loadingChildParts, isAnalyticsMode]
+    [parts, childPartsCache, loadingChildParts, isAnalyticsMode, backendFilters]
   );
 
   // Process parts to include child parts when expanded
@@ -115,7 +116,7 @@ export function useExpandableParts(
         // Auto-fetch child parts for default expanded items
         const childIds = getChildPartIds(part);
         if (childIds.length > 0) {
-          getPartsByIds(childIds)
+          getPartsByIds(childIds, backendFilters)
             .then((childParts) => {
               const processedChildParts = childParts.map((childPart) => ({
                 ...childPart,
@@ -141,7 +142,7 @@ export function useExpandableParts(
     if (defaultExpanded.size > 0) {
       setExpandedRows(defaultExpanded);
     }
-  }, [parts]);
+  }, [parts, backendFilters]);
 
   // Handle mode changes - clear expansion when entering analytics mode
   useEffect(() => {

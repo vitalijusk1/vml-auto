@@ -104,10 +104,12 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     photo_gallery: apiCar.car_photo_gallery || [],
     brand: {
       id: apiCar.car_model.brand.id,
+      rrr_id: apiCar.car_model.brand.rrr_id,
       name: apiCar.car_model.brand.name,
     },
     model: {
       id: apiCar.car_model.id,
+      rrr_id: apiCar.car_model.rrr_id,
       name: apiCar.car_model.name,
     },
     year: parseInt(apiCar.car_years) || 0,
@@ -122,37 +124,61 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     fuel: apiCar.car_fuel
       ? {
           id: apiCar.car_fuel.id,
-          name: getLocalizedText(apiCar.car_fuel.languages, apiCar.car_fuel.name),
+          rrr_id: apiCar.car_fuel.rrr_id,
+          name: getLocalizedText(
+            apiCar.car_fuel.languages,
+            apiCar.car_fuel.name
+          ),
         }
       : null,
     body_type: apiCar.car_body_type
       ? {
           id: apiCar.car_body_type.id,
-          name: getLocalizedText(apiCar.car_body_type.languages, apiCar.car_body_type.name),
+          rrr_id: apiCar.car_body_type.rrr_id,
+          name: getLocalizedText(
+            apiCar.car_body_type.languages,
+            apiCar.car_body_type.name
+          ),
         }
       : null,
     wheel_drive: apiCar.wheel_drive
       ? {
           id: apiCar.wheel_drive.id,
-          name: getLocalizedText(apiCar.wheel_drive.languages, apiCar.wheel_drive.name),
+          rrr_id: apiCar.wheel_drive.rrr_id,
+          name: getLocalizedText(
+            apiCar.wheel_drive.languages,
+            apiCar.wheel_drive.name
+          ),
         }
       : null,
     wheel_type: apiCar.wheel_type
       ? {
           id: apiCar.wheel_type.id,
-          name: getLocalizedText(apiCar.wheel_type.languages, apiCar.wheel_type.name),
+          rrr_id: apiCar.wheel_type.rrr_id,
+          name: getLocalizedText(
+            apiCar.wheel_type.languages,
+            apiCar.wheel_type.name
+          ),
         }
       : null,
     gearbox_type: apiCar.gearbox_type
       ? {
           id: apiCar.gearbox_type.id,
-          name: getLocalizedText(apiCar.gearbox_type.languages, apiCar.gearbox_type.name),
+          rrr_id: apiCar.gearbox_type.rrr_id,
+          name: getLocalizedText(
+            apiCar.gearbox_type.languages,
+            apiCar.gearbox_type.name
+          ),
         }
       : null,
     color: apiCar.car_color
       ? {
           id: apiCar.car_color.id,
-          name: getLocalizedText(apiCar.car_color.languages, apiCar.car_color.name),
+          rrr_id: apiCar.car_color.rrr_id,
+          name: getLocalizedText(
+            apiCar.car_color.languages,
+            apiCar.car_color.name
+          ),
         }
       : null,
     color_code: apiCar.car_color_code,
@@ -160,7 +186,11 @@ function transformApiCar(apiCar: ApiCarResponse): Car {
     category: apiCar.category
       ? {
           id: apiCar.category.id,
-          name: getLocalizedText(apiCar.category.languages, apiCar.category.name),
+          rrr_id: apiCar.category.rrr_id,
+          name: getLocalizedText(
+            apiCar.category.languages,
+            apiCar.category.name
+          ),
         }
       : null,
     mileage: apiCar.car_mileage ? parseInt(apiCar.car_mileage) : null,

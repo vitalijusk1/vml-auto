@@ -90,6 +90,7 @@ interface ApiPartResponse {
       id: number;
       rrr_id: string;
       name: string;
+      languages?: Record<string, string>;
     } | null;
     category?: {
       id: number;
@@ -169,8 +170,40 @@ function calculateDaysInInventory(dateAdded: string): number {
   return diffDays;
 }
 
+// Get localized status from backend filters
+function getLocalizedStatus(statusId: number, backendFilters?: any): string {
+  if (!backendFilters?.parts?.statuses) {
+    return mapStatus(statusId);
+  }
+
+  // Try to find by ID first
+  let statusOption = backendFilters.parts.statuses.find(
+    (s: any) => typeof s === "object" && s.rrr_id == statusId
+  );
+
+  // If not found, try matching by English name fallback
+  if (!statusOption) {
+    const englishStatus = mapStatus(statusId).toLowerCase();
+    statusOption = backendFilters.parts.statuses.find(
+      (s: any) =>
+        typeof s === "object" &&
+        (s.name?.toLowerCase() === englishStatus ||
+          s.languages?.en?.toLowerCase() === englishStatus)
+    );
+  }
+
+  if (statusOption) {
+    return getLocalizedText(statusOption.languages, statusOption.name);
+  }
+
+  return mapStatus(statusId);
+}
+
 // Transform API response to Part type
-function transformApiPart(apiPart: ApiPartResponse): Part {
+function transformApiPart(
+  apiPart: ApiPartResponse,
+  backendFilters?: any
+): Part {
   const dateAdded = new Date(apiPart.date || apiPart.create_date).toISOString();
   const photos = [
     ...(apiPart.photo ? [apiPart.photo] : []),
@@ -199,7 +232,8 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
     carModel: apiPart.car?.car_model?.name || "",
     carYear: apiPart.car?.car_years ? parseInt(apiPart.car.car_years) || 0 : 0,
     manufacturerCode: apiPart.manufacturer_code || undefined,
-    status: mapStatus(apiPart.status),
+    status: getLocalizedStatus(apiPart.status, backendFilters),
+    statusId: apiPart.status,
     priceEUR,
     pricePLN,
     position: mapPosition(apiPart.position),
@@ -213,7 +247,12 @@ function transformApiPart(apiPart: ApiPartResponse): Part {
         : undefined,
     photos,
     warehouse: undefined, // TODO: Get warehouse from API if available
-    fuelType: apiPart.car?.car_fuel?.name || undefined,
+    fuelType: apiPart.car?.car_fuel
+      ? getLocalizedText(
+          apiPart.car.car_fuel.languages,
+          apiPart.car.car_fuel.name
+        )
+      : undefined,
     engineVolume: apiPart.car?.car_engine_cubic_capacity || undefined,
     qualityId: getQualityId(apiPart.quality),
     // Expandable parts fields
@@ -289,13 +328,13 @@ export const filterStateToQueryParams = (
 
   // Car filters - extract IDs directly from FilterOption objects
   if (filters.carBrand && filters.carBrand.length > 0) {
-    const brandIds = filters.carBrand.map((brand) => brand.id);
+    const brandIds = filters.carBrand.map((brand) => brand.rrr_id ?? brand.id);
     if (brandIds.length > 0) {
       params.brand_id = brandIds;
     }
   }
   if (filters.carModel && filters.carModel.length > 0) {
-    const modelIds = filters.carModel.map((model) => model.id);
+    const modelIds = filters.carModel.map((model) => model.rrr_id ?? model.id);
     if (modelIds.length > 0) {
       params.model_id = modelIds;
     }
@@ -329,7 +368,9 @@ export const filterStateToQueryParams = (
     }
   }
   if (filters.position && filters.position.length > 0) {
-    const positionIds = filters.position.map((position) => position.id);
+    const positionIds = filters.position.map(
+      (position) => position.rrr_id ?? position.id
+    );
     if (positionIds.length > 0) {
       params.position = positionIds;
     }
@@ -337,7 +378,9 @@ export const filterStateToQueryParams = (
 
   // Body type - extract IDs directly from FilterOption objects
   if (filters.bodyType && filters.bodyType.length > 0) {
-    const bodyTypeIds = filters.bodyType.map((bodyType) => bodyType.id);
+    const bodyTypeIds = filters.bodyType.map(
+      (bodyType) => bodyType.rrr_id ?? bodyType.id
+    );
     if (bodyTypeIds.length > 0) {
       params.body_type_id = bodyTypeIds;
     }
@@ -362,34 +405,40 @@ export const filterStateToQueryParams = (
   // Wheel filters - extract IDs directly from FilterOption objects
   if (filters.wheelFixingPoints && filters.wheelFixingPoints.length > 0) {
     const fixingPointsIds = filters.wheelFixingPoints.map(
-      (points) => points.id
+      (points) => points.rrr_id ?? points.id
     );
     if (fixingPointsIds.length > 0) {
       params.rims_fixing_points_id = fixingPointsIds;
     }
   }
   if (filters.wheelSpacing && filters.wheelSpacing.length > 0) {
-    const spacingIds = filters.wheelSpacing.map((spacing) => spacing.id);
+    const spacingIds = filters.wheelSpacing.map(
+      (spacing) => spacing.rrr_id ?? spacing.id
+    );
     if (spacingIds.length > 0) {
       params.rims_spacing_id = spacingIds;
     }
   }
   if (filters.wheelCentralDiameter && filters.wheelCentralDiameter.length > 0) {
     const centralDiameterIds = filters.wheelCentralDiameter.map(
-      (diameter) => diameter.id
+      (diameter) => diameter.rrr_id ?? diameter.id
     );
     if (centralDiameterIds.length > 0) {
       params.rims_central_diameter_id = centralDiameterIds;
     }
   }
   if (filters.wheelHeight && filters.wheelHeight.length > 0) {
-    const heightIds = filters.wheelHeight.map((height) => height.id);
+    const heightIds = filters.wheelHeight.map(
+      (height) => height.rrr_id ?? height.id
+    );
     if (heightIds.length > 0) {
       params.tires_height_id = heightIds;
     }
   }
   if (filters.wheelWidth && filters.wheelWidth.length > 0) {
-    const widthIds = filters.wheelWidth.map((width) => width.id);
+    const widthIds = filters.wheelWidth.map(
+      (width) => width.rrr_id ?? width.id
+    );
     if (widthIds.length > 0) {
       params.tires_width_id = widthIds;
     }
@@ -400,13 +449,16 @@ export const filterStateToQueryParams = (
 
 // Get all parts
 export const getParts = async (
-  queryParams?: PartsQueryParams
+  queryParams?: PartsQueryParams,
+  backendFilters?: any
 ): Promise<PartsResponse> => {
   const response = await authInstance.get<ApiPartsResponse>(
     apiEndpoints.getParts(queryParams)
   );
   const result = {
-    parts: response.data.data.map(transformApiPart),
+    parts: response.data.data.map((part) =>
+      transformApiPart(part, backendFilters)
+    ),
     pagination: response.data.pagination,
   };
   return result;
@@ -419,7 +471,10 @@ export const getPart = async (id: string): Promise<Part> => {
 };
 
 // Get multiple parts by comma-separated IDs
-export const getPartsByIds = async (ids: number[]): Promise<Part[]> => {
+export const getPartsByIds = async (
+  ids: number[],
+  backendFilters?: any
+): Promise<Part[]> => {
   const idsString = ids.join(",");
   const endpoint = `/parts/${idsString}`;
 
@@ -446,7 +501,9 @@ export const getPartsByIds = async (ids: number[]): Promise<Part[]> => {
       return [];
     }
 
-    const transformedParts = partsData.map(transformApiPart);
+    const transformedParts = partsData.map((part) =>
+      transformApiPart(part, backendFilters)
+    );
     return transformedParts;
   } catch (error) {
     console.error(`API Error for endpoint ${endpoint}:`, error);

@@ -46,10 +46,12 @@ export interface Car {
   photo_gallery: string[];
   brand: {
     id: number;
+    rrr_id: string;
     name: string;
   };
   model: {
     id: number;
+    rrr_id: string;
     name: string;
   };
   year: number;
@@ -61,32 +63,39 @@ export interface Car {
   };
   fuel: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   body_type: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   wheel_drive: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   wheel_type: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   gearbox_type: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   color: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   color_code: string | null;
   interior: string;
   category: {
     id: number;
+    rrr_id: string;
     name: string;
   } | null;
   mileage: number | null;
@@ -105,7 +114,8 @@ export interface Part {
   carModel: string;
   carYear: number;
   manufacturerCode?: string;
-  status: PartStatus;
+  status: string;
+  statusId?: number; // Raw status ID for logic checks (0=In Stock, 1=Reserved, 2=Sold, etc.)
   priceEUR: number;
   pricePLN: number;
   position?: PartPosition;

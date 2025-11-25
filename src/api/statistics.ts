@@ -68,35 +68,37 @@ export const filterStateToStatisticsQueryParams = (
 
   // Date range
   if (filters.dateRange?.from) {
-    const fromDate = filters.dateRange.from instanceof Date 
-      ? filters.dateRange.from.toISOString().split('T')[0]
-      : filters.dateRange.from;
+    const fromDate =
+      filters.dateRange.from instanceof Date
+        ? filters.dateRange.from.toISOString().split("T")[0]
+        : filters.dateRange.from;
     params.date_from = fromDate;
   }
   if (filters.dateRange?.to) {
-    const toDate = filters.dateRange.to instanceof Date 
-      ? filters.dateRange.to.toISOString().split('T')[0]
-      : filters.dateRange.to;
+    const toDate =
+      filters.dateRange.to instanceof Date
+        ? filters.dateRange.to.toISOString().split("T")[0]
+        : filters.dateRange.to;
     params.date_to = toDate;
   }
 
   // Car filters
   if (filters.carBrand && filters.carBrand.length > 0) {
-    params.brand_id = filters.carBrand.map((b) => b.id);
+    params.brand_id = filters.carBrand.map((b) => b.rrr_id ?? b.id);
   }
   if (filters.carModel && filters.carModel.length > 0) {
-    params.model_id = filters.carModel.map((m) => m.id);
+    params.model_id = filters.carModel.map((m) => m.rrr_id ?? m.id);
   }
 
   // Part filters
   if (filters.partCategory && filters.partCategory.length > 0) {
-    params.category_id = filters.partCategory.map((c) => c.id);
+    params.category_id = filters.partCategory.map((c) => c.rrr_id ?? c.id);
   }
   if (filters.quality && filters.quality.length > 0) {
-    params.quality = filters.quality.map((q) => q.id);
+    params.quality = filters.quality.map((q) => q.rrr_id ?? q.id);
   }
   if (filters.position && filters.position.length > 0) {
-    params.position = filters.position.map((p) => p.id);
+    params.position = filters.position.map((p) => p.rrr_id ?? p.id);
   }
 
   return params;

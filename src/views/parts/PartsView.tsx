@@ -33,7 +33,8 @@ export function PartsView() {
   // Expandable parts functionality
   const { expandedRows, processedParts, toggleExpand } = useExpandableParts(
     parts,
-    topDetailsFilter
+    topDetailsFilter,
+    backendFilters
   );
 
   // Handle top details filter change - wrapped in useCallback
