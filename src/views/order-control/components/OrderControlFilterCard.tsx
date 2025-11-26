@@ -84,6 +84,14 @@ export const OrderControlFilterCard = memo(function OrderControlFilterCard({
         queryParams.car_fuel_id = fuelIds.length === 1 ? fuelIds[0] : fuelIds;
       }
 
+      if (filters.yearRange?.min) {
+        queryParams.year_from = filters.yearRange.min;
+      }
+
+      if (filters.yearRange?.max) {
+        queryParams.year_to = filters.yearRange.max;
+      }
+
       const response = await getCars(queryParams);
       onCarsUpdate(response.cars);
     } catch (error) {

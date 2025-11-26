@@ -5,6 +5,8 @@ export interface CarQueryParams {
   car_fuel_id?: number | string;
   car_body_type_id?: number | string;
   car_years?: string;
+  year_from?: number;
+  year_to?: number;
   per_page?: number;
   page?: number;
 }

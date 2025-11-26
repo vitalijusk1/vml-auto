@@ -346,9 +346,9 @@ export function AnalyticsView() {
                   value={groupBy}
                   onChange={(e) => setGroupBy(e.target.value as any)}
                 >
-                  <option value="day">Day</option>
-                  <option value="week">Week</option>
-                  <option value="month">Month</option>
+                  <option value="day">Diena</option>
+                  <option value="week">Savaitė</option>
+                  <option value="month">Mėnuo</option>
                 </select>
               </div>
             </div>

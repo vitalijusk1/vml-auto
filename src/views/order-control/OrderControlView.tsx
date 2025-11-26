@@ -138,13 +138,6 @@ export function OrderControlView() {
         params.engine_volume = selectedCar.engine.capacity.toString();
       }
 
-      // Add default date range (last year)
-      const today = new Date();
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(today.getFullYear() - 1);
-      params.date_from = oneYearAgo.toISOString().split("T")[0];
-      params.date_to = today.toISOString().split("T")[0];
-
       // Fetch preorder analysis data
       const result = await getPreorderAnalysis(params);
       setParts(result.parts);

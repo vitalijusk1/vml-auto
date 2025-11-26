@@ -1,4 +1,4 @@
-import { Bell, User, LogOut, Menu } from "lucide-react";
+import { User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -51,9 +51,6 @@ export function Header() {
       )}
 
       <div className="flex items-center gap-4 ml-auto">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-        </Button>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon">
