@@ -19,6 +19,7 @@ export interface PreorderAnalysisPart {
   };
   value: number;
   profit: number;
+  price: number;
   avg_price: number;
   avg_profit: number;
   avg_days_to_sell: number;
@@ -152,8 +153,8 @@ function transformPart(
         : apiPart.in_stock === 0 && apiPart.sold > 0
         ? 2
         : 0,
-    priceEUR: apiPart.avg_price || 0,
-    pricePLN: (apiPart.avg_price || 0) * 4.5, // Approximate conversion
+    priceEUR: apiPart.price || 0,
+    pricePLN: (apiPart.price || 0) * 4.5, // Approximate conversion
     daysInInventory: apiPart.avg_days_to_sell || 0,
     dateAdded: new Date().toISOString(),
     photos: [],
