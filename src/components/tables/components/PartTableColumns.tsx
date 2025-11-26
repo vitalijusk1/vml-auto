@@ -317,9 +317,6 @@ export function PartTableColumns({
       cell: ({ row }) => (
         <div>
           <div className="font-medium">€{row.original.priceEUR.toFixed(2)}</div>
-          <div className="text-xs text-muted-foreground">
-            PLN {row.original.pricePLN.toFixed(2)}
-          </div>
         </div>
       ),
     },
