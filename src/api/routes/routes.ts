@@ -87,6 +87,7 @@ export interface OrdersQueryParams {
   search?: string;
   // Status filters
   status?: string | (string | number)[];
+  order_status?: string[];
   // Date range
   date_from?: string;
   date_to?: string;

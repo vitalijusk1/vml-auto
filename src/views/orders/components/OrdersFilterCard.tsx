@@ -149,7 +149,7 @@ export const OrdersFilterCard = memo(function OrdersFilterCard({
 
   return (
     <FilterPanel
-      type={LayoutType.PARTS}
+      type={LayoutType.ORDERS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
       onFilter={handleFilter}
