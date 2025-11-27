@@ -363,9 +363,9 @@ export function AnalyticsView() {
         {/* Sales Trend - Full width */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle>Pardavimų tendencija</CardTitle>
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-wrap gap-2 items-center">
                 <input
                   type="date"
                   className="text-sm border rounded px-2 py-1"
@@ -381,7 +381,7 @@ export function AnalyticsView() {
                   onChange={(e) => setDateTo(e.target.value)}
                   placeholder="To"
                 />
-                <div className="w-px h-4 bg-border mx-2" />
+                <div className="w-px h-4 bg-border mx-2 hidden sm:block" />
                 <select
                   className="text-sm border rounded px-2 py-1"
                   value={groupBy}

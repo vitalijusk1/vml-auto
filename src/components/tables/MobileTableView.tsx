@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Car, Part, Order, Return } from "@/types";
+import { Car, Part, Order, Return, OrderStatus } from "@/types";
 import { LayoutType } from "../filters/type";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,8 @@ import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateLithuanian } from "@/utils/dateFormatting";
-import { getStatusBadgeClass } from "@/theme/utils";
+import { getStatusBadgeClass, getPartStatusClass } from "@/theme/utils";
+import { getLocalizedText } from "@/utils/i18n";
 
 interface MobileTableViewProps<T extends Car | Part | Order | Return> {
   type: Exclude<LayoutType, "analytics" | "order-control">;
@@ -16,7 +17,52 @@ interface MobileTableViewProps<T extends Car | Part | Order | Return> {
   onToggleExpand?: (id: string) => void;
   renderExpandedRow?: (item: T) => React.ReactNode;
   onItemClick?: (item: T) => void;
+  backendFilters?: any;
 }
+
+// Helper to find quality name from backend filters by ID
+const findQualityFromBackend = (
+  qualityId: number | undefined,
+  backendFilters: any
+): string | null => {
+  if (!qualityId) return null;
+  const qualities = backendFilters?.parts?.qualities;
+  if (!Array.isArray(qualities)) return null;
+
+  for (const qualityOption of qualities) {
+    if (qualityOption && typeof qualityOption === "object") {
+      if (qualityOption.id === qualityId) {
+        // Return localized version (prioritizes Lithuanian)
+        return getLocalizedText(qualityOption.languages, qualityOption.name);
+      }
+    }
+  }
+  return null;
+};
+
+const getQualityLabel = (
+  qualityId: number | undefined,
+  backendFilters: any
+): string => {
+  // Try to get from backend filters first (with language support)
+  const backendQuality = findQualityFromBackend(qualityId, backendFilters);
+  if (backendQuality) return backendQuality;
+
+  // Fallback if not found
+  return "-";
+};
+
+// Get status badge class for order statuses
+const getOrderStatusClass = (status: OrderStatus) => {
+  const statusMap: Record<OrderStatus, string> = {
+    NEW: getStatusBadgeClass("order", "Pending"),
+    PREPARED: getStatusBadgeClass("order", "Processing"),
+    SENT: getStatusBadgeClass("order", "Shipped"),
+    DELIVERED: getStatusBadgeClass("order", "Delivered"),
+    CANCELLED: getStatusBadgeClass("order", "Cancelled"),
+  };
+  return statusMap[status] || getStatusBadgeClass("order", "Pending");
+};
 
 export function MobileTableView<T extends Car | Part | Order | Return>({
   type,
@@ -25,6 +71,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
   onToggleExpand,
   renderExpandedRow,
   onItemClick,
+  backendFilters,
 }: MobileTableViewProps<T>) {
   const renderPartCard = (part: Part) => (
     <Card
@@ -51,7 +98,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
               <span
                 className={cn(
                   "px-2 py-1 rounded-full text-xs font-medium",
-                  getStatusBadgeClass("part", part.status)
+                  getPartStatusClass(part.statusId)
                 )}
               >
                 {part.status}
@@ -59,9 +106,6 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
               <div className="text-right">
                 <div className="font-medium text-sm">
                   €{part.priceEUR.toFixed(2)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  PLN {part.pricePLN.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -73,20 +117,50 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                 <div className="truncate font-medium">{part.code}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Sandėlis</div>
-                <div className="truncate">{part.warehouse || "-"}</div>
+                <div className="text-muted-foreground">Sandėly</div>
+                <div className="truncate">
+                  {part.statuses ? part.statuses[0] || 0 : 0}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Sandėlys</div>
+                <div className="truncate">{part.accountId ?? "-"}</div>
               </div>
               <div>
                 <div className="text-muted-foreground">Kuro tipas</div>
                 <div className="truncate">{part.fuelType || "-"}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Variklio tūris</div>
-                <div className="truncate">{part.engineVolume || "-"}</div>
+                <div className="text-muted-foreground">Kebulo tipas</div>
+                <div className="truncate">{part.bodyType || "-"}</div>
               </div>
-              <div className="col-span-2">
+              <div>
+                <div className="text-muted-foreground">Variklio tūris</div>
+                <div className="truncate">
+                  {part.engineVolume ? `${part.engineVolume}cc` : "-"}
+                </div>
+              </div>
+              <div>
                 <div className="text-muted-foreground">Gamintojo kodas</div>
                 <div className="truncate">{part.manufacturerCode || "-"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Kokybė</div>
+                <div className="truncate">
+                  {getQualityLabel(part.qualityId, backendFilters)}
+                </div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Laikas sandėly</div>
+                <div className="truncate">
+                  {(() => {
+                    const days = part.daysInInventory;
+                    let color = "text-inventory-normal";
+                    if (days > 180) color = "text-inventory-critical";
+                    else if (days > 90) color = "text-inventory-warning";
+                    return <span className={color}>{days} d.</span>;
+                  })()}
+                </div>
               </div>
             </div>
           </div>
@@ -113,7 +187,7 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                   <span
                     className={cn(
                       "px-2 py-1 rounded-full text-xs font-medium",
-                      getStatusBadgeClass("order", order.status)
+                      getOrderStatusClass(order.status)
                     )}
                   >
                     {order.status}
@@ -133,8 +207,9 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {formatDateLithuanian(order.date)}
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>{formatDateLithuanian(order.date)}</span>
+                  <span>Sandėlys: {order.accountId ?? "-"}</span>
                 </div>
               </div>
               {onToggleExpand && (
@@ -155,11 +230,13 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                 </Button>
               )}
             </div>
+            {isExpanded && renderExpandedRow && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                {renderExpandedRow(order as T)}
+              </div>
+            )}
           </CardContent>
         </Card>
-        {isExpanded && renderExpandedRow && (
-          <div className="mb-4 mx-2">{renderExpandedRow(order as T)}</div>
-        )}
       </Fragment>
     );
   };
@@ -198,8 +275,9 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                     </div>
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {formatDateLithuanian(returnItem.dateCreated)}
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>{formatDateLithuanian(returnItem.dateCreated)}</span>
+                  <span>Sandėlys: {returnItem.accountId ?? "-"}</span>
                 </div>
               </div>
               {onToggleExpand && (
@@ -220,11 +298,13 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                 </Button>
               )}
             </div>
+            {isExpanded && renderExpandedRow && (
+              <div className="mt-4 pt-4 border-t border-border/50">
+                {renderExpandedRow(returnItem as T)}
+              </div>
+            )}
           </CardContent>
         </Card>
-        {isExpanded && renderExpandedRow && (
-          <div className="mb-4 mx-2">{renderExpandedRow(returnItem as T)}</div>
-        )}
       </Fragment>
     );
   };

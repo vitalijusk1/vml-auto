@@ -126,11 +126,7 @@ export function PartTableColumns({
       {
         accessorKey: "bodyType",
         header: "Kebulo tipas",
-        cell: () => {
-          // Body type is not directly in Part, would need to fetch from car
-          // For now, show "-" or we could add it to Part type later
-          return "-";
-        },
+        cell: ({ row }) => row.original.bodyType || "-",
       },
       {
         accessorKey: "engineVolume",
@@ -159,14 +155,9 @@ export function PartTableColumns({
         },
       },
       {
-        accessorKey: "sandely",
-        header: "Sandėly",
-        cell: ({ row }) => {
-          const part = row.original;
-          // Show count of parts with status 0 (in stock)
-          const inStockCount = part.statuses ? part.statuses[0] || 0 : 0;
-          return <div>{inStockCount}</div>;
-        },
+        accessorKey: "sandelys",
+        header: "Sandėlys",
+        cell: ({ row }) => row.original.accountId ?? "-",
       },
       {
         accessorKey: "avgPrice",
@@ -232,6 +223,11 @@ export function PartTableColumns({
       cell: ({ row }) => row.original.fuelType || "-",
     },
     {
+      accessorKey: "bodyType",
+      header: "Kebulo tipas",
+      cell: ({ row }) => row.original.bodyType || "-",
+    },
+    {
       accessorKey: "engineVolume",
       header: "Variklio tūris",
       cell: ({ row }) =>
@@ -255,6 +251,11 @@ export function PartTableColumns({
           {row.original.status}
         </span>
       ),
+    },
+    {
+      accessorKey: "sandelys",
+      header: "Sandėlys",
+      cell: ({ row }) => row.original.accountId ?? "-",
     },
     {
       accessorKey: "daysInInventory",

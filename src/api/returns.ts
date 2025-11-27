@@ -85,6 +85,7 @@ interface ApiReturnResponse {
   refund_invoice_number: string | null;
   total_returnable_amount: string;
   total_returnable_amount_in_seller_currency: string;
+  account_id?: number | null;
 }
 
 interface ApiReturnsResponse {
@@ -241,6 +242,7 @@ const transformReturn = (apiReturn: ApiReturnResponse): Return => {
     returnStatus: apiReturn.return_status,
     refundStatus: apiReturn.refund_status,
     creditNoteUrl: apiReturn.refund_invoice_url || undefined,
+    accountId: apiReturn.account_id ?? undefined,
   };
 };
 

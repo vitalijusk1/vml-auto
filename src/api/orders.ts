@@ -131,6 +131,7 @@ const transformOrder = (order: any): any => {
     paymentMethod: order.payment_method || "",
     shippingStatus: mapOrderStatus(order.order_status || "NEW"), // Map to same status enum
     invoiceUrl: order.invoice_download_url || undefined,
+    accountId: order.account_id ?? undefined,
   };
 };
 
