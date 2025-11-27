@@ -26,6 +26,8 @@ export interface QueryParamsConfig {
   includeTopDetails?: boolean;
   /** Use rrr_id for status extraction (false = use just id) */
   useRrrIdForStatus?: boolean;
+  /** Use order_status param name instead of status (for orders API) */
+  useOrderStatusParam?: boolean;
 }
 
 /**
@@ -36,6 +38,7 @@ export interface BaseQueryParams {
   per_page?: number;
   search?: string;
   status?: (string | number)[];
+  order_status?: string[];
   brand_id?: (string | number)[];
   model_id?: (string | number)[];
   year_from?: number;
@@ -89,6 +92,7 @@ export function buildQueryParams<T extends BaseQueryParams>(
     includeWheelDrive = false,
     includeTopDetails = false,
     useRrrIdForStatus = true,
+    useOrderStatusParam = false,
   } = config;
 
   const params: BaseQueryParams = {
@@ -123,9 +127,17 @@ export function buildQueryParams<T extends BaseQueryParams>(
     Array.isArray(filters.status) &&
     filters.status.length > 0
   ) {
-    const statusIds = extractIds(filters.status, useRrrIdForStatus);
-    if (statusIds.length > 0) {
-      params.status = statusIds;
+    if (useOrderStatusParam) {
+      // For orders API: use order_status param with string values (e.g., "NEW", "SENT")
+      const statusNames = filters.status.map((s) => String(s.rrr_id ?? s.name));
+      if (statusNames.length > 0) {
+        params.order_status = statusNames;
+      }
+    } else {
+      const statusIds = extractIds(filters.status, useRrrIdForStatus);
+      if (statusIds.length > 0) {
+        params.status = statusIds;
+      }
     }
   }
 
@@ -280,7 +292,7 @@ export const buildOrdersQueryParams = (
     includeDateRange: true,
     includeFuelType: true,
     includeWheelDrive: true,
-    useRrrIdForStatus: false, // Orders uses just status.id
+    useOrderStatusParam: true, // Orders uses order_status param with string values
   });
 
 /**

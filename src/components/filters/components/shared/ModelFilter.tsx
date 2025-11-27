@@ -34,7 +34,7 @@ export const ModelFilter = ({
     }
 
     // Create a Set for faster brand ID lookups
-    const selectedBrandIdsSet = new Set(selectedBrands.map(b => b.id));
+    const selectedBrandIdsSet = new Set(selectedBrands.map((b) => b.id));
 
     // If no brands selected, return all models from all brands
     if (selectedBrandIdsSet.size === 0) {
@@ -57,7 +57,11 @@ export const ModelFilter = ({
                 name = String(model.id);
               }
               // Use Map to deduplicate by ID
-              allModelsFromBrands.set(model.id, { name, id: model.id });
+              allModelsFromBrands.set(model.id, {
+                name,
+                id: model.id,
+                rrr_id: model.rrr_id,
+              });
             }
           }
         }
@@ -70,7 +74,8 @@ export const ModelFilter = ({
 
     for (const brand of backendFiltersData.car.brands) {
       // Extract brand ID
-      const brandId = typeof brand === "object" && brand.id !== undefined ? brand.id : null;
+      const brandId =
+        typeof brand === "object" && brand.id !== undefined ? brand.id : null;
 
       // Check if this brand is selected using Set for O(1) lookup
       if (brandId !== null && selectedBrandIdsSet.has(brandId)) {
@@ -92,7 +97,11 @@ export const ModelFilter = ({
                 name = String(model.id);
               }
               // Use Map to deduplicate by ID
-              modelsByBrand.set(model.id, { name, id: model.id });
+              modelsByBrand.set(model.id, {
+                name,
+                id: model.id,
+                rrr_id: model.rrr_id,
+              });
             }
           }
         }

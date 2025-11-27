@@ -78,19 +78,24 @@ export function useFilterPanelLogic<T extends FilterState>({
     return getLocalizedText(category.languages, category.name);
   }, []);
 
-  // Create a lookup map for O(1) category access
-  const categoryMap = useMemo(() => {
-    const map = new Map<number, Category>();
-    const addToMap = (cats: Category[]) => {
+  // Create a lookup map for O(1) category access and parent lookup
+  const { categoryMap, parentMap } = useMemo(() => {
+    const catMap = new Map<number, Category>();
+    const parMap = new Map<number, number>(); // child id -> parent id
+
+    const addToMap = (cats: Category[], parentId?: number) => {
       cats.forEach((cat) => {
-        map.set(cat.id, cat);
+        catMap.set(cat.id, cat);
+        if (parentId !== undefined) {
+          parMap.set(cat.id, parentId);
+        }
         if (cat.subcategories && cat.subcategories.length > 0) {
-          addToMap(cat.subcategories);
+          addToMap(cat.subcategories, cat.id);
         }
       });
     };
     addToMap(categories);
-    return map;
+    return { categoryMap: catMap, parentMap: parMap };
   }, [categories]);
 
   // Convert FilterOption[] to IDs for CategorySection
@@ -123,6 +128,21 @@ export function useFilterPanelLogic<T extends FilterState>({
     [getCategoryName]
   );
 
+  // Helper to get all ancestor IDs (parents, grandparents, etc.)
+  const getAncestorIds = useCallback(
+    (categoryId: number): number[] => {
+      const ancestors: number[] = [];
+      let currentId = categoryId;
+      while (parentMap.has(currentId)) {
+        const parentId = parentMap.get(currentId)!;
+        ancestors.push(parentId);
+        currentId = parentId;
+      }
+      return ancestors;
+    },
+    [parentMap]
+  );
+
   // Handle category toggle
   const handleCategoryToggle = useCallback(
     (categoryId: number) => {
@@ -141,12 +161,17 @@ export function useFilterPanelLogic<T extends FilterState>({
       const isSelected = currentCategories.some((cat) => cat.id === categoryId);
 
       if (isSelected) {
-        // Unselect parent and all children
+        // Unselect this category and all its children
         const childOptions = getAllChildCategoryOptions(category);
         const idsToRemove = new Set([
           categoryId,
           ...childOptions.map((opt) => opt.id),
         ]);
+
+        // Also unselect all ancestors (parents) since not all children are selected anymore
+        const ancestorIds = getAncestorIds(categoryId);
+        ancestorIds.forEach((id) => idsToRemove.add(id));
+
         updateFilters({
           partCategory: currentCategories.filter(
             (cat) => !idsToRemove.has(cat.id)
@@ -171,6 +196,7 @@ export function useFilterPanelLogic<T extends FilterState>({
       categoryMap,
       getCategoryName,
       getAllChildCategoryOptions,
+      getAncestorIds,
       updateFilters,
     ]
   );

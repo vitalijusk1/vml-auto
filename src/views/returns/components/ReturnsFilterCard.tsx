@@ -138,7 +138,7 @@ export const ReturnsFilterCard = memo(function ReturnsFilterCard({
 
   return (
     <FilterPanel
-      type={LayoutType.PARTS}
+      type={LayoutType.RETURNS}
       filters={filters}
       onFiltersChange={handleFiltersChange}
       onFilter={handleFilter}
