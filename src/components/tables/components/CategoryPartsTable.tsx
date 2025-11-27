@@ -357,7 +357,6 @@ export function CategoryPartsTable({
         <TableCell className="text-center">{inStock}</TableCell>
         <TableCell className="text-center">{soldUnits}</TableCell>
         <TableCell className="text-center">-</TableCell>
-        <TableCell className="text-center">-</TableCell>
       </TableRow>
     );
 
@@ -411,9 +410,6 @@ export function CategoryPartsTable({
             </TableCell>
             <TableCell className="text-center">{partSoldUnits}</TableCell>
             <TableCell className="text-center">{part.priceEUR} €</TableCell>
-            <TableCell className="text-center">
-              {part.warehouse || "-"}
-            </TableCell>
           </TableRow>
         );
 
@@ -464,9 +460,6 @@ export function CategoryPartsTable({
               <TableCell className="text-center">{childSoldUnits}</TableCell>
               <TableCell className="text-center">
                 {childPart.priceEUR} €
-              </TableCell>
-              <TableCell className="text-center">
-                {childPart.warehouse || "-"}
               </TableCell>
             </TableRow>
           );
@@ -521,9 +514,6 @@ export function CategoryPartsTable({
                 Parduota
               </TableHead>
               <TableHead className="text-center bg-background">Kaina</TableHead>
-              <TableHead className="text-center bg-background">
-                Sandėlys
-              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

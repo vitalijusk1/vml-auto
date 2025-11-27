@@ -60,7 +60,7 @@ export const selectMetrics = createSelector(
 
     const revenueCurrentMonth = orders
       .filter(
-        (o) => new Date(o.date) >= startOfMonth && o.status === "Delivered"
+        (o) => new Date(o.date) >= startOfMonth && o.status === "DELIVERED"
       )
       .reduce((sum, o) => sum + o.totalAmountEUR, 0);
 
@@ -106,7 +106,7 @@ export const makeSelectTopPerformers = (
 
       // Get all sold parts from orders
       orders
-        .filter((o) => o.status === "Delivered")
+        .filter((o) => o.status === "DELIVERED")
         .forEach((order) => {
           order.items.forEach((item) => {
             const part = parts.find((p) => p.id === item.partId);

@@ -6,6 +6,7 @@ import { Category } from "@/utils/backendFilters";
 // API Response types for preorder analysis
 export interface PreorderAnalysisPart {
   name: string;
+  part_id: number;
   manufactories_id: string;
   part_list: number[];
   part_part_ids: number[];
@@ -23,6 +24,12 @@ export interface PreorderAnalysisPart {
   avg_price: number;
   avg_profit: number;
   avg_days_to_sell: number;
+  time_in_storage?: {
+    this_part: number;
+    min_days: number;
+    max_days: number;
+    avg_days: number;
+  };
 }
 
 export interface PreorderAnalysisCategory {
@@ -155,7 +162,9 @@ function transformPart(
         : 0,
     priceEUR: apiPart.price || 0,
     pricePLN: (apiPart.price || 0) * 4.5, // Approximate conversion
-    daysInInventory: apiPart.avg_days_to_sell || 0,
+    daysInInventory: Math.ceil(
+      apiPart.time_in_storage?.this_part ?? apiPart.avg_days_to_sell ?? 0
+    ),
     dateAdded: new Date().toISOString(),
     photos: [],
     warehouse: undefined,
