@@ -170,8 +170,6 @@ export function Table<T extends Car | Part | Order | Return>({
           backendFilters,
           topDetailsFilter,
           orders,
-          onToggleExpand,
-          isExpanded: isRowExpanded,
         }) as ColumnDef<T>[];
       case LayoutType.ORDERS:
         return OrderTableColumns({
@@ -313,6 +311,7 @@ export function Table<T extends Car | Part | Order | Return>({
               renderExpandedRow ? (item) => renderExpandedRow(item) : undefined
             }
             onItemClick={handleItemClick}
+            backendFilters={backendFilters}
           />
         ) : (
           <div className="bg-white rounded-lg border border-border p-8">

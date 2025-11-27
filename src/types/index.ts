@@ -125,7 +125,9 @@ export interface Part {
   dateSold?: string;
   photos: string[];
   warehouse?: string;
+  accountId?: number;
   fuelType?: string;
+  bodyType?: string;
   engineVolume?: string;
   quality?: string;
   qualityId?: number;
@@ -207,6 +209,7 @@ export interface Order {
   shippingStatus: string;
   invoiceUrl?: string;
   shippingLabelUrl?: string;
+  accountId?: number;
 }
 
 export interface Return {
@@ -248,6 +251,7 @@ export interface Return {
   returnStatus: string;
   refundStatus?: string;
   creditNoteUrl?: string;
+  accountId?: number;
 }
 
 export interface DashboardMetrics {

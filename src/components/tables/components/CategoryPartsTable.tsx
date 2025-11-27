@@ -11,9 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getPartStatusClass } from "@/theme/utils";
 import { getPartsByIds } from "@/api/parts";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface CategoryPartsTableProps {
   parts: Part[];
@@ -41,6 +43,7 @@ export function CategoryPartsTable({
   backendFilters,
   onSelectionChange,
 }: CategoryPartsTableProps) {
+  const isMobile = useIsMobile();
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
     new Set()
   );
@@ -357,6 +360,7 @@ export function CategoryPartsTable({
         <TableCell className="text-center">{inStock}</TableCell>
         <TableCell className="text-center">{soldUnits}</TableCell>
         <TableCell className="text-center">-</TableCell>
+        <TableCell className="text-center">-</TableCell>
       </TableRow>
     );
 
@@ -415,6 +419,9 @@ export function CategoryPartsTable({
               {part.statusId === 0 ? "1" : "0"}
             </TableCell>
             <TableCell className="text-center">{partSoldUnits}</TableCell>
+            <TableCell className="text-center">
+              {part.accountId ?? "-"}
+            </TableCell>
             <TableCell className="text-center">{part.priceEUR} €</TableCell>
           </TableRow>
         );
@@ -427,6 +434,220 @@ export function CategoryPartsTable({
     }
 
     return rows;
+  };
+
+  // Mobile: render parts list
+  const renderMobileParts = (
+    partsToRender: Part[],
+    categoryApiParts: Part[],
+    level: number
+  ): ReactNode => {
+    if (partsToRender.length === 0) return null;
+
+    // Parts should be indented one level deeper than their parent category
+    const partPaddingLeft = 12 + (level + 1) * 16;
+
+    return (
+      <div className="divide-y divide-border/50">
+        {partsToRender.map((part: Part) => {
+          const partSoldUnits = getPartSoldUnits(part);
+          const isPartSelected = selectedParts.has(part.id);
+          return (
+            <div
+              key={`mobile-part-${part.id}`}
+              className={cn("p-3", isPartSelected && "bg-primary/10")}
+              style={{ paddingLeft: `${partPaddingLeft}px` }}
+            >
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id={`mobile-part-${part.id}`}
+                  checked={isPartSelected}
+                  onChange={() => togglePartSelection(part.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">
+                    {part.name}
+                    {isLoadingParts &&
+                      categoryApiParts.length === 0 &&
+                      " (kraunama...)"}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    ID: {part.part_id ?? part.code}
+                    {part.manufacturerCode && ` / ${part.manufacturerCode}`}
+                  </div>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+                    <span
+                      className={`px-2 py-0.5 rounded-full font-medium ${getPartStatusClass(
+                        part.statusId
+                      )}`}
+                    >
+                      {getLocalizedStatusName(part)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {part.daysInInventory} d. sandėly
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 text-xs">
+                    <div className="flex gap-3">
+                      <span>Sandėlys: {part.accountId ?? "-"}</span>
+                      <span>Parduota: {partSoldUnits}</span>
+                    </div>
+                    <span className="font-semibold">{part.priceEUR} €</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Mobile: render subcategory (no card wrapper)
+  const renderMobileSubcategory = (
+    data: CategoryData,
+    level: number
+  ): ReactNode => {
+    const { category, parts, soldUnits, inStock, subcategories } = data;
+    const categoryName = getLocalizedText(category.languages, category.name);
+    const isExpanded = expandedCategories.has(category.id);
+    const isSelected = selectedCategories.has(category.id);
+    const hasChildren = subcategories.length > 0;
+
+    const categoryApiParts = allPartsFromApi.filter(
+      (p) => p.category === categoryName
+    );
+    const partsToRender =
+      categoryApiParts.length > 0 ? categoryApiParts : parts;
+
+    return (
+      <div key={category.id}>
+        {/* Subcategory Header - no card, just indented row */}
+        <div
+          className={cn(
+            "p-3 flex items-center gap-2 cursor-pointer border-t border-border/50",
+            isSelected && "bg-primary/10"
+          )}
+          style={{ paddingLeft: `${12 + level * 16}px` }}
+          onClick={() => hasChildren && toggleCategory(category.id)}
+        >
+          <Checkbox
+            id={`mobile-category-${category.id}`}
+            checked={isSelected}
+            onChange={() => toggleCategorySelection(category.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-shrink-0"
+          />
+          {hasChildren && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCategory(category.id);
+              }}
+              className="p-1 hover:bg-accent rounded"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+          )}
+          <div className="flex-1">
+            <div className="font-medium text-sm">{categoryName}</div>
+            <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+              <span>Likutis: {inStock}</span>
+              <span>Parduota: {soldUnits}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded content */}
+        {isExpanded && (
+          <>
+            {renderMobileParts(partsToRender, categoryApiParts, level)}
+            {subcategories.map((sub) =>
+              renderMobileSubcategory(sub, level + 1)
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Mobile card view - only top level gets card wrapper
+  const renderMobileCategoryCard = (data: CategoryData): ReactNode => {
+    const { category, parts, soldUnits, inStock, subcategories } = data;
+    const categoryName = getLocalizedText(category.languages, category.name);
+    const isExpanded = expandedCategories.has(category.id);
+    const isSelected = selectedCategories.has(category.id);
+    const hasChildren = subcategories.length > 0;
+    const hasContent = parts.length > 0 || subcategories.length > 0;
+
+    const categoryApiParts = allPartsFromApi.filter(
+      (p) => p.category === categoryName
+    );
+    const partsToRender =
+      categoryApiParts.length > 0 ? categoryApiParts : parts;
+
+    return (
+      <Card
+        key={category.id}
+        className={cn(
+          "mb-3 overflow-hidden",
+          isSelected && "ring-2 ring-primary"
+        )}
+      >
+        {/* Category Header */}
+        <div
+          className={cn(
+            "p-3 flex items-center gap-2 cursor-pointer",
+            isExpanded && hasContent && "border-b border-border"
+          )}
+          onClick={() => hasChildren && toggleCategory(category.id)}
+        >
+          <Checkbox
+            id={`mobile-category-${category.id}`}
+            checked={isSelected}
+            onChange={() => toggleCategorySelection(category.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-shrink-0"
+          />
+          {hasChildren && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCategory(category.id);
+              }}
+              className="p-1 hover:bg-accent rounded"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </button>
+          )}
+          <div className="flex-1">
+            <div className="font-medium text-sm">{categoryName}</div>
+            <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+              <span>Likutis: {inStock}</span>
+              <span>Parduota: {soldUnits}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded Content - all children without wrappers */}
+        {isExpanded && (
+          <div className="bg-muted/20">
+            {renderMobileParts(partsToRender, categoryApiParts, 0)}
+            {subcategories.map((sub) => renderMobileSubcategory(sub, 1))}
+          </div>
+        )}
+      </Card>
+    );
   };
 
   if (!selectedCarId) {
@@ -445,6 +666,16 @@ export function CategoryPartsTable({
     );
   }
 
+  // Mobile view
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
+        {categoryData.map((data) => renderMobileCategoryCard(data))}
+      </div>
+    );
+  }
+
+  // Desktop table view
   return (
     <div className="rounded-md border border-border bg-white overflow-hidden">
       <div className="relative w-full overflow-visible">
@@ -466,6 +697,9 @@ export function CategoryPartsTable({
               </TableHead>
               <TableHead className="text-center bg-background">
                 Parduota
+              </TableHead>
+              <TableHead className="text-center bg-background">
+                Sandėlys
               </TableHead>
               <TableHead className="text-center bg-background">Kaina</TableHead>
             </TableRow>

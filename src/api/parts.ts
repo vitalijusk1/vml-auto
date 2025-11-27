@@ -43,6 +43,7 @@ interface ApiPartResponse {
   rims_central_diameter_info: string | null;
   tires_width_info: string | null;
   tires_height_info: string | null;
+  account_id?: number;
   // Expandable parts fields
   part_ids?: number[];
   items_count?: number;
@@ -87,6 +88,12 @@ interface ApiPartResponse {
       };
     };
     car_fuel?: {
+      id: number;
+      rrr_id: string;
+      name: string;
+      languages?: Record<string, string>;
+    } | null;
+    car_body_type?: {
       id: number;
       rrr_id: string;
       name: string;
@@ -249,10 +256,17 @@ function transformApiPart(
         : undefined,
     photos,
     warehouse: undefined, // TODO: Get warehouse from API if available
+    accountId: apiPart.account_id,
     fuelType: apiPart.car?.car_fuel
       ? getLocalizedText(
           apiPart.car.car_fuel.languages,
           apiPart.car.car_fuel.name
+        )
+      : undefined,
+    bodyType: apiPart.car?.car_body_type
+      ? getLocalizedText(
+          apiPart.car.car_body_type.languages,
+          apiPart.car.car_body_type.name
         )
       : undefined,
     engineVolume: apiPart.car?.car_engine_cubic_capacity || undefined,

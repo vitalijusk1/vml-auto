@@ -111,6 +111,13 @@ export function ReturnTableColumns({
       ),
     },
     {
+      accessorKey: "sandelys",
+      header: "Sandėlys",
+      cell: ({ row }) => (
+        <span className="font-semibold">{row.original.accountId ?? "-"}</span>
+      ),
+    },
+    {
       id: "action",
       header: "Veiksmas",
       cell: ({ row }) => {
