@@ -120,43 +120,35 @@ export function AnalyticsView() {
       }));
     }
 
-    // Legacy fallback logic
-    const dailyData: Record<string, number> = {};
+    // Legacy fallback logic using local orders
+    const dailyData: Record<string, { units: number; revenue: number }> = {};
 
     filteredOrders.forEach((order) => {
       const dateKey = new Date(order.date).toISOString().split("T")[0];
       const units = order.items.reduce((sum, item) => sum + item.quantity, 0);
-      dailyData[dateKey] = (dailyData[dateKey] || 0) + units;
+
+      if (!dailyData[dateKey]) {
+        dailyData[dateKey] = { units: 0, revenue: 0 };
+      }
+
+      dailyData[dateKey].units += units;
+      dailyData[dateKey].revenue += order.totalAmountEUR;
     });
 
     // Get all dates and sort
     const sortedDates = Object.keys(dailyData).sort();
 
-    // If we have data, return it; otherwise generate sample data for this year
+    // If we have data, return it
     if (sortedDates.length > 0) {
       return sortedDates.map((date) => ({
         date,
-        units: dailyData[date],
+        units: dailyData[date].units,
+        revenue: dailyData[date].revenue,
+        profit: 0, // Cost/Profit not available in local order data
       }));
     }
 
-    // Generate sample data for this year (for demo purposes)
-    const startDate = new Date(new Date().getFullYear(), 0, 1);
-    const endDate = new Date();
-    const sampleData = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      const dateKey = currentDate.toISOString().split("T")[0];
-      // Generate random units between 30-50 for demo
-      sampleData.push({
-        date: dateKey,
-        units: Math.floor(Math.random() * 20) + 30,
-      });
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return sampleData;
+    return [];
   }, [filteredOrders, ordersData]);
 
   // Currency formatter
@@ -164,6 +156,12 @@ export function AnalyticsView() {
     `€ ${value.toLocaleString("en-US", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
+    })}`;
+
+  const formatCurrency = (value: number) =>
+    `€${value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     })}`;
 
   const formatAxisDate = (value: string) => {
@@ -199,6 +197,7 @@ export function AnalyticsView() {
           "Rugs",
           "Spa",
           "Lap",
+          "Gru",
           "Gru",
         ][monthIndex];
         // Show year only if it changes or distinct
@@ -252,6 +251,40 @@ export function AnalyticsView() {
     return value;
   };
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="rounded-lg border bg-background p-3 shadow-md">
+          <div className="mb-2 font-semibold text-foreground">
+            {formatTooltipDate(label)}
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <span className="text-muted-foreground">Užsakymai:</span>
+            <span className="text-right font-medium text-foreground">
+              {data.units}
+            </span>
+            <span className="text-muted-foreground">Pajamos:</span>
+            <span className="text-right font-medium text-foreground">
+              {formatCurrency(data.revenue || 0)}
+            </span>
+            <span className="text-muted-foreground">Pelnas:</span>
+            <span className="text-right font-medium text-green-600">
+              {formatCurrency(data.profit || 0)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const NoDataMessage = () => (
+    <div className="flex h-[300px] w-full items-center justify-center text-muted-foreground">
+      Nerasta informacijos
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -277,21 +310,25 @@ export function AnalyticsView() {
             <CardTitle>Detales pagal gamintoja</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={partsSoldByModel}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="model"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="sold" fill={COLORS.primary} name="Parduota" />
-              </BarChart>
-            </ResponsiveContainer>
+            {partsSoldByModel.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={partsSoldByModel}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="model"
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="sold" fill={COLORS.primary} name="Parduota" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <NoDataMessage />
+            )}
           </CardContent>
         </Card>
 
@@ -301,21 +338,25 @@ export function AnalyticsView() {
             <CardTitle>Detales parduotos pagal kategorija</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={partsSoldByCategory}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="category"
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="units" fill={COLORS.primary} name="Kiekis" />
-              </BarChart>
-            </ResponsiveContainer>
+            {partsSoldByCategory.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={partsSoldByCategory}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="category"
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                  />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="units" fill={COLORS.primary} name="Kiekis" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <NoDataMessage />
+            )}
           </CardContent>
         </Card>
 
@@ -354,28 +395,32 @@ export function AnalyticsView() {
             </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tickFormatter={formatAxisDate} />
-                <YAxis
-                  label={{
-                    value: "Užsakymai",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip labelFormatter={formatTooltipDate} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="units"
-                  stroke={COLORS.line}
-                  strokeWidth={2}
-                  name="Užsakymai"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {salesTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tickFormatter={formatAxisDate} />
+                  <YAxis
+                    label={{
+                      value: "Užsakymai",
+                      angle: -90,
+                      position: "insideLeft",
+                    }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="units"
+                    stroke={COLORS.line}
+                    strokeWidth={2}
+                    name="Užsakymai"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <NoDataMessage />
+            )}
           </CardContent>
         </Card>
       </div>
