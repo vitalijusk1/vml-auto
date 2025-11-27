@@ -3,9 +3,6 @@ import { Part, Order, TopDetailsFilter } from "@/types";
 import { getPartStatusClass } from "@/theme/utils";
 import { PhotoTableCell } from "@/components/ui/PhotoTableCell";
 import { getLocalizedText } from "@/utils/i18n";
-import { ChevronRight, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { hasExpandableChildren } from "@/utils/partHelpers";
 
 // Helper to find quality name from backend filters by ID
 const findQualityFromBackend = (
@@ -44,9 +41,6 @@ interface PartTableColumnsProps {
   backendFilters?: any;
   topDetailsFilter?: TopDetailsFilter;
   orders?: Order[];
-  // Expandable row support
-  onToggleExpand?: (id: string) => void;
-  isExpanded?: (id: string) => boolean;
 }
 
 export function PartTableColumns({
@@ -54,8 +48,6 @@ export function PartTableColumns({
   backendFilters,
   topDetailsFilter,
   orders = [],
-  onToggleExpand,
-  isExpanded,
 }: PartTableColumnsProps): ColumnDef<Part>[] {
   const isAnalyticsMode =
     topDetailsFilter === TopDetailsFilter.TOP_SELLING ||
@@ -193,42 +185,6 @@ export function PartTableColumns({
 
   // Default columns
   return [
-    // Expandable column - fixed width to prevent shifting
-    {
-      id: "expand",
-      header: "",
-      size: 40,
-      cell: ({ row }) => {
-        const part = row.original;
-        const canExpand = hasExpandableChildren(part, isAnalyticsMode);
-        const expanded = isExpanded ? isExpanded(part.id) : false;
-
-        return (
-          <div className="w-10 flex items-center">
-            {part.isChildPart && (
-              <div className="w-4 h-4 border-l border-t border-gray-300 mr-2" />
-            )}
-            {canExpand && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleExpand?.(part.id);
-                }}
-                className="h-6 w-6 p-0"
-              >
-                {expanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-          </div>
-        );
-      },
-    },
     {
       accessorKey: "code",
       header: "Detalės id",

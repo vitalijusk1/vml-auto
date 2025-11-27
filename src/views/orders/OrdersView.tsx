@@ -10,7 +10,7 @@ import { renderOrderExpandedContent } from "@/components/tables/components/Order
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { OrdersFilterCard } from "./components/OrdersFilterCard";
-import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTablePagination } from "@/components/tables/useTablePagination";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export function OrdersView() {

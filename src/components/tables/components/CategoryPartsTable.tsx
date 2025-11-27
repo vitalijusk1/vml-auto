@@ -48,9 +48,8 @@ export function CategoryPartsTable({
     new Set()
   );
   const [selectedParts, setSelectedParts] = useState<Set<string>>(new Set());
-  const [childPartsCache, setChildPartsCache] = useState<
-    Record<string, Part[]>
-  >({});
+  const [allPartsFromApi, setAllPartsFromApi] = useState<Part[]>([]);
+  const [isLoadingParts, setIsLoadingParts] = useState(false);
 
   // Helper function to collect all category IDs recursively from CategoryData
   const getAllCategoryIdsFromData = (
@@ -193,43 +192,44 @@ export function CategoryPartsTable({
     }
   }, [categoryData]);
 
-  // Fetch child parts for parts that have expandable children
+  // Fetch all parts from part_list via /parts API
+  // This gets the full part data for all items in part_list
   useEffect(() => {
-    const fetchChildParts = async () => {
-      // Filter parts that have more than 1 item in part_ids
-      // (single item = the parent itself, no need to fetch)
-      const partsWithChildren = parts.filter(
-        (part) =>
-          part.part_ids &&
-          Array.isArray(part.part_ids) &&
-          part.part_ids.length > 1
-      );
-
-      for (const part of partsWithChildren) {
-        const partKey = part.id;
-        // Skip if already cached
-        if (childPartsCache[partKey]) continue;
-
-        // Get all child IDs except the first one (which is the parent)
-        const childIds = part.part_ids!.slice(1);
-        if (childIds.length === 0) continue;
-
-        try {
-          const childParts = await getPartsByIds(childIds, backendFilters);
-          setChildPartsCache((prev) => ({
-            ...prev,
-            [partKey]: childParts,
-          }));
-        } catch (error) {
-          console.error(`Error fetching child parts for ${partKey}:`, error);
+    const fetchAllParts = async () => {
+      // Collect all unique part IDs from all parts' part_ids
+      const allPartIds = new Set<number>();
+      parts.forEach((part) => {
+        if (part.part_ids && Array.isArray(part.part_ids)) {
+          part.part_ids.forEach((id) => allPartIds.add(id));
         }
+      });
+
+      if (allPartIds.size === 0) {
+        setAllPartsFromApi([]);
+        return;
+      }
+
+      setIsLoadingParts(true);
+      try {
+        const fetchedParts = await getPartsByIds(
+          Array.from(allPartIds),
+          backendFilters
+        );
+        setAllPartsFromApi(fetchedParts);
+      } catch (error) {
+        console.error("Error fetching parts from API:", error);
+        setAllPartsFromApi([]);
+      } finally {
+        setIsLoadingParts(false);
       }
     };
 
     if (parts.length > 0) {
-      fetchChildParts();
+      fetchAllParts();
+    } else {
+      setAllPartsFromApi([]);
     }
-  }, [parts, childPartsCache, backendFilters]);
+  }, [parts, backendFilters]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((prev) => {
@@ -362,14 +362,17 @@ export function CategoryPartsTable({
 
     // Expanded: show parts and subcategories
     if (isExpanded) {
-      // Show parts in this category
-      parts.forEach((part: any) => {
+      // Show all parts in this category from the API
+      // Get parts for this category from allPartsFromApi
+      const categoryApiParts = allPartsFromApi.filter(
+        (p) => p.category === categoryName
+      );
+      const partsToRender =
+        categoryApiParts.length > 0 ? categoryApiParts : parts;
+
+      partsToRender.forEach((part: Part) => {
         const partSoldUnits = getPartSoldUnits(part);
         const isPartSelected = selectedParts.has(part.id);
-        const partKey = part.id;
-        const childParts = childPartsCache[partKey] || [];
-
-        // Render parent part
         rows.push(
           <TableRow
             key={`part-${part.id}`}
@@ -386,6 +389,9 @@ export function CategoryPartsTable({
                 />
                 <span className="text-sm text-muted-foreground">
                   {part.name}
+                  {isLoadingParts &&
+                    categoryApiParts.length === 0 &&
+                    " (kraunama...)"}
                 </span>
               </div>
             </TableCell>
@@ -412,58 +418,6 @@ export function CategoryPartsTable({
             <TableCell className="text-center">{part.priceEUR} €</TableCell>
           </TableRow>
         );
-
-        // Render child parts if they exist
-        childParts.forEach((childPart) => {
-          const childSoldUnits = getPartSoldUnits(childPart);
-          const isChildSelected = selectedParts.has(childPart.id);
-          rows.push(
-            <TableRow
-              key={`child-part-${childPart.id}`}
-              className={cn("bg-muted/50", isChildSelected && "bg-accent")}
-            >
-              <TableCell style={{ paddingLeft: `${40 + level * 24}px` }}>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id={`child-part-${childPart.id}`}
-                    checked={isChildSelected}
-                    onChange={() => togglePartSelection(childPart.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex-shrink-0"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {childPart.name}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell className="text-center text-sm">
-                {childPart.part_id ?? childPart.code}{" "}
-                {childPart.manufacturerCode
-                  ? `/ ${childPart.manufacturerCode}`
-                  : ""}
-              </TableCell>
-              <TableCell className="text-center">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${getPartStatusClass(
-                    childPart.statusId
-                  )}`}
-                >
-                  {getLocalizedStatusName(childPart)}
-                </span>
-              </TableCell>
-              <TableCell className="text-center">
-                {childPart.daysInInventory}
-              </TableCell>
-              <TableCell className="text-center">
-                {childPart.statusId === 0 ? "1" : "0"}
-              </TableCell>
-              <TableCell className="text-center">{childSoldUnits}</TableCell>
-              <TableCell className="text-center">
-                {childPart.priceEUR} €
-              </TableCell>
-            </TableRow>
-          );
-        });
       });
 
       // Show subcategories
