@@ -13,7 +13,7 @@ import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
 import { MobileFilterPanel } from "./MobileFilterPanel";
-import { useFilterPanelLogic } from "@/hooks/useFilterPanelLogic";
+import { useFilterPanelLogic } from "@/components/filters/useFilterPanelLogic";
 
 interface FilterPanelProps<T extends FilterState> {
   type: LayoutType;

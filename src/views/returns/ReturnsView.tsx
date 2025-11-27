@@ -11,7 +11,7 @@ import { renderReturnExpandedContent } from "@/components/tables/components/Retu
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterLoadingCard } from "@/components/ui/FilterLoadingCard";
 import { ReturnsFilterCard } from "./components/ReturnsFilterCard";
-import { useTablePagination } from "@/hooks/useTablePagination";
+import { useTablePagination } from "@/components/tables/useTablePagination";
 import { useDebounce } from "@/hooks/useDebounce";
 
 export function ReturnsView() {

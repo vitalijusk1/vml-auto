@@ -5,14 +5,14 @@ import { Table } from "../../components/tables/Table";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PartsFilterCard } from "./components/PartsFilterCard";
 import { TopDetailsFilter } from "@/types";
-import { useTablePagination } from "@/hooks/useTablePagination";
-import { useExpandableParts } from "@/hooks/useExpandableParts";
+import { useTablePagination } from "@/components/tables/useTablePagination";
+import { useFetchedParts } from "@/views/parts/useFetchedParts";
 import { useDebounce } from "@/hooks/useDebounce";
 import { loadPersistedFilters } from "@/utils/storageHelpers";
 import { StorageKeys } from "@/utils/storageKeys";
 
 export function PartsView() {
-  const parts = useAppSelector(selectParts);
+  const partsFromStore = useAppSelector(selectParts);
   const backendFilters = useAppSelector(selectBackendFilters);
   const {
     pagination,
@@ -30,9 +30,9 @@ export function PartsView() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearchQuery = useDebounce(searchQuery, 800);
 
-  // Expandable parts functionality
-  const { expandedRows, processedParts, toggleExpand } = useExpandableParts(
-    parts,
+  // Fetch all parts from API - all parts are equal, no parent/child
+  const { parts, isLoading: isLoadingParts } = useFetchedParts(
+    partsFromStore,
     topDetailsFilter,
     backendFilters
   );
@@ -68,17 +68,14 @@ export function PartsView() {
 
       <Table
         type="parts"
-        data={processedParts}
+        data={parts}
         serverPagination={pagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         onSearchChange={handleSearchChange}
         topDetailsFilter={topDetailsFilter}
         filterPlaceholder="Filtruoti dalis..."
-        expandedRows={expandedRows}
-        onToggleExpand={toggleExpand}
-        isLoading={isLoading}
-        parentItemsCount={parts.length}
+        isLoading={isLoading || isLoadingParts}
       />
     </div>
   );

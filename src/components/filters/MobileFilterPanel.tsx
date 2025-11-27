@@ -11,7 +11,7 @@ import { OrderManagementFilters } from "./components/OrderManagementFilters/Orde
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
-import { useFilterPanelLogic } from "@/hooks/useFilterPanelLogic";
+import { useFilterPanelLogic } from "@/components/filters/useFilterPanelLogic";
 
 interface MobileFilterPanelProps<T extends FilterState> {
   type: LayoutType;
