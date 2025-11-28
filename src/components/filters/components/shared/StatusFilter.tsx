@@ -1,6 +1,6 @@
-import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
 import { FilterOption } from "@/types";
+import { FilterDropdown } from "./FilterDropdown";
 
 interface StatusFilterProps {
   label?: string;
@@ -18,18 +18,14 @@ export const StatusFilter = ({
   const { statuses } = useBackendFilters();
 
   return (
-    <div>
-      <label className="text-sm font-medium mb-2 block">{label}</label>
-      <MultiSelectDropdown
-        options={statuses}
-        selected={selected}
-        onChange={onChange}
-        placeholder={placeholder}
-        searchable={true}
-        searchPlaceholder="Ieškoti būsenų..."
-        getDisplayValue={(item) => item.name}
-        getValue={(item) => item.rrr_id ?? item.id}
-      />
-    </div>
+    <FilterDropdown
+      label={label}
+      options={statuses}
+      selected={selected}
+      onChange={onChange}
+      placeholder={placeholder}
+      searchPlaceholder="Ieškoti būsenų..."
+      useRrrId={true}
+    />
   );
 };

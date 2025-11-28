@@ -1,6 +1,6 @@
-import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useBackendFilters } from "@/hooks/useBackendFilters";
 import { FilterOption } from "@/types";
+import { FilterDropdown } from "./FilterDropdown";
 
 interface PositionFilterProps {
   label?: string;
@@ -16,19 +16,12 @@ export const PositionFilter = ({
   const { positions } = useBackendFilters();
 
   return (
-    <div>
-      <label className="text-sm font-medium mb-2 block">{label}</label>
-      <MultiSelectDropdown
-        options={positions}
-        selected={selected}
-        onChange={onChange}
-        placeholder="Visi"
-        searchable={true}
-        searchPlaceholder="Ieškoti padėčių..."
-        getDisplayValue={(item) => item.name}
-        getValue={(item) => item.id}
-      />
-    </div>
+    <FilterDropdown
+      label={label}
+      options={positions}
+      selected={selected}
+      onChange={onChange}
+      searchPlaceholder="Ieškoti padėčių..."
+    />
   );
 };
-

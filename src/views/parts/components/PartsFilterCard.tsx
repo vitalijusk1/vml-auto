@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, memo, useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { getParts, filterStateToQueryParams } from "@/api/parts";
 import { FilterState, TopDetailsFilter } from "@/types";
@@ -48,6 +48,8 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     }
   );
   const [isLoading, setIsLoading] = useState(false);
+  const hasFetchedInitially = useRef(false);
+  const lastFetchParams = useRef<string | null>(null);
 
   // Notify parent when loading state changes
   useEffect(() => {
@@ -66,49 +68,51 @@ export const PartsFilterCard = memo(function PartsFilterCard({
     }
   }, [filters, topDetailsFilter]);
 
-  // Fetch parts based on current filters
-  const fetchParts = useCallback(async () => {
-    if (!backendFilters) {
-      return;
-    }
+  // Core fetch function - reused by both fetchParts and handleFilter
+  const executeFetch = useCallback(
+    async (page: number) => {
+      if (!backendFilters) return;
 
-    setIsLoading(true);
-    try {
-      const queryParams = filterStateToQueryParams(
-        filters,
-        {
-          page: pagination.current_page,
-          per_page: pagination.per_page,
-        },
-        backendFilters,
-        topDetailsFilter
-      );
+      setIsLoading(true);
+      try {
+        const queryParams = filterStateToQueryParams(
+          filters,
+          { page, per_page: pagination.per_page },
+          backendFilters,
+          topDetailsFilter
+        );
 
-      // Only add search query if it's not empty
-      if (searchQuery && searchQuery.trim()) {
-        queryParams.search = searchQuery.trim();
-      } else {
-        // Explicitly remove search parameter if query is empty
-        delete queryParams.search;
+        // Only add search query if it's not empty
+        if (searchQuery?.trim()) {
+          queryParams.search = searchQuery.trim();
+        } else {
+          delete queryParams.search;
+        }
+
+        const response = await getParts(queryParams, backendFilters);
+        dispatch(setParts(response.parts));
+        onPaginationUpdate(response.pagination);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [
+      filters,
+      pagination.per_page,
+      backendFilters,
+      topDetailsFilter,
+      searchQuery,
+      dispatch,
+      onPaginationUpdate,
+    ]
+  );
 
-      const response = await getParts(queryParams, backendFilters);
-      dispatch(setParts(response.parts));
-      onPaginationUpdate(response.pagination);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    filters,
-    pagination,
-    backendFilters,
-    topDetailsFilter,
-    searchQuery,
-    dispatch,
-    onPaginationUpdate,
-  ]);
+  // Fetch parts based on current pagination
+  const fetchParts = useCallback(() => {
+    executeFetch(pagination.current_page);
+  }, [executeFetch, pagination.current_page]);
 
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
@@ -116,7 +120,6 @@ export const PartsFilterCard = memo(function PartsFilterCard({
 
   const handleTopDetailsFilterChange = useCallback(
     (value: TopDetailsFilter) => {
-      // Only update local state, don't notify parent yet
       setTopDetailsFilter(value);
     },
     []
@@ -124,68 +127,47 @@ export const PartsFilterCard = memo(function PartsFilterCard({
 
   const handleFilter = useCallback(async () => {
     // Reset to page 1 when filtering
-    const newPagination = {
-      ...pagination,
-      current_page: 1,
-    };
-    onPaginationUpdate(newPagination);
-
-    // Notify parent of the applied filter BEFORE fetching
+    onPaginationUpdate({ ...pagination, current_page: 1 });
+    // Notify parent of the applied filter
     onTopDetailsFilterChange(topDetailsFilter);
-
-    // Fetch with page 1 directly to avoid stale closure
-    setIsLoading(true);
-    try {
-      const queryParams = filterStateToQueryParams(
-        filters,
-        {
-          page: 1,
-          per_page: pagination.per_page,
-        },
-        backendFilters,
-        topDetailsFilter
-      );
-
-      // Only add search query if it's not empty
-      if (searchQuery && searchQuery.trim()) {
-        queryParams.search = searchQuery.trim();
-      } else {
-        // Explicitly remove search parameter if query is empty
-        delete queryParams.search;
-      }
-
-      const response = await getParts(queryParams, backendFilters);
-      dispatch(setParts(response.parts));
-      onPaginationUpdate(response.pagination);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    // Fetch with page 1
+    await executeFetch(1);
   }, [
     pagination,
     onPaginationUpdate,
     topDetailsFilter,
     onTopDetailsFilterChange,
-    filters,
-    backendFilters,
-    searchQuery,
-    dispatch,
+    executeFetch,
   ]);
 
-  // Fetch on initial load when backendFilters become available
+  // Single effect to handle all fetch triggers - prevents duplicate fetches
   useEffect(() => {
-    if (backendFilters) {
-      fetchParts();
+    if (!backendFilters) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [backendFilters]);
 
-  // Fetch when pagination or search changes
-  useEffect(() => {
+    // Create a key representing current fetch parameters
+    const fetchKey = JSON.stringify({
+      page: pagination.current_page,
+      per_page: pagination.per_page,
+      search: searchQuery,
+    });
+
+    // Skip if we've already fetched with these exact params
+    if (hasFetchedInitially.current && lastFetchParams.current === fetchKey) {
+      return;
+    }
+
+    lastFetchParams.current = fetchKey;
+    hasFetchedInitially.current = true;
     fetchParts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.current_page, pagination.per_page, searchQuery]);
+  }, [
+    backendFilters,
+    pagination.current_page,
+    pagination.per_page,
+    searchQuery,
+  ]);
 
   return (
     <FilterPanel

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Part, TopDetailsFilter } from "@/types";
 import { getPartsByIds } from "@/api/parts";
 
@@ -10,14 +10,21 @@ interface UseFetchedPartsReturn {
 /**
  * Hook to fetch all parts from part_list via /parts API.
  * All parts are now equal - no parent/child relationship.
+ *
+ * @param parts - Parts from the store (initial fetch)
+ * @param topDetailsFilter - Filter mode
+ * @param backendFilters - Backend filters
+ * @param isInitialLoading - Whether the initial parts fetch is still loading
  */
 export function useFetchedParts(
   parts: Part[],
   topDetailsFilter?: TopDetailsFilter,
-  backendFilters?: any
+  backendFilters?: any,
+  isInitialLoading?: boolean
 ): UseFetchedPartsReturn {
   const [allPartsFromApi, setAllPartsFromApi] = useState<Part[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const lastFetchedPartIds = useRef<string | null>(null);
 
   const isAnalyticsMode =
     topDetailsFilter === TopDetailsFilter.TOP_SELLING ||
@@ -45,6 +52,17 @@ export function useFetchedParts(
         return;
       }
 
+      // Create a key from sorted part IDs to detect if we need to refetch
+      const partIdsKey = Array.from(allPartIds)
+        .sort((a, b) => a - b)
+        .join(",");
+
+      // Skip fetch if we already fetched these exact part IDs
+      if (lastFetchedPartIds.current === partIdsKey) {
+        return;
+      }
+
+      lastFetchedPartIds.current = partIdsKey;
       setIsLoading(true);
       try {
         const fetchedParts = await getPartsByIds(
@@ -64,6 +82,7 @@ export function useFetchedParts(
       fetchAllParts();
     } else {
       setAllPartsFromApi([]);
+      lastFetchedPartIds.current = null;
     }
   }, [parts, backendFilters, isAnalyticsMode]);
 
@@ -76,8 +95,12 @@ export function useFetchedParts(
     return allPartsFromApi.length > 0 ? allPartsFromApi : parts;
   }, [parts, allPartsFromApi, isAnalyticsMode]);
 
+  // Only report not loading when both initial fetch AND secondary fetch are complete
+  // This prevents the "loader-data-loader-data" flicker
+  const combinedLoading = isInitialLoading || isLoading;
+
   return {
     parts: processedParts,
-    isLoading,
+    isLoading: combinedLoading,
   };
 }

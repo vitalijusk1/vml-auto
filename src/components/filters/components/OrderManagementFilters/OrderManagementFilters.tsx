@@ -1,4 +1,5 @@
 import { FilterState } from "@/types";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { BrandFilter } from "../shared/BrandFilter";
@@ -11,36 +12,31 @@ import { EngineCapacityFilter } from "../shared/EngineCapacityFilter";
 interface OrderManagementFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
-  onReset: () => void;
 }
 
 export const OrderManagementFilters = ({
   filters,
   onFiltersChange,
-  onReset: _onReset,
 }: OrderManagementFiltersProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
 
   if (backendFilters === null) {
-    return (
-      <div className="space-y-4">
-        <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
-      </div>
-    );
+    return <LoadingState message="Kraunami filtrai..." />;
   }
 
   return (
     <div className="space-y-4">
       {/* Single grid layout: 1 col 0-440px, 2 cols 440-635px, 3 cols 635px+, 5 cols 1280px+ */}
       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-4">
-        {/* Brand (Manufacturer) */}
+        {/* Brand (Manufacturer) - single select for order control */}
         <BrandFilter
           required={true}
           selected={filters.carBrand || []}
           onChange={brandChangeHandler(onFiltersChange)}
+          singleSelect={true}
         />
 
-        {/* Model */}
+        {/* Model - single select for order control */}
         <ModelFilter
           required={true}
           selected={filters.carModel || []}
@@ -48,6 +44,7 @@ export const OrderManagementFilters = ({
           onChange={(selected) =>
             onFiltersChange({ carModel: selected } as Partial<FilterState>)
           }
+          singleSelect={true}
         />
 
         {/* Engine Capacity */}

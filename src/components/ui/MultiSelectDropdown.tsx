@@ -52,16 +52,19 @@ export function MultiSelectDropdown<T>({
   }, [isOpen]);
 
   // Normalize function - extract value for comparison
-  const normalize = React.useCallback((val: T): string => {
-    const value = getValue(val);
-    const str = String(value).trim();
-    // Try to normalize numbers (e.g., "10.0" -> "10")
-    const num = Number(str);
-    if (!isNaN(num) && isFinite(num)) {
-      return String(num);
-    }
-    return str;
-  }, [getValue]);
+  const normalize = React.useCallback(
+    (val: T): string => {
+      const value = getValue(val);
+      const str = String(value).trim();
+      // Try to normalize numbers (e.g., "10.0" -> "10")
+      const num = Number(str);
+      if (!isNaN(num) && isFinite(num)) {
+        return String(num);
+      }
+      return str;
+    },
+    [getValue]
+  );
 
   // Memoize selected items as a Set for O(1) lookups
   const selectedSet = React.useMemo(() => {
@@ -89,7 +92,7 @@ export function MultiSelectDropdown<T>({
       return options;
     }
     const query = searchQuery.toLowerCase();
-    return options.filter((option) => 
+    return options.filter((option) =>
       getDisplayValue(option).toLowerCase().includes(query)
     );
   }, [options, searchQuery, searchable, getDisplayValue]);
@@ -196,9 +199,9 @@ export function MultiSelectDropdown<T>({
                       e.stopPropagation();
                       onChange([]);
                     }}
-                    title="Clear selection"
+                    title="Išvalyti"
                   >
-                    Clear
+                    Išvalyti
                   </Button>
                 )}
               </div>
@@ -216,9 +219,9 @@ export function MultiSelectDropdown<T>({
                   onChange([]);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title="Clear selection"
+                title="Išvalyti"
               >
-                Clear
+                Išvalyti
               </Button>
             </div>
           )}

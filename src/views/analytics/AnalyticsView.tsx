@@ -40,6 +40,7 @@ export function AnalyticsView() {
   const [ordersData, setOrdersData] = useState<StatisticsOrdersData | null>(
     null
   );
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [groupBy, setGroupBy] = useState<"day" | "week" | "month">("month");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
@@ -47,6 +48,7 @@ export function AnalyticsView() {
   // Fetch statistics orders data
   useEffect(() => {
     const fetchOrdersData = async () => {
+      setIsLoadingOrders(true);
       try {
         const queryParams = filterStateToStatisticsQueryParams(filters);
         const data = await getStatisticsOrders({
@@ -58,6 +60,8 @@ export function AnalyticsView() {
         setOrdersData(data);
       } catch (error) {
         console.error("Failed to fetch statistics orders:", error);
+      } finally {
+        setIsLoadingOrders(false);
       }
     };
 
@@ -285,6 +289,18 @@ export function AnalyticsView() {
     </div>
   );
 
+  const ChartLoader = () => (
+    <div className="flex h-[300px] w-full items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p className="text-sm text-muted-foreground">Kraunami duomenys...</p>
+      </div>
+    </div>
+  );
+
+  // Check if parts data is loading (no data yet)
+  const isLoadingParts = !partsData;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -310,7 +326,9 @@ export function AnalyticsView() {
             <CardTitle>Detales pagal gamintoja</CardTitle>
           </CardHeader>
           <CardContent>
-            {partsSoldByModel.length > 0 ? (
+            {isLoadingParts ? (
+              <ChartLoader />
+            ) : partsSoldByModel.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={partsSoldByModel}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -338,7 +356,9 @@ export function AnalyticsView() {
             <CardTitle>Detales parduotos pagal kategorija</CardTitle>
           </CardHeader>
           <CardContent>
-            {partsSoldByCategory.length > 0 ? (
+            {isLoadingParts ? (
+              <ChartLoader />
+            ) : partsSoldByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={partsSoldByCategory}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -395,7 +415,9 @@ export function AnalyticsView() {
             </div>
           </CardHeader>
           <CardContent>
-            {salesTrend.length > 0 ? (
+            {isLoadingOrders ? (
+              <ChartLoader />
+            ) : salesTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={salesTrend}>
                   <CartesianGrid strokeDasharray="3 3" />

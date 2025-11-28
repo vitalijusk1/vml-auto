@@ -1,4 +1,4 @@
-import { CardContent } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { FilterState } from "@/types";
 import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
@@ -15,7 +15,6 @@ import { brandChangeHandler, rangeHandler } from "@/utils/filterHelpers";
 interface OrdersFiltersProps {
   filters: FilterState;
   onFiltersChange: (updates: Partial<FilterState>) => void;
-  onReset: () => void;
 }
 
 export const OrdersFilters = ({
@@ -25,11 +24,7 @@ export const OrdersFilters = ({
   const backendFilters = useAppSelector(selectBackendFilters);
 
   if (backendFilters === null) {
-    return (
-      <CardContent>
-        <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
-      </CardContent>
-    );
+    return <LoadingState message="Kraunami filtrai..." />;
   }
 
   return (
