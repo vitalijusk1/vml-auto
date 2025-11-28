@@ -255,99 +255,58 @@ export function useFilterPanelLogic<T extends FilterState>({
   const hasCategories = categories.length > 0;
   const hasWheels = wheelsFilters && Object.keys(wheelsFilters).length > 0;
 
-  // Calculate selected filters count
-  const filtersCount = useMemo(() => {
-    if (type !== LayoutType.PARTS || !partsFilters) return 0;
+  // Helper to count selected filters
+  const countFilters = useCallback(
+    (includeCategories: boolean): number => {
+      if (type !== LayoutType.PARTS || !partsFilters) return 0;
 
-    let count = 0;
+      let count = 0;
 
-    // Count array filters
-    if (partsFilters.carBrand && partsFilters.carBrand.length > 0)
-      count += partsFilters.carBrand.length;
-    if (partsFilters.carModel && partsFilters.carModel.length > 0)
-      count += partsFilters.carModel.length;
-    if (partsFilters.bodyType && partsFilters.bodyType.length > 0)
-      count += partsFilters.bodyType.length;
-    if (partsFilters.quality && partsFilters.quality.length > 0)
-      count += partsFilters.quality.length;
-    if (partsFilters.position && partsFilters.position.length > 0)
-      count += partsFilters.position.length;
-    if (partsFilters.partCategory && partsFilters.partCategory.length > 0)
-      count += partsFilters.partCategory.length;
+      // Count array filters
+      count += partsFilters.carBrand?.length || 0;
+      count += partsFilters.carModel?.length || 0;
+      count += partsFilters.bodyType?.length || 0;
+      count += partsFilters.quality?.length || 0;
+      count += partsFilters.position?.length || 0;
 
-    // Count status (if not "All")
-    if (
-      partsFilters.status !== "All" &&
-      Array.isArray(partsFilters.status) &&
-      partsFilters.status.length > 0
-    ) {
-      count += partsFilters.status.length;
-    }
+      if (includeCategories) {
+        count += partsFilters.partCategory?.length || 0;
+      }
 
-    // Count year range (if either min or max is set, count as 1)
-    if (
-      partsFilters.yearRange &&
-      (partsFilters.yearRange.min !== undefined ||
-        partsFilters.yearRange.max !== undefined)
-    ) {
-      count += 1;
-    }
+      // Count status (if not "All")
+      if (partsFilters.status !== "All" && Array.isArray(partsFilters.status)) {
+        count += partsFilters.status.length;
+      }
 
-    // Count price range (if either min or max is set, count as 1)
-    if (
-      partsFilters.priceRange &&
-      (partsFilters.priceRange.min !== undefined ||
-        partsFilters.priceRange.max !== undefined)
-    ) {
-      count += 1;
-    }
+      // Count year range (if either min or max is set, count as 1)
+      if (
+        partsFilters.yearRange?.min !== undefined ||
+        partsFilters.yearRange?.max !== undefined
+      ) {
+        count += 1;
+      }
 
-    return count;
-  }, [type, partsFilters]);
+      // Count price range (if either min or max is set, count as 1)
+      if (
+        partsFilters.priceRange?.min !== undefined ||
+        partsFilters.priceRange?.max !== undefined
+      ) {
+        count += 1;
+      }
+
+      return count;
+    },
+    [type, partsFilters]
+  );
+
+  // Total filters count (includes categories)
+  const filtersCount = useMemo(() => countFilters(true), [countFilters]);
 
   // Default filters count (excludes partCategory for collapsible section badge)
-  const defaultFiltersCount = useMemo(() => {
-    if (type !== LayoutType.PARTS || !partsFilters) return 0;
-
-    let count = 0;
-
-    if (partsFilters.carBrand && partsFilters.carBrand.length > 0)
-      count += partsFilters.carBrand.length;
-    if (partsFilters.carModel && partsFilters.carModel.length > 0)
-      count += partsFilters.carModel.length;
-    if (partsFilters.bodyType && partsFilters.bodyType.length > 0)
-      count += partsFilters.bodyType.length;
-    if (partsFilters.quality && partsFilters.quality.length > 0)
-      count += partsFilters.quality.length;
-    if (partsFilters.position && partsFilters.position.length > 0)
-      count += partsFilters.position.length;
-
-    if (
-      partsFilters.status !== "All" &&
-      Array.isArray(partsFilters.status) &&
-      partsFilters.status.length > 0
-    ) {
-      count += partsFilters.status.length;
-    }
-
-    if (
-      partsFilters.yearRange &&
-      (partsFilters.yearRange.min !== undefined ||
-        partsFilters.yearRange.max !== undefined)
-    ) {
-      count += 1;
-    }
-
-    if (
-      partsFilters.priceRange &&
-      (partsFilters.priceRange.min !== undefined ||
-        partsFilters.priceRange.max !== undefined)
-    ) {
-      count += 1;
-    }
-
-    return count;
-  }, [type, partsFilters]);
+  const defaultFiltersCount = useMemo(
+    () => countFilters(false),
+    [countFilters]
+  );
 
   return {
     // State

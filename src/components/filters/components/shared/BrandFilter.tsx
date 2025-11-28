@@ -8,6 +8,7 @@ interface BrandFilterProps {
   selected: FilterOption[];
   onChange: (selected: FilterOption[]) => void;
   onModelChange?: (models: FilterOption[]) => void; // Optional callback to clear models when brand changes
+  singleSelect?: boolean; // If true, only allow one selection
 }
 
 export const BrandFilter = ({
@@ -16,12 +17,18 @@ export const BrandFilter = ({
   selected,
   onChange,
   onModelChange,
+  singleSelect = false,
 }: BrandFilterProps) => {
   const { brands } = useBackendFilters();
 
   const handleChange = (newSelected: FilterOption[]) => {
+    // If singleSelect, only keep the last selected item
+    const finalSelection =
+      singleSelect && newSelected.length > 1
+        ? [newSelected[newSelected.length - 1]]
+        : newSelected;
     // Call onChange to update brands
-    onChange(newSelected);
+    onChange(finalSelection);
     // Clear models when brands change - only call if onModelChange is provided
     // Note: PartFilters already clears models in onChange, so this is mainly
     // for other components that use BrandFilter

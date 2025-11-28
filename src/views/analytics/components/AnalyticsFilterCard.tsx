@@ -15,6 +15,7 @@ import {
 import { StorageKeys } from "@/utils/storageKeys";
 import { loadPersistedFilters } from "@/utils/storageHelpers";
 import { Card, CardContent } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/LoadingState";
 import { selectBackendFilters } from "@/store/selectors";
 
 // Separate component that manages local filter state - this isolates re-renders
@@ -91,7 +92,7 @@ export const AnalyticsFilterCard = memo(function AnalyticsFilterCard() {
     return (
       <Card>
         <CardContent>
-          <p className="text-muted-foreground text-sm">Kraunami filtrai...</p>
+          <LoadingState message="Kraunami filtrai..." />
         </CardContent>
       </Card>
     );

@@ -139,6 +139,7 @@ export const forgotPassword = async (
 
 interface ResetPasswordData {
   token: string;
+  email: string;
   password: string;
   password_confirmation: string;
 }

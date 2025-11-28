@@ -5,15 +5,11 @@ import { Filter, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState } from "react";
 import { LayoutType } from "./type";
-import { PartFilters } from "./components/PartFilters/PartFilters";
-import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
-import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
-import { OrdersFilters } from "./components/OrdersFilters/OrdersFilters";
-import { ReturnsFilters } from "./components/ReturnsFilters/ReturnsFilters";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
 import { useFilterPanelLogic } from "@/components/filters/useFilterPanelLogic";
+import { getFilterComponent } from "./getFilterComponent";
 
 interface MobileFilterPanelProps<T extends FilterState> {
   type: LayoutType;
@@ -25,68 +21,6 @@ interface MobileFilterPanelProps<T extends FilterState> {
   hideCategoriesAndWheels?: boolean;
   hideTopDetailsFilter?: boolean;
 }
-
-const getFilter = (
-  type: LayoutType,
-  filters: FilterState,
-  onFiltersChange: (updates: Partial<FilterState>) => void,
-  onReset: () => void
-) => {
-  switch (type) {
-    case LayoutType.PARTS:
-      return (
-        <PartFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ANALYTICS:
-      return (
-        <AnalyticsFiltersComponent
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ORDER_CONTROL:
-      return (
-        <OrderManagementFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ORDERS:
-      return (
-        <OrdersFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.RETURNS:
-      return (
-        <ReturnsFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    default:
-      return null;
-  }
-};
 
 export function MobileFilterPanel<T extends FilterState>({
   type,
@@ -221,7 +155,7 @@ export function MobileFilterPanel<T extends FilterState>({
                 setIsDefaultFiltersExpanded(!isDefaultFiltersExpanded)
               }
             >
-              {getFilter(type, filters, updateFilters, resetFilters)}
+              {getFilterComponent(type, filters, updateFilters)}
             </FilterSection>
 
             {/* Filter Button */}

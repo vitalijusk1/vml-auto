@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -17,6 +17,10 @@ import { resetPassword } from "@/api/auth";
 // Define the form schema
 const resetPasswordSchema = z
   .object({
+    email: z
+      .string()
+      .min(1, "El. paštas yra privalomas")
+      .email("Neteisingas el. pašto formatas"),
     password: z
       .string()
       .min(8, "Slaptažodis turi būti bent 8 simbolių ilgio")
@@ -50,7 +54,8 @@ export function ResetPasswordView() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  // Watch the password fields to enable/disable submit button
+  // Watch the fields to enable/disable submit button
+  const email = watch("email", "");
   const password = watch("password", "");
   const confirmPassword = watch("confirmPassword", "");
 
@@ -69,6 +74,7 @@ export function ResetPasswordView() {
     try {
       const response = await resetPassword({
         token,
+        email: data.email,
         password: data.password,
         password_confirmation: data.confirmPassword,
       });
@@ -111,7 +117,7 @@ export function ResetPasswordView() {
               Atkurti slaptažodį
             </CardTitle>
             <CardDescription className="text-slate-400">
-              Įveskite naują slaptažodį
+              Įveskite el. paštą ir naują slaptažodį
             </CardDescription>
           </CardHeader>
 
@@ -128,6 +134,30 @@ export function ResetPasswordView() {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* Email */}
+              <div className="space-y-2">
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-slate-200"
+                >
+                  El. paštas
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder="Įveskite el. paštą"
+                    {...register("email")}
+                    disabled={isLoading}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
+                {errors.email && (
+                  <p className="text-red-400 text-sm">{errors.email.message}</p>
+                )}
+              </div>
+
               {/* New Password */}
               <div className="space-y-2">
                 <label
@@ -183,7 +213,7 @@ export function ResetPasswordView() {
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={isLoading || !password || !confirmPassword}
+                disabled={isLoading || !email || !password || !confirmPassword}
                 className="w-full mt-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (

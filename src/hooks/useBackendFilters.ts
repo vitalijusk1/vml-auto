@@ -3,6 +3,7 @@ import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { Category } from "@/utils/backendFilters";
 import { FilterOption } from "@/types";
+import { getLocalizedText } from "@/utils/i18n";
 
 // Helper function to extract FilterOption objects from backend filter data
 const extractFilterOptions = (items: any[]): FilterOption[] => {
@@ -14,20 +15,10 @@ const extractFilterOptions = (items: any[]): FilterOption[] => {
         return null;
       }
       if (item && typeof item === "object" && item.id !== undefined) {
-        // Extract name - prioritize Lithuanian, fallback to English, then name property
-        let name = "";
-        if (item.languages?.lt) {
-          name = item.languages.lt;
-        } else if (item.languages?.en) {
-          name = item.languages.en;
-        } else if (item.languages?.name) {
-          name = item.languages.name;
-        } else if (item.name) {
-          name = item.name;
-        } else {
-          // Fallback to string representation if no name found
-          name = String(item.id);
-        }
+        const name = getLocalizedText(
+          item.languages,
+          item.name || String(item.id)
+        );
         const filterOption: FilterOption = { name, id: item.id };
         if (item.rrr_id !== undefined) {
           filterOption.rrr_id = item.rrr_id;

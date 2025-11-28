@@ -117,12 +117,6 @@ export function MobileTableView<T extends Car | Part | Order | Return>({
                 <div className="truncate font-medium">{part.code}</div>
               </div>
               <div>
-                <div className="text-muted-foreground">Sandėly</div>
-                <div className="truncate">
-                  {part.statuses ? part.statuses[0] || 0 : 0}
-                </div>
-              </div>
-              <div>
                 <div className="text-muted-foreground">Sandėlys</div>
                 <div className="truncate">{part.accountId ?? "-"}</div>
               </div>

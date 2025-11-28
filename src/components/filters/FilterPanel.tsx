@@ -6,16 +6,12 @@ import { SingleSelectDropdown } from "@/components/ui/SingleSelectDropdown";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { LayoutType } from "./type";
-import { PartFilters } from "./components/PartFilters/PartFilters";
-import { AnalyticsFilters as AnalyticsFiltersComponent } from "./components/AnalyticsFilters/AnalyticsFilters";
-import { OrderManagementFilters } from "./components/OrderManagementFilters/OrderManagementFilters";
-import { OrdersFilters } from "./components/OrdersFilters/OrdersFilters";
-import { ReturnsFilters } from "./components/ReturnsFilters/ReturnsFilters";
 import { CategorySection } from "./components/CategorySection/CategorySection";
 import { WheelsSection } from "./components/WheelsSection/WheelsSection";
 import { FilterSection } from "./components/FilterSection/FilterSection";
 import { MobileFilterPanel } from "./MobileFilterPanel";
 import { useFilterPanelLogic } from "@/components/filters/useFilterPanelLogic";
+import { getFilterComponent } from "./getFilterComponent";
 
 interface FilterPanelProps<T extends FilterState> {
   type: LayoutType;
@@ -27,68 +23,6 @@ interface FilterPanelProps<T extends FilterState> {
   hideCategoriesAndWheels?: boolean;
   hideTopDetailsFilter?: boolean;
 }
-
-const getFilter = (
-  type: LayoutType,
-  filters: FilterState,
-  onFiltersChange: (updates: Partial<FilterState>) => void,
-  onReset: () => void
-) => {
-  switch (type) {
-    case LayoutType.PARTS:
-      return (
-        <PartFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ANALYTICS:
-      return (
-        <AnalyticsFiltersComponent
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ORDER_CONTROL:
-      return (
-        <OrderManagementFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.ORDERS:
-      return (
-        <OrdersFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    case LayoutType.RETURNS:
-      return (
-        <ReturnsFilters
-          filters={filters as FilterState}
-          onFiltersChange={
-            onFiltersChange as (updates: Partial<FilterState>) => void
-          }
-          onReset={onReset}
-        />
-      );
-    default:
-      return null;
-  }
-};
 
 export function FilterPanel<T extends FilterState>({
   type,
@@ -220,62 +154,22 @@ export function FilterPanel<T extends FilterState>({
           hasSelection={hasDefaultFiltersSelection}
           selectionCount={defaultFiltersCount}
         >
-          {getFilter(type, filters, updateFilters, resetFilters)}
+          {getFilterComponent(type, filters, updateFilters)}
         </FilterSection>
 
         {/* Filter Button */}
-        {type === LayoutType.PARTS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button
-              className="px-6"
-              onClick={onFilter}
-              disabled={isLoading || !backendFilters}
-            >
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
-          </div>
-        )}
-        {type === LayoutType.ANALYTICS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button className="px-6" onClick={onFilter} disabled={isLoading}>
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
-          </div>
-        )}
-        {type === LayoutType.ORDER_CONTROL && onFilter && (
+        {onFilter && (
           <div className="flex justify-end pt-2">
             <Button
               className="px-6"
               onClick={onFilter}
               disabled={
                 isLoading ||
-                !(filters as FilterState).carBrand ||
-                (filters as FilterState).carBrand?.length === 0 ||
-                !(filters as FilterState).carModel ||
-                (filters as FilterState).carModel?.length === 0
+                (type === LayoutType.ORDER_CONTROL
+                  ? !(filters as FilterState).carBrand?.length ||
+                    !(filters as FilterState).carModel?.length
+                  : type !== LayoutType.ANALYTICS && !backendFilters)
               }
-            >
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
-          </div>
-        )}
-        {type === LayoutType.ORDERS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button
-              className="px-6"
-              onClick={onFilter}
-              disabled={isLoading || !backendFilters}
-            >
-              {isLoading ? "Kraunama..." : "Filtruoti"}
-            </Button>
-          </div>
-        )}
-        {type === LayoutType.RETURNS && onFilter && (
-          <div className="flex justify-end pt-2">
-            <Button
-              className="px-6"
-              onClick={onFilter}
-              disabled={isLoading || !backendFilters}
             >
               {isLoading ? "Kraunama..." : "Filtruoti"}
             </Button>

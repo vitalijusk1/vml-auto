@@ -4,6 +4,7 @@ import { useAppSelector } from "@/store/hooks";
 import { selectBackendFilters } from "@/store/selectors";
 import { useMemo } from "react";
 import { FilterOption } from "@/types";
+import { getLocalizedText } from "@/utils/i18n";
 
 interface ModelFilterProps {
   label?: string;
@@ -11,6 +12,7 @@ interface ModelFilterProps {
   selected: FilterOption[];
   selectedBrands: FilterOption[];
   onChange: (selected: FilterOption[]) => void;
+  singleSelect?: boolean; // If true, only allow one selection
 }
 
 export const ModelFilter = ({
@@ -19,6 +21,7 @@ export const ModelFilter = ({
   selected,
   selectedBrands,
   onChange,
+  singleSelect = false,
 }: ModelFilterProps) => {
   const backendFilters = useAppSelector(selectBackendFilters);
   const { models: allModels } = useBackendFilters();
@@ -36,28 +39,29 @@ export const ModelFilter = ({
     // Create a Set for faster brand ID lookups
     const selectedBrandIdsSet = new Set(selectedBrands.map((b) => b.id));
 
-    // If no brands selected, return all models from all brands
-    if (selectedBrandIdsSet.size === 0) {
-      const allModelsFromBrands = new Map<number, FilterOption>();
-      for (const brand of backendFiltersData.car.brands) {
+    // Helper to extract models from brands
+    const extractModelsFromBrands = (
+      brands: any[],
+      filterByBrandIds?: Set<number>
+    ): FilterOption[] => {
+      const modelsMap = new Map<number, FilterOption>();
+      for (const brand of brands) {
+        const brandId = typeof brand === "object" ? brand.id : null;
+        // Skip if filtering by brand IDs and this brand isn't selected
+        if (
+          filterByBrandIds &&
+          (brandId === null || !filterByBrandIds.has(brandId))
+        ) {
+          continue;
+        }
         if (brand.models && Array.isArray(brand.models)) {
           for (const model of brand.models) {
             if (model && typeof model === "object" && model.id !== undefined) {
-              // Extract name - prioritize Lithuanian, fallback to English, then name property
-              let name = "";
-              if (model.languages?.lt) {
-                name = model.languages.lt;
-              } else if (model.languages?.en) {
-                name = model.languages.en;
-              } else if (model.languages?.name) {
-                name = model.languages.name;
-              } else if (model.name) {
-                name = model.name;
-              } else {
-                name = String(model.id);
-              }
-              // Use Map to deduplicate by ID
-              allModelsFromBrands.set(model.id, {
+              const name = getLocalizedText(
+                model.languages,
+                model.name || String(model.id)
+              );
+              modelsMap.set(model.id, {
                 name,
                 id: model.id,
                 rrr_id: model.rrr_id,
@@ -66,50 +70,14 @@ export const ModelFilter = ({
           }
         }
       }
-      return Array.from(allModelsFromBrands.values());
-    }
+      return Array.from(modelsMap.values());
+    };
 
-    // Get models from selected brands
-    const modelsByBrand = new Map<number, FilterOption>();
-
-    for (const brand of backendFiltersData.car.brands) {
-      // Extract brand ID
-      const brandId =
-        typeof brand === "object" && brand.id !== undefined ? brand.id : null;
-
-      // Check if this brand is selected using Set for O(1) lookup
-      if (brandId !== null && selectedBrandIdsSet.has(brandId)) {
-        // Extract models from this brand
-        if (brand.models && Array.isArray(brand.models)) {
-          for (const model of brand.models) {
-            if (model && typeof model === "object" && model.id !== undefined) {
-              // Extract name - prioritize Lithuanian, fallback to English, then name property
-              let name = "";
-              if (model.languages?.lt) {
-                name = model.languages.lt;
-              } else if (model.languages?.en) {
-                name = model.languages.en;
-              } else if (model.languages?.name) {
-                name = model.languages.name;
-              } else if (model.name) {
-                name = model.name;
-              } else {
-                name = String(model.id);
-              }
-              // Use Map to deduplicate by ID
-              modelsByBrand.set(model.id, {
-                name,
-                id: model.id,
-                rrr_id: model.rrr_id,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // Return unique models from selected brands
-    return Array.from(modelsByBrand.values());
+    // If no brands selected, return all models; otherwise filter by selected brands
+    return extractModelsFromBrands(
+      backendFiltersData.car.brands,
+      selectedBrandIdsSet.size > 0 ? selectedBrandIdsSet : undefined
+    );
   }, [allModels, selectedBrands, backendFilters]);
 
   return (
@@ -121,7 +89,14 @@ export const ModelFilter = ({
       <MultiSelectDropdown
         options={models}
         selected={selected}
-        onChange={onChange}
+        onChange={(newSelected) => {
+          // If singleSelect, only keep the last selected item
+          const finalSelection =
+            singleSelect && newSelected.length > 1
+              ? [newSelected[newSelected.length - 1]]
+              : newSelected;
+          onChange(finalSelection);
+        }}
         placeholder="Visi"
         searchable={true}
         searchPlaceholder="Ieškoti modelių..."

@@ -31,10 +31,12 @@ export function PartsView() {
   const debouncedSearchQuery = useDebounce(searchQuery, 800);
 
   // Fetch all parts from API - all parts are equal, no parent/child
+  // Pass isLoading to coordinate loading states and prevent flicker
   const { parts, isLoading: isLoadingParts } = useFetchedParts(
     partsFromStore,
     topDetailsFilter,
-    backendFilters
+    backendFilters,
+    isLoading
   );
 
   // Handle top details filter change - wrapped in useCallback
@@ -75,7 +77,7 @@ export function PartsView() {
         onSearchChange={handleSearchChange}
         topDetailsFilter={topDetailsFilter}
         filterPlaceholder="Filtruoti dalis..."
-        isLoading={isLoading || isLoadingParts}
+        isLoading={isLoadingParts}
       />
     </div>
   );
